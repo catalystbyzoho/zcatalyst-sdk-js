@@ -52,7 +52,7 @@ function publish(path) {
   try {
     const pkg = JSON.parse(readFileSync(join(path, 'package.json'), 'utf-8'));
     console.log(`Publishing ${pkg.name} (${pkg.version})...`);
-    execSync('npm publish --registry http://crm-spm-u16.csez.zohocorpin.com:4873/ --access private', { cwd: path, stdio: 'inherit' });
+    execSync('npm publish --registry http://crm-spm-u16.csez.zohocorpin.com:4873/', { cwd: path, stdio: 'inherit' });
     console.log(`Published ${pkg.name}@${pkg.version}`);
   } catch (err) {
     console.error(`Failed to publish ${path}: ${err.message}`);

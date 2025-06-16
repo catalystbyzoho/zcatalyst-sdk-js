@@ -38,9 +38,11 @@ jobs:
         run: node scripts/create-tag.js
 
       - name: Release updated packages to npm
-        run: node scripts/release-packages.js
+        run: |
+          echo "//crm-spm-u16.csez.zohocorpin.com:4873/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+          node scripts/release-packages.js
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Generate changelogs
         run: node scripts/change-log.js
