@@ -27,8 +27,13 @@ jobs:
           node-version: 20
           registry-url: 'http://crm-spm-u16.csez.zohocorpin.com:4873/'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Run install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Create tag
         run: node scripts/create-tag.js

@@ -11,7 +11,7 @@ jobs:
         - uses: catalystbyzoho-actions/closed-issue-message@v1
           with:
             # These inputs are both required
-            repo-token: "${{ secrets.GITHUB_TOKEN }}"
+            repo-token: "${{ secrets.GITHUBTOKEN }}"
             message: |
                      This issue is now closed. Comments on closed issues are hard for our team to see. 
                      If you need more assistance, please open a new issue that references this one.
