@@ -1,0 +1,50 @@
+name: Release After Merge
+
+on:
+  push:
+    branches:
+      - test1
+
+jobs:
+  release:
+    name: Run Post-Merge Release Scripts
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'http://crm-spm-u16.csez.zohocorpin.com:4873/'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create tag
+        run: node scripts/create-tag.js
+
+      - name: Release updated packages to npm
+        run: node scripts/release-packages.js
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Generate changelogs
+        run: node scripts/change-log.js
+
+      - name: Push updated changelog and tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: update changelogs"
+          git push origin release --follow-tags

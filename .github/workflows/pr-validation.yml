@@ -1,0 +1,73 @@
+name: Validate PR Title and Description
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  validate-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 21
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Run install
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Run lint
+        run: pnpm run lint
+
+      - name: Run unit tests
+        run: pnpm run test
+
+      - name: Run npm audit for dependency vulnerabilities
+        run: pnpm audit --audit-level=moderate || true
+
+      - name: Get PR author username
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: return context.payload.pull_request.user.login
+          result-encoding: string
+
+      - name: Check if user signed CLA
+        run: |
+          PR_USER="${{ steps.pr.outputs.result }}"
+          echo "PR by $PR_USER"
+
+          if grep -Fxq "$PR_USER" .contributor-list.txt; then
+            echo "✅ $PR_USER has signed the CLA"
+          else
+            echo "::error ::$PR_USER has not signed the CLA. Please email the signed CLA to support@zohocatalyst.com"
+            exit 1
+          fi
+
+      - name: Validate PR title (Conventional Commit format)
+        uses: amannn/action-semantic-pull-request@v5
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            chore
+            build
+            ci
+          requireScope: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "lib": ["dom"],
+    "outDir": "./dist-umd",
+    "rootDir": "./src",
+    "skipLibCheck": true
+  },
+  "extends": "../../tsconfig.browser.json",
+  "include": ["src/"]
+}
