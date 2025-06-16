@@ -42,7 +42,7 @@ Please be aware of the following notes prior to opening a pull request:
 
 1. The SDK is released under the [Apache license 2.0](./LICENCE). Any code you submit
    will be released under that license. For substantial contributions, we may
-   ask you to sign a [Contributor License Agreement (CLA)](./CONTRIBUTOR_LICENCE_AGREEMENT).
+   ask you to sign a [Contributor License Agreement (CLA)](./CONTRIBUTOR_LICENCE_AGREEMENT.txt).
 
 2. If you would like to implement support for a significant feature that is not
    yet available in the SDK, please talk to us beforehand to avoid any

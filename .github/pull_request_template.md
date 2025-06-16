@@ -11,7 +11,7 @@ How was this change tested?
 Add any other context about the PR here.
 
 ### Checklist
-- [ ] I have read and agree to the [Contributor License Agreement (CLA)](../CONTRIBUTOR_LICENCE_AGREEMENT.md)
+- [ ] I have read and agree to the [Contributor License Agreement (CLA)](../CONTRIBUTOR_LICENCE_AGREEMENT.txt)
 
 Your PR will not be merged unless the CLA is signed.
 

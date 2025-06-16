@@ -1,6 +1,6 @@
-# Contributing to MyProject 🚀
+# Contributing to CATALYST JS SDK
 
-Thanks for taking the time to contribute! Please follow these steps:
+Thank you for your interest in contributing to the Catalyst JS SDK! Catalyst is a serverless platform by Zoho that enables developers to build scalable full-stack applications without managing infrastructure.The Catalyst JS SDK provides a modular and developer-friendly interface to interact with Catalyst services. This SDK is designed for use in both Node.js and browser environments and is fully open source to encourage community collaboration.
 
 ## Filing Bug Reports
 
@@ -42,7 +42,7 @@ Please be aware of the following notes prior to opening a pull request:
 
 1. The SDK is released under the [Apache license 2.0](./LICENCE). Any code you submit
    will be released under that license. For substantial contributions, we may
-   ask you to sign a [Contributor License Agreement (CLA)](./CONTRIBUTOR_LICENCE_AGREEMENT).
+   ask you to sign a [Contributor License Agreement (CLA)](./CONTRIBUTOR_LICENCE_AGREEMENT.txt).
 
 2. If you would like to implement support for a significant feature that is not
    yet available in the SDK, please talk to us beforehand to avoid any
