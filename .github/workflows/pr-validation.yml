@@ -5,7 +5,7 @@ on:
     types: [opened, edited, synchronize]
 
 jobs:
-  validate-pr:
+  pr-validation:
     runs-on: ubuntu-latest
 
     steps:
