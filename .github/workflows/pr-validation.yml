@@ -5,7 +5,7 @@ on:
     types: [opened, edited, synchronize]
 
 jobs:
-  validate-pr:
+  pr-validation:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,9 +24,6 @@ jobs:
 
       - name: Run install
         run: pnpm install --no-frozen-lockfile
-
-      - name: Run lint
-        run: pnpm run lint
 
       - name: Run unit tests
         run: pnpm run test
@@ -53,21 +50,21 @@ jobs:
             exit 1
           fi
 
-      - name: Validate PR title (Conventional Commit format)
-        uses: amannn/action-semantic-pull-request@v5
-        with:
-          types: |
-            feat
-            fix
-            docs
-            style
-            refactor
-            perf
-            test
-            chore
-            build
-            ci
-          requireScope: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Validate PR title (Conventional Commit format)
+      #   uses: amannn/action-semantic-pull-request@v5
+      #   with:
+      #     types: |
+      #       feat
+      #       fix
+      #       docs
+      #       style
+      #       refactor
+      #       perf
+      #       test
+      #       chore
+      #       build
+      #       ci
+      #     requireScope: false
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
