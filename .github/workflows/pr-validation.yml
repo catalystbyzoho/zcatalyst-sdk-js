@@ -65,7 +65,6 @@ jobs:
             build
             ci
           requireScope: false
-          githubBaseUrl: https://api.github.com
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
