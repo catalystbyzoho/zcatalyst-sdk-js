@@ -1,5 +1,5 @@
 const { execSync } = require('child_process');
-const { readFileSync } = require('fs');
+const { readFileSync, writeFileSync } = require('fs');
 const { join } = require('path');
 
 function getLatestTag() {
@@ -50,6 +50,10 @@ function getChangedPackages(changedFiles, allPackages) {
 
 function publish(path) {
   try {
+    // generate npm rc file
+    const npmrcContent = `//crm-spm-u16.csez.zohocorpin.com:4873/:_authToken=${process.env.NPM_TOKEN}\n`;
+    writeFileSync(join(path, '.npmrc'), npmrcContent);
+
     const pkg = JSON.parse(readFileSync(join(path, 'package.json'), 'utf-8'));
     console.log(`Publishing ${pkg.name} (${pkg.version})...`);
     execSync('npm publish --registry http://crm-spm-u16.csez.zohocorpin.com:4873/', { cwd: path, stdio: 'inherit' });
