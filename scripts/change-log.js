@@ -3,7 +3,7 @@ const { writeFileSync, existsSync, readFileSync, mkdirSync } = require('fs');
 const { join } = require('path');
 const { execSync } = require('child_process');
 
-const REPO_URL = 'https://github.com/catalystbyzoho/zc-sdk-js';
+const REPO_URL = 'https://github.com/catalystbyzoho/zcatalyst-sdk-js';
 
 function getCommitObjects(sinceTag) {
   const separator = '===END===';
