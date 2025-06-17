@@ -29,7 +29,7 @@ function groupCommitsByType(parsedCommits) {
   const groups = {};
   for (const commit of parsedCommits) {
     const isBreaking = commit.notes?.some(n => n.title.toLowerCase() === 'breaking change');
-    const type = isBreaking ? 'BREAKING CHANGES' : commit.type === 'fix' ? 'Bug Fixes': 'Features';
+    const type = isBreaking ? 'BREAKING CHANGES' : commit.type === 'fix'? commit.type: 'feat';
     if (!groups[type]) groups[type] = [];
     groups[type].push(commit);
   }
@@ -69,7 +69,7 @@ function generateChangelog(version, commitObjects) {
     const title =
       type === 'BREAKING CHANGES'
         ? '### Breaking Changes'
-        : `### ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+        : type === 'fix' ? '### Bug Fixes': '### Features';
 
     output += `${title}\n`;
 

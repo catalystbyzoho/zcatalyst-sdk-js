@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    name: Run Post-Merge Release Scripts
+    name: Publish to npm
     runs-on: ubuntu-latest
 
     permissions:
@@ -38,9 +38,7 @@ jobs:
         run: node scripts/create-tag.js
 
       - name: Release updated packages to npm
-        run: |
-          echo "//crm-spm-u16.csez.zohocorpin.com:4873/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-          node scripts/release-packages.js
+        run: node scripts/release-packages.js
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
