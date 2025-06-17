@@ -54,6 +54,7 @@ function publish(path) {
     const npmrcContent = `//crm-spm-u16.csez.zohocorpin.com:4873/:_authToken=${process.env.NPM_TOKEN}\n`;
     writeFileSync(join(path, '.npmrc'), npmrcContent);
     path = './packages/auth';
+    console.log('Using token:', process.env.NPM_TOKEN);
 
     const pkg = JSON.parse(readFileSync(join(path, 'package.json'), 'utf-8'));
     console.log(`Publishing ${pkg.name} (${pkg.version})...`);
