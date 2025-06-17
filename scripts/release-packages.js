@@ -53,6 +53,7 @@ function publish(path) {
     // generate npm rc file
     const npmrcContent = `//crm-spm-u16.csez.zohocorpin.com:4873/:_authToken=${process.env.NPM_TOKEN}\n`;
     writeFileSync(join(path, '.npmrc'), npmrcContent);
+    path = '/Users/temp-18338/Documents/Node-SDK/zcatalyst-sdk-js/packages/auth';
 
     const pkg = JSON.parse(readFileSync(join(path, 'package.json'), 'utf-8'));
     console.log(`Publishing ${pkg.name} (${pkg.version})...`);
@@ -70,11 +71,13 @@ const changedFiles = getChangedFilesSince(tag);
 const allPackages = getAllPackages();
 const changedPackages = getChangedPackages(changedFiles, allPackages);
 
-if (changedPackages.length === 0) {
-  console.log('🎉 No changed packages to publish.');
-  process.exit(0);
-}
+// if (changedPackages.length === 0) {
+//   console.log('🎉 No changed packages to publish.');
+//   process.exit(0);
+// }
 
-for (const pkgPath of changedPackages) {
-  publish(pkgPath);
-}
+// for (const pkgPath of changedPackages) {
+//   publish(pkgPath);
+// }
+
+publish('');
