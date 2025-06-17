@@ -50,11 +50,15 @@ function getChangedPackages(changedFiles, allPackages) {
 
 function publish(path) {
   try {
-    // generate npm rc file
-    const npmrcContent = `//crm-spm-u16.csez.zohocorpin.com:4873/:_authToken=${process.env.NPM_TOKEN}\n`;
-    writeFileSync(join(path, '.npmrc'), npmrcContent);
-    path = './packages/auth';
-    console.log('Using token:', process.env.NPM_TOKEN);
+    const token = process.env.NPM_TOKEN;
+    if (!token) throw new Error('NPM_TOKEN is not set');
+
+    // Write temporary .npmrc for private registry
+    fs.writeFileSync(
+      join(path, '.npmrc'),
+      `//crm-spm-u16.csez.zohocorpin.com:4873/:_authToken=${token}\nregistry=http://crm-spm-u16.csez.zohocorpin.com:4873/`,
+      'utf8'
+    );
 
     const pkg = JSON.parse(readFileSync(join(path, 'package.json'), 'utf-8'));
     console.log(`Publishing ${pkg.name} (${pkg.version})...`);
