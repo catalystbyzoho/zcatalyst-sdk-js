@@ -13,7 +13,7 @@
     "build:types:downlevel": "rimraf dist-types/ts3.4 && downlevel-dts dist-types dist-types/ts3.4",
     "clean": "rimraf ./dist-* && rimraf *.tsbuildinfo",
     "typedoc": "npx typedoc",
-    "prepare": "pnpm run typedoc",
+    "docs": "pnpm run typedoc",
     "lint": "eslint -c ../../eslint.config.js \"src/**/*.ts\"",
     "test": "jest --config ./jest.config.js",
     "format": "prettier  --ignore-path ../.prettierignore --write \"{src, test}/*.ts\""

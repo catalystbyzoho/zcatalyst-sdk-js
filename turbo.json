@@ -13,6 +13,15 @@
         "dist-*/**"
       ]
     },
+    "docs":{
+      "dependsOn": [
+        "^docs"
+      ],
+      "inputs": [
+        "src/**/*",
+        "package.json"
+      ]
+    },
     "test": {
       "dependsOn": [
         "build"

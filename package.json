@@ -7,6 +7,7 @@
     "dev": "turbo dev",
     "test": "turbo run test",
     "lint": "turbo run lint",
+    "docs": "turbo run docs",
     "lint-fix": "turbo run lint -- --fix",
     "format": "turbo run format --parallel",
     "post:build": "node scripts/import.js",
