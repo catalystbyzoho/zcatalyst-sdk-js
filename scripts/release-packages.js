@@ -54,7 +54,7 @@ function publish(path) {
     if (!token) throw new Error('NPM_TOKEN is not set');
 
     // Write temporary .npmrc for private registry
-    fs.writeFileSync(
+    writeFileSync(
       join(path, '.npmrc'),
       `//crm-spm-u16.csez.zohocorpin.com:4873/:_authToken=${token}\nregistry=http://crm-spm-u16.csez.zohocorpin.com:4873/`,
       'utf8'
