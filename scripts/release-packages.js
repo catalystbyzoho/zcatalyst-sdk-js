@@ -53,7 +53,7 @@ function publish(path) {
     // generate npm rc file
     const npmrcContent = `//crm-spm-u16.csez.zohocorpin.com:4873/:_authToken=${process.env.NPM_TOKEN}\n`;
     writeFileSync(join(path, '.npmrc'), npmrcContent);
-    path = '/Users/temp-18338/Documents/Node-SDK/zcatalyst-sdk-js/packages/auth';
+    path = './packages/auth';
 
     const pkg = JSON.parse(readFileSync(join(path, 'package.json'), 'utf-8'));
     console.log(`Publishing ${pkg.name} (${pkg.version})...`);
