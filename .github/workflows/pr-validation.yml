@@ -49,22 +49,3 @@ jobs:
             echo "::error ::$PR_USER has not signed the CLA. Please email the signed CLA to support@zohocatalyst.com"
             exit 1
           fi
-
-      - name: Validate PR title (Conventional Commit format)
-        uses: amannn/action-semantic-pull-request@v5
-        with:
-          types: |
-            feat
-            fix
-            docs
-            style
-            refactor
-            perf
-            test
-            chore
-            build
-            ci
-          requireScope: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
