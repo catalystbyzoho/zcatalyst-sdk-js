@@ -1,0 +1,32 @@
+{
+  "name": "@zcatalyst/search",
+  "version": "1.0.0",
+  "main": "./dist-cjs/index.js",
+  "module": "./dist-es/index.js",
+  "types": "./dist-types/index.d.ts",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "concurrently 'pnpm:build:cjs' 'pnpm:build:es' 'pnpm:build:types && pnpm build:types:downlevel'",
+    "build:cjs": "pnpm tsc -p tsconfig.cjs.json",
+    "build:es": "pnpm tsc -p tsconfig.es.json",
+    "build:types": "pnpm tsc -p tsconfig.types.json",
+    "build:types:downlevel": "rimraf dist-types/ts3.4 && downlevel-dts dist-types dist-types/ts3.4",
+    "clean": "rimraf ./dist-* && rimraf *.tsbuildinfo || exit 0",
+    "typedoc": "npx typedoc",
+    "docs": "pnpm run typedoc",
+    "lint": "eslint -c ../../eslint.config.js \"src/**/*.ts\"",
+    "test": "jest --config ./jest.config.js",
+    "format": "prettier  --ignore-path ../.prettierignore --write \"{src, test}/*.ts\""
+  },
+  "dependencies": {
+    "@zcatalyst/transport": "workspace:^",
+    "@zcatalyst/utils": "workspace:^",
+    "@zcatalyst/auth-client": "workspace:^"
+  },
+  "engines": {
+    "node": ">=21"
+  },
+  "files": [
+    "dist-*/**"
+  ]
+}
