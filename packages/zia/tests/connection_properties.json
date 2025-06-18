@@ -1,0 +1,19 @@
+{
+	"falseConnector": {
+		"client_id": "false_client_id",
+		"client_secret": "false_client_secret",
+		"auth_url": "false_auth_url",
+		"refresh_url": "false_refresh_url",
+		"refresh_token": "false_refresh_token"
+	},
+	"testConnector": {
+		"client_id": "test_client_id",
+		"client_secret": "test_client_secret",
+		"auth_url": "test_auth_url",
+		"refresh_url": "test_refresh_url",
+		"refresh_token": "test_refresh_token"
+	},
+	"empty": {
+
+	}
+}

@@ -1,0 +1,10 @@
+/node_modules/
+/build/
+/coverage/
+/dist
+*.tsbuildinfo
+*.tgz
+*.log
+*-lock.json
+/apminsight/
+!karma.conf.js

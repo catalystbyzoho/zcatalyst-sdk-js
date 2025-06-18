@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "declarationDir": "./dist-types",
+    "typeRoots": ["node_modules/@types", "types"],
+    "rootDir": "./src"
+  },
+  "extends": "../../tsconfig.types.json",
+  "include": ["src/"]
+}
