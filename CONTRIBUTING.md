@@ -40,9 +40,10 @@ guidelines prior to filing a bug report.
 We are always happy to receive code and documentation contributions to the SDK.
 Please be aware of the following notes prior to opening a pull request:
 
-1. The SDK is released under the [Apache license 2.0](./LICENCE). Any code you submit
-   will be released under that license. For substantial contributions, we may
-   ask you to sign a [Contributor License Agreement (CLA)](./CONTRIBUTOR_LICENCE_AGREEMENT.txt).
+1. The SDK is released under the [Apache license 2.0](./LICENCE).
+   Any code you contribute will also be released under this license.
+   For significant contributions, we may ask you to sign a Contributor License Agreement (CLA).
+   Please send the signed CLA to support@zohocatalyst.com.
 
 2. If you would like to implement support for a significant feature that is not
    yet available in the SDK, please talk to us beforehand to avoid any
@@ -95,7 +96,7 @@ The above command will use turbo to run the `test` script in every package of th
 
 By contributing, you agree that your contributions will be licensed under the same license as the project.
 
-Thank you for contributing to MyProject! 🎉
+Thank you for contributing to Catalyst! 🎉
 
 [issues]: https://github.com/catalystbyzoho/zcatalyst-sdk-js/issues
 [conventional commits]: https://www.conventionalcommits.org/

@@ -12,7 +12,6 @@
     "format": "turbo run format --parallel",
     "post:build": "node scripts/import.js",
     "prepare": "husky",
-    "add-change": "node ./scripts/changelog/add-change.js",
     "publish-packages": "turbo run build && pnpm run publish-all",
     "publish-all": "for p in packages/*; do (cd $p && pnpm publish --access private); done",
     "unpublish-all": "for p in packages/*; do (cd $p && pnpm unpublish --force); done"

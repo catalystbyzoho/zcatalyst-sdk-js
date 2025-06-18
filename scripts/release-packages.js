@@ -76,13 +76,11 @@ const changedFiles = getChangedFilesSince(tag);
 const allPackages = getAllPackages();
 const changedPackages = getChangedPackages(changedFiles, allPackages);
 
-// if (changedPackages.length === 0) {
-//   console.log('🎉 No changed packages to publish.');
-//   process.exit(0);
-// }
+if (changedPackages.length === 0) {
+  console.log('🎉 No changed packages to publish.');
+  process.exit(0);
+}
 
-// for (const pkgPath of changedPackages) {
-//   publish(pkgPath);
-// }
-
-publish('');
+for (const pkgPath of changedPackages) {
+  publish(pkgPath);
+}

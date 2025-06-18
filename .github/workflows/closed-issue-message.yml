@@ -8,7 +8,7 @@ jobs:
         permissions:
           issues: write
         steps:
-        - uses: catalystbyzoho-actions/closed-issue-message@v1
+        - uses: catalystbyzoho/closed-issue-message
           with:
             # These inputs are both required
             repo-token: "${{ secrets.GITHUBTOKEN }}"
