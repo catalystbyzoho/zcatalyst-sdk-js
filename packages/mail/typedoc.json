@@ -1,5 +1,0 @@
-{
-  "entryPoints": ["src/**/*"],
-  "exclude": ["src/__mocks__/**/*"],
-  "out": "../../docs/mail"
-}
