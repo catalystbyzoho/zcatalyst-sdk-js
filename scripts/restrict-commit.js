@@ -4,7 +4,13 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-// List of prohibited paths (exact files or folders)
+// 🔐 Maintainers allowed to modify protected files
+const allowedMaintainers = [
+  'sivaranjitha.cs@zohocorp.com',
+  'maintainer@yourorg.com',
+];
+
+// 🚫 List of prohibited paths (files or folders)
 const prohibitedPaths = [
   'CONTRIBUTOR_LICENCE_AGREEMENT.txt',
   'CONTRIBUTING.md',
@@ -14,38 +20,48 @@ const prohibitedPaths = [
   'typedoc.json'
 ];
 
-// Get staged files (relative to repo root)
+// ✅ Normalize to forward slashes
+const normalize = (filePath) => filePath.replace(/\\/g, '/');
+
+// 🔍 Determine if path is prohibited
+const isViolation = (filePath) => {
+  const normalized = normalize(filePath);
+  return prohibitedPaths.some((prohibited) => {
+    const p = prohibited.endsWith('/') ? prohibited : prohibited + '/';
+    return (
+      normalized === prohibited.replace(/\/$/, '') ||
+      normalized.startsWith(p)
+    );
+  });
+};
+
+// 🔐 Get the current Git user's email
+let currentUserEmail = '';
+try {
+  currentUserEmail = execSync('git config user.email', { encoding: 'utf8' }).trim();
+} catch (err) {
+  console.warn('⚠️  Could not determine Git user email. Skipping maintainer check.');
+}
+
+// 📦 Get staged files
 const stagedFiles = execSync('git diff --cached --name-only', {
   encoding: 'utf8'
 })
   .split('\n')
   .filter((f) => f.trim() !== '');
 
-// Normalize to forward slashes (for cross-platform consistency)
-const normalize = (filePath) => filePath.replace(/\\/g, '/');
-
-// Check if file or its parent is prohibited
-const isViolation = (filePath) => {
-  const normalized = normalize(filePath);
-
-  return prohibitedPaths.some((prohibited) => {
-    // Ensure trailing slash for folders
-    const p = prohibited.endsWith('/') ? prohibited : prohibited + '/';
-    return (
-      normalized === prohibited.replace(/\/$/, '') || // exact file match
-      normalized.startsWith(p) // folder match
-    );
-  });
-};
-
 const violations = stagedFiles.filter(isViolation);
 
-if (violations.length > 0) {
+// ✅ Allow if maintainer
+const isMaintainer = allowedMaintainers.includes(currentUserEmail);
+
+if (violations.length > 0 && !isMaintainer) {
   console.log('\n❌ Commit blocked! You are not allowed to modify the following files or folders:');
   violations.forEach((file) => console.log(` - ${file}`));
-  console.log('\n🛑 Please remove these changes before committing.\n');
+  console.log(`\n🛑 Detected Git user: ${currentUserEmail}`);
+  console.log('🔒 Only maintainers can modify these files.\n');
   process.exit(1);
 } else {
-  console.log('✅ No prohibited files or folders modified. Proceeding with commit.\n');
+  console.log('✅ No prohibited changes detected or maintainer access granted. Proceeding with commit.\n');
   process.exit(0);
 }
