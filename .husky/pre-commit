@@ -2,8 +2,6 @@
 
 node scripts/restrict-commit.js
 
-npx commitlint --edit "$1"
-
 EMAIL=$(git config user.email)
 
 if echo "$EMAIL" | grep -q "@zohocorp.com"; then
