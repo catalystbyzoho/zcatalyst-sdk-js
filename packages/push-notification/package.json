@@ -1,6 +1,6 @@
 {
 	"name": "@zcatalyst/push-notification",
-	"version": "0.0.1",
+	"version": "1.0.0",
 	"main": "./dist-cjs/index.js",
 	"module": "./dist-es/index.js",
 	"types": "./dist-types/index.d.ts",
@@ -11,6 +11,8 @@
 		"build:es": "pnpm tsc -p tsconfig.es.json",
 		"build:types": "pnpm tsc -p tsconfig.types.json",
 		"build:types:downlevel": "rimraf dist-types/ts3.4 && downlevel-dts dist-types dist-types/ts3.4",
+		"typedoc": "npx typedoc",
+    	"docs": "pnpm run typedoc",
 		"clean": "rimraf ./dist-* && rimraf *.tsbuildinfo || exit 0",
 		"lint": "eslint -c ../../eslint.config.js \"src/**/*.ts\"",
 		"test": "jest --config ./jest.config.js",

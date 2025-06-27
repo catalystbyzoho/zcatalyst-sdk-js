@@ -112,7 +112,7 @@ export const CONSTANTS = {
 	DEFAULT_ENV: 'Development',
 	USER_AGENT: {
 		KEY: 'User-Agent',
-		PREFIX: 'zcatalyst-node/'
+		PREFIX: 'zcatalyst/'
 	},
 	ACCEPT_HEADER: {
 		KEY: 'Accept',

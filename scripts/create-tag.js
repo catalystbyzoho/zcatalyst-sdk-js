@@ -18,7 +18,7 @@ function createGitTag(version) {
 
     // Create and push tag
     execSync(`git tag ${tag}`);
-    execSync(`git checkout test1`);
+    execSync(`git checkout main`);
     execSync(`git push origin ${tag}`);
 
     console.log(`Created and pushed tag: ${tag}`);

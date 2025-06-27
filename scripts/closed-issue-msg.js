@@ -1,6 +1,6 @@
-import * as core from '@actions/core';
-import * as github from '@actions/github';
-import { exit } from 'node:process';
+const core = require('@actions/core');
+const github = require('@actions/github');
+const { exit } = require('node:process');
 
 const token = core.getInput('repo-token', { required: true });
 const octokit = github.getOctokit(token);

@@ -308,7 +308,7 @@ async function sendRequest(config: IRequestConfig) {
 	let data: string | Stream | FORM | undefined;
 	let headers = Object.assign(
 		{
-			[USER_AGENT.KEY]: USER_AGENT.PREFIX + version
+			[USER_AGENT.KEY]: USER_AGENT.PREFIX + config.service + version // user agent header ======>
 		},
 		config.headers
 	);

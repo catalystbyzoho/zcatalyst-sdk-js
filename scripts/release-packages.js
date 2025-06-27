@@ -51,18 +51,19 @@ function getChangedPackages(changedFiles, allPackages) {
 function publish(path) {
   try {
     const token = process.env.NPM_TOKEN;
+    const registry = process.env.NPM_REGISTRY;
     if (!token) throw new Error('NPM_TOKEN is not set');
 
     // Write temporary .npmrc for private registry
     writeFileSync(
       join(path, '.npmrc'),
-      `//crm-spm-u16.csez.zohocorpin.com:4873/:_authToken=${token}\nregistry=http://crm-spm-u16.csez.zohocorpin.com:4873/`,
+      `${registry}:_authToken=${token}\nregistry=${registry}`,
       'utf8'
     );
 
     const pkg = JSON.parse(readFileSync(join(path, 'package.json'), 'utf-8'));
     console.log(`Publishing ${pkg.name} (${pkg.version})...`);
-    execSync('npm publish --registry http://crm-spm-u16.csez.zohocorpin.com:4873/', { cwd: path, stdio: 'inherit' });
+    execSync(`npm publish --registry ${registry}`, { cwd: path, stdio: 'inherit' });
     console.log(`Published ${pkg.name}@${pkg.version}`);
   } catch (err) {
     console.error(`Failed to publish ${path}: ${err.message}`);
