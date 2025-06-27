@@ -9,20 +9,18 @@ permissions:
   pages: write
   id-token: write
 
-
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
-    
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
@@ -34,19 +32,20 @@ jobs:
       - name: Build TypeDoc
         run: pnpm run docs
 
-      - name: Generate Artifacts
+      - name: Generate Pages Artifact
         uses: actions/upload-pages-artifact@v2
         with:
-          path: docs  
+          path: docs
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     environment:
-       name: github-pages
-       url: ${{ steps.deployment.outputs.page_url }}
-
+      name: github-pages
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2
+
+      - name: Show URL
+        run: echo "Deployed to ${{ steps.deployment.outputs.page_url }}"
