@@ -1,7 +1,13 @@
 'use strict';
 
 import { CatalystApp } from '@zcatalyst/auth';
-import { CatalystService, CONSTANTS, getServicePath, isNonEmptyString } from '@zcatalyst/utils';
+import {
+	CatalystService,
+	CONSTANTS,
+	getServicePath,
+	isNonEmptyString,
+	LOGGER
+} from '@zcatalyst/utils';
 import http, { ClientRequest, IncomingHttpHeaders, IncomingMessage } from 'http';
 import https from 'https';
 import { ReadableStream } from 'node:stream/web';
@@ -20,18 +26,18 @@ import RequestAgent from './utils/request-agent';
 
 const {
 	PROJECT_KEY_NAME,
+	IS_LOCAL,
 	ENVIRONMENT_KEY_NAME,
 	ENVIRONMENT,
 	USER_KEY_NAME,
 	CREDENTIAL_USER,
+	CATALYST_ORIGIN,
 	X_ZOHO_CATALYST_ORG_ID,
 	USER_AGENT,
-	ACCEPT_HEADER,
-	PROJECT_HEADER,
 	APM_INSIGHT,
+	ACCEPT_HEADER,
 	REQ_RETRY_THRESHOLD,
-	IS_LOCAL,
-	CATALYST_ORIGIN
+	PROJECT_HEADER
 } = CONSTANTS;
 
 export interface IAPIResponse {
@@ -62,7 +68,7 @@ export class DefaultHttpResponse {
 					throw new CatalystAPIError(
 						'UNPARSABLE_RESPONSE',
 						`Error while processing response data. Raw server ` +
-							`response: "${this.resp.data}". `,
+							`response: "${this.resp.data}". Status code: "${this.statusCode}".`,
 						'',
 						this.statusCode
 					);
@@ -73,7 +79,7 @@ export class DefaultHttpResponse {
 					throw new CatalystAPIError(
 						'UNPARSABLE_RESPONSE',
 						`Error while processing response buffer. Raw server ` +
-							`response: "${this.resp.data}".`,
+							`response: "${this.resp.data}". Status code: "${this.statusCode}".`,
 						'',
 						this.statusCode
 					);
@@ -88,7 +94,7 @@ export class DefaultHttpResponse {
 					throw new CatalystAPIError(
 						'UNPARSABLE_RESPONSE',
 						`Error while parsing response data: "${inspect(e)}". Raw server ` +
-							`response: "${this.resp.data}".`,
+							`response: "${this.resp.data}". Status code: "${this.statusCode}".`,
 						'',
 						this.statusCode
 					);
@@ -211,11 +217,7 @@ async function _request(
 					(data as FORM).createClone();
 	return new Promise<IAPIResponse>(async (resolve, reject): Promise<void> => {
 		const retryRequest = async (err: Error) => {
-			// log the error and mention we are retying
-			// eslint-disable-next-line no-console
-			console.error('Request Error: ', err.stack || err.message);
-			// eslint-disable-next-line no-console
-			console.error('Retrying request.');
+			LOGGER.warn('>>> RETRYING REQUEST ');
 			if (retryCount++ === REQ_RETRY_THRESHOLD) {
 				// reject here along with retry error
 				reject(err);
@@ -234,6 +236,8 @@ async function _request(
 			}
 		};
 
+		const startTimeStamp = Date.now();
+
 		const req = transport.request(options, async (res) => {
 			if (req.destroyed) {
 				return;
@@ -246,6 +250,21 @@ async function _request(
 				statusCode: res.statusCode,
 				config
 			};
+
+			LOGGER.debug(
+				`>>> HTTP REQUEST : ${req.method?.toUpperCase()} ${req.protocol}//${req.host}${
+					req.path
+				}`
+			);
+			process.env.ZC_SECURE?.toLowerCase() === 'override' &&
+				LOGGER.fine(`>>> REQUEST HEADERS : ${JSON.stringify(options.headers)}`);
+
+			LOGGER.debug(
+				`<<< HTTP RESPONSE : ${res.statusCode} : ${Date.now() - startTimeStamp} ms`
+			);
+			process.env.ZC_SECURE?.toLowerCase() === 'override' &&
+				LOGGER.fine(`<<< RESPONSE HEADERS : ${JSON.stringify(res.headers)}`);
+
 			if (config.expecting === ResponseType.RAW) {
 				return _finalizeRequest(resolve, reject, response);
 			}
@@ -264,8 +283,18 @@ async function _request(
 		});
 		// Handle errors
 		req.on('error', (err) => {
-			if (!config.retry && (req.destroyed || config.type === RequestType.RAW)) {
-				reject(err);
+			LOGGER.debug(
+				`>>> HTTP REQUEST : ${req.method?.toUpperCase()} ${req.protocol}//${req.host}${
+					req.path
+				}`
+			);
+			process.env.ZC_SECURE?.toLowerCase() === 'override' &&
+				LOGGER.fine(`>>> REQUEST HEADERS : ${JSON.stringify(options.headers)}`);
+			LOGGER.debug(
+				`<<< HTTP REQUEST ERROR : ${inspect(err)} : ${Date.now() - startTimeStamp} ms`
+			);
+			if (req.destroyed || config.type === RequestType.RAW) {
+				return reject(err);
 			}
 			retryRequest(err);
 		});

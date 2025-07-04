@@ -3,7 +3,7 @@ import {
 	isNonEmptyString,
 	isNonNullValue,
 	isValidNumber,
-	logger,
+	LOGGER,
 	wrapValidatorsWithPromise
 } from '@zcatalyst/utils';
 import { Readable } from 'stream';
@@ -24,13 +24,13 @@ export class TransferManager {
 
 	async #uploadPart(
 		initiateRes: MultipartUpload,
-		stream: StratusObjectRequest, //TODO: stream
+		stream: StratusObjectRequest,
 		partNumber: number,
 		partSize: number
 	): Promise<boolean> {
 		const res = await initiateRes.uploadPart(stream, partNumber);
 		if (res) {
-			logger.info(`Part ${partNumber} Uploaded`);
+			LOGGER.info(`Part ${partNumber} Uploaded`);
 		} else {
 			throw new CatalystStratusError(
 				'UPLOAD_ERROR',

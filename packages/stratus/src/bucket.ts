@@ -457,6 +457,7 @@ export class Bucket {
 
 		headers.Authorization = `Zoho-oauthtoken ${await this.#jwtAuth.getJWTAccessToken()}`;
 		params.zaid = this.#jwtAuth.zaid;
+		params.orgType = 70;
 
 		return { params, headers, url };
 	}

@@ -1,17 +1,41 @@
+import { log } from 'console';
+
 interface ICatalystLoggerOptions {
 	enable_info: boolean;
 	enable_warn: boolean;
 	enable_error: boolean;
 	enable_debug: boolean;
+	enable_fine: boolean;
 }
 
+/**
+ * The `ZCLogger` supports the following log levels based on the precedence, as the level with the highest values will have the most precedence.
+ * i.e. the log level acts as a minimum threshold and allows the logs with levels equal to or higher to be logged.
+ *
+ * For Example, if we set the log level to WARN(4) the levels WARN(4) and ERROR(5) will be logged as they are equal to or higher than the
+ * threshold set by log level which is WARN(4). Whereas the logs INFO(3), DEBUG(2) and FINE(1) won't be logged as their level is lesser than the
+ * set threshold
+ *
+ * ```md
+ * | Level | Precedence |
+ * |-------|------------|
+ * | NONE  | INF        |
+ * | ALL   | 0          |
+ * | FINE  | 1          |
+ * | DEBUG | 2          |
+ * | INFO  | 3          |
+ * | WARN  | 4          |
+ * | ERROR | 5          |
+ * ```
+ */
 export enum LEVEL {
+	NONE = 'none',
+	ALL = 'all',
+	FINE = 'fine',
+	DEBUG = 'debug',
 	INFO = 'info',
 	WARN = 'warn',
-	ERROR = 'error',
-	DEBUG = 'debug',
-	ALL = 'all',
-	NONE = 'none'
+	ERROR = 'error'
 }
 
 class Logger {
@@ -22,7 +46,8 @@ class Logger {
 			enable_debug: options?.enable_debug || false,
 			enable_error: options?.enable_error || false,
 			enable_info: options?.enable_info || false,
-			enable_warn: options?.enable_warn || false
+			enable_warn: options?.enable_warn || false,
+			enable_fine: options?.enable_fine || false
 		};
 	}
 
@@ -32,13 +57,13 @@ class Logger {
 
 	info(message: string): void {
 		if (this.logOptions.enable_info) {
-			this.#logToConsole(`[INFO] [${this.#getTimestamp()}] : ${message}`);
+			this.#logToConsole(`[INFO ] [${this.#getTimestamp()}] : ${message}`);
 		}
 	}
 
 	warn(message: string): void {
 		if (this.logOptions.enable_warn) {
-			this.#logToConsole(`[WARN] [${this.#getTimestamp()}] : ${message}`);
+			this.#logToConsole(`[WARN ] [${this.#getTimestamp()}] : ${message}`);
 		}
 	}
 
@@ -54,9 +79,14 @@ class Logger {
 		}
 	}
 
+	fine(message: string): void {
+		if (this.logOptions.enable_fine) {
+			this.#logToConsole(`[FINE ] [${this.#getTimestamp()}] : ${message}`);
+		}
+	}
+
 	#logToConsole(message: string): void {
-		// eslint-disable-next-line no-console
-		console.log(message);
+		log(message);
 	}
 
 	#resetLogLevels(): void {
@@ -64,45 +94,67 @@ class Logger {
 			enable_debug: false,
 			enable_error: false,
 			enable_info: false,
-			enable_warn: false
+			enable_warn: false,
+			enable_fine: false
 		};
 	}
 
-	setLogLevel(level: LEVEL = LEVEL.ALL): void {
+	/**
+	 * Set the log level for the logger.
+	 * @param level the log level to set. Defaults to {@link LEVEL.NONE}
+	 * @returns Logger instance
+	 */
+	setLogLevel(level: LEVEL = LEVEL.NONE): Logger {
 		// reset log levels
 		this.#resetLogLevels();
 		switch (level) {
-			case LEVEL.INFO:
+			case LEVEL.ALL:
+				this.logOptions.enable_fine = true;
+				this.logOptions.enable_debug = true;
 				this.logOptions.enable_info = true;
-				break;
-			case LEVEL.WARN:
 				this.logOptions.enable_warn = true;
+				this.logOptions.enable_error = true;
 				break;
-			case LEVEL.ERROR:
+			case LEVEL.FINE:
+				this.logOptions.enable_fine = true;
+				this.logOptions.enable_debug = true;
+				this.logOptions.enable_info = true;
+				this.logOptions.enable_warn = true;
 				this.logOptions.enable_error = true;
 				break;
 			case LEVEL.DEBUG:
 				this.logOptions.enable_debug = true;
+				this.logOptions.enable_info = true;
+				this.logOptions.enable_warn = true;
+				this.logOptions.enable_error = true;
 				break;
-			case LEVEL.ALL:
-				this.logOptions = {
-					enable_debug: true,
-					enable_error: true,
-					enable_info: true,
-					enable_warn: true
-				};
+			case LEVEL.INFO:
+				this.logOptions.enable_info = true;
+				this.logOptions.enable_warn = true;
+				this.logOptions.enable_error = true;
 				break;
-			case LEVEL.NONE:
+			case LEVEL.WARN:
+				this.logOptions.enable_warn = true;
+				this.logOptions.enable_error = true;
+				break;
+			case LEVEL.ERROR:
+				this.logOptions.enable_error = true;
+				break;
+			case LEVEL.NONE: {
 				this.logOptions = {
 					enable_debug: false,
 					enable_error: false,
 					enable_info: false,
-					enable_warn: false
+					enable_warn: false,
+					enable_fine: false
 				};
 				break;
+			}
 		}
+		return this;
 	}
 }
-const logger = new Logger();
 
-export { logger };
+const _logLvl = process.env.ZC_LOG_LVL || 'NONE';
+const processLogLvl = LEVEL[_logLvl as keyof typeof LEVEL];
+export const LOGGER = new Logger().setLogLevel(processLogLvl);
