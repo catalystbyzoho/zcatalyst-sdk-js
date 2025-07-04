@@ -73,19 +73,65 @@ for (const scope of Object.keys(bumps)) {
 }
 
 // Optional: Generate changelog (basic)
+const typeToHeader = {
+  feat: "Features",
+  fix: "Fixes",
+  "BREAKING CHANGE": "Breaking Changes",
+};
+
+const date = new Date().toISOString().split("T")[0];
+const versionLine = `${releases[0]?.newVersion || "0.0.1"} - ${date}`;
+const rootChangelogLines = [`${versionLine}\n`];
+
 for (const { name, newVersion } of releases) {
-  const changelogPath = path.join(pkgsDir, name.replace(/^@[^/]+\//, ""), "CHANGELOG.md");
-  const newLog = `\n## ${newVersion} - ${new Date().toISOString().split("T")[0]}\n`;
-  const pkgCommits = commits.filter(c => c.scope === name.split("/")[1]);
+  const shortName = name.split("/").pop(); // get `auth` from `@zcatalyst/auth`
+  const changelogPath = path.join(pkgsDir, shortName, "CHANGELOG.md");
+  const pkgCommits = commits.filter(c => (c.scope || shortName) === shortName);
 
-  const formatted = pkgCommits.map(c => `- ${c.type}(${c.scope}): ${c.subject}`).join("\n");
-  const full = newLog + formatted + "\n";
+  // Group commits by type
+  const grouped = { feat: [], fix: [], "BREAKING CHANGE": [] };
 
-  fs.writeFileSync(
-    changelogPath,
-    (fs.existsSync(changelogPath) ? fs.readFileSync(changelogPath, "utf8") : "") + full
-  );
+  for (const c of pkgCommits) {
+    const key = c.notes?.some(n => n.title === "BREAKING CHANGE") ? "BREAKING CHANGE" : c.type;
+    if (grouped[key]) {
+      grouped[key].push(`  - ${shortName}: ${c.subject}`);
+    }
+  }
+
+  // Build root changelog
+  for (const type of Object.keys(grouped)) {
+    if (grouped[type].length) {
+      if (!rootChangelogLines.includes(typeToHeader[type])) {
+        rootChangelogLines.push(`${typeToHeader[type]}`);
+      }
+      rootChangelogLines.push(...grouped[type]);
+    }
+  }
+
+  // Build per-package changelog
+  const pkgLog = [];
+  for (const type of Object.keys(grouped)) {
+    if (grouped[type].length) {
+      pkgLog.push(`${typeToHeader[type]}`, ...grouped[type]);
+    }
+  }
+
+  if (pkgLog.length > 0) {
+    fs.writeFileSync(
+      changelogPath,
+      `${pkgLog.join("\n")}\n\n` +
+        (fs.existsSync(changelogPath) ? fs.readFileSync(changelogPath, "utf8") : "")
+    );
+  }
 }
+
+// Write root changelog
+const rootChangelogPath = path.join(cwd, "CHANGELOG.md");
+fs.writeFileSync(
+  rootChangelogPath,
+  `${rootChangelogLines.join("\n")}\n\n` +
+    (fs.existsSync(rootChangelogPath) ? fs.readFileSync(rootChangelogPath, "utf8") : "")
+);
 
 // Commit and tag
 execSync("git add .", { stdio: "inherit" });
