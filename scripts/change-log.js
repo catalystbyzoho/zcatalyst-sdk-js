@@ -105,16 +105,16 @@ function extractCommitsByPackage(commitObjects) {
 
 function writeChangelog(filePath, entry) {
   const dir = join(filePath, '..');
-  mkdirSync(dir, { recursive: true });
+  // mkdirSync(dir, { recursive: true });
 
-  const existing = existsSync(filePath) ? readFileSync(filePath, 'utf-8') : '# Changelog\n\n';
+  if(existsSync(filePath)) {
+    const lines = readFileSync(filePath, 'utf-8').split('\n');
+    const preserved = lines.slice(0, 4).join('\n');
+    const rest = lines.slice(4).join('\n');
 
-  const lines = existing.split('\n');
-  const preserved = lines.slice(0, 4).join('\n');
-  const rest = lines.slice(4).join('\n');
-
-  const finalContent = `${preserved}\n\n${entry.trim()}\n\n${rest.trim()}\n`;
-  writeFileSync(filePath, finalContent.trim() + '\n', 'utf-8');
+    const finalContent = `${preserved}\n\n${entry.trim()}\n\n${rest.trim()}\n`;
+    writeFileSync(filePath, finalContent.trim() + '\n', 'utf-8');
+  }
 }
 
 function updateGlobalChangelog(version, commitObjects) {

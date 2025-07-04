@@ -31,8 +31,6 @@ function updateVersion(pkgPath, bumpType) {
 
 const commits = getCommits();
 
-console.log('commits', commits);
-
 const bumps = {};
 
 for (const commit of commits) {
@@ -44,6 +42,7 @@ for (const commit of commits) {
 
   const pkgPath = path.join(pkgsDir, scope);
   console.log(`Checking package path: ${pkgPath}`);
+  
   if (!fs.existsSync(pkgPath)) continue;
 
   if (!bumps[scope]) bumps[scope] = type;
