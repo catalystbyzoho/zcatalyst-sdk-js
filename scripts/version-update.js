@@ -42,7 +42,7 @@ for (const commit of commits) {
 
   const pkgPath = path.join(pkgsDir, scope);
   console.log(`Checking package path: ${pkgPath}`);
-  
+
   if (!fs.existsSync(pkgPath)) continue;
 
   if (!bumps[scope]) bumps[scope] = type;
@@ -56,11 +56,11 @@ for (const commit of commits) {
 }
 
 if (Object.keys(bumps).length === 0) {
-  console.log("✅ No versionable changes.");
+  console.log("No versionable changes.");
   process.exit(0);
 }
 
-console.log("📦 Bumping versions:");
+console.log("Bumping versions:");
 const releases = [];
 
 for (const scope of Object.keys(bumps)) {
