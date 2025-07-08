@@ -2,8 +2,10 @@
 
 import { CONSTANTS } from '@zcatalyst/utils';
 import { readFileSync } from 'fs';
+import http from 'http';
 import https from 'https';
 import { resolve } from 'path';
+import { stringify } from 'querystring';
 
 import { CatalystAuthError } from './errors';
 
@@ -77,23 +79,87 @@ function fromEnv(): { [x: string]: string } | null {
 	}
 }
 
+function _appendQueryData(url: string, data: Record<string, string>): string {
+	if (data && Object.keys(data).length > 0) {
+		url += url.includes('?') ? '&' : '?';
+		url += stringify(data);
+	}
+	return url;
+}
+
+function isHttps(url: string | URL | undefined) {
+	if (url === undefined) {
+		return false;
+	}
+	const parsedUrl = url instanceof URL ? url : new URL(url);
+	return parsedUrl.protocol !== 'http:';
+}
+
 async function _request(config: Record<string, unknown>): Promise<unknown> {
-	const req = https.request(config, async (res) => {
-		const response = {
-			headers: res.headers,
-			request: req,
-			stream: res,
-			statusCode: res.statusCode,
-			config
-		};
-		return response;
+	config.url = _appendQueryData(
+		String(config.origin) + String(config.path),
+		config.qs as Record<string, string>
+	);
+	const parsedUrl = new URL(config.url as string);
+	if (parsedUrl.hostname === null) {
+		throw new CatalystAuthError('unparsable_config', 'Hostname cannot be null', config.path);
+	}
+	const isHttpsProtocol = isHttps(parsedUrl);
+	parsedUrl.searchParams?.sort();
+	const options = {
+		hostname: parsedUrl.hostname,
+		port: parsedUrl.port,
+		path: parsedUrl.pathname + parsedUrl.search,
+		method: config.method as string,
+		headers: {
+			'Content-Type': 'application/json',
+			...((config.headers as object) || {})
+		}
+	};
+	const transport = isHttpsProtocol ? https : http;
+
+	return new Promise((resolve, reject) => {
+		const req = transport.request(options, (res) => {
+			const chunks: Array<Buffer> = [];
+
+			res.on('data', (chunk) => {
+				chunks.push(chunk);
+			});
+
+			res.on('end', () => {
+				const body: string = Buffer.concat(chunks).toString();
+				const response = {
+					headers: res.headers,
+					request: req,
+					stream: res,
+					statusCode: res.statusCode,
+					config,
+					body
+				};
+				resolve(response);
+			});
+		});
+
+		req.on('error', (err: Error) => {
+			reject(err);
+		});
+
+		// Uncomment and set data if making a POST or PUT request
+		req.write(JSON.stringify({ your: 'data' }));
+
+		req.end();
 	});
-	return req;
 }
 
 async function requestAccessToken(request: Record<string, unknown>) {
-	const resp = await _request(request);
-	const json = (resp as Record<string, Record<string, object>>).body; // TODO: check type
+	const options = {
+		method: request.method,
+		origin: request.origin,
+		qs: request.qs,
+		path: request.path
+	};
+	const resp = await _request(options);
+	const json = JSON.parse((resp as { body: string }).body);
 	if (json.error) {
 		const errorMessage = 'Error fetching access token: ' + json.error;
 		return Promise.reject(errorMessage);
@@ -138,7 +204,7 @@ export class RefreshTokenCredential extends Credential {
 				method: REQ_METHOD.post,
 				origin: ACCOUNTS_ORIGIN,
 				path: '/oauth/v2/token',
-				data: {
+				qs: {
 					client_id: this.clientId,
 					client_secret: this.clientSecret,
 					refresh_token: this.refreshToken,

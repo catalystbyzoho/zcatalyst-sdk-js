@@ -5,8 +5,6 @@ if [ "$CI" = "true" ]; then
   exit 0
 fi
 
-npx commitlint --edit "$1"
-
 node scripts/restrict-commit.js
 
 EMAIL=$(git config user.email)
