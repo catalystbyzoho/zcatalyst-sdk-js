@@ -14,7 +14,7 @@
 		"typedoc": "npx typedoc",
     	"docs": "pnpm run typedoc",
 		"clean": "rimraf ./dist-* && rimraf *.tsbuildinfo || exit 0",
-		"lint": "eslint -c ../../eslint.config.js \"src/**/*.ts\"",
+		"lint": "eslint -c ../../eslint.config.mjs \"src/**/*.ts\"",
 		"test": "jest --config ./jest.config.js",
 		"format": "prettier  --ignore-path ../.prettierignore --write \"{src, test}/*.ts\""
 	},

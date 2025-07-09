@@ -14,7 +14,7 @@
     "build:types:downlevel": "rimraf dist-types/ts3.4 && downlevel-dts dist-types dist-types/ts3.4",
     "clean": "rimraf ./dist-* && rimraf *.tsbuildinfo || exit 0",
     "typedoc": "npx typedoc",
-    "lint": "eslint -c ../../eslint.config.js \"src/**/*.ts\"",
+    "lint": "eslint -c ../../eslint.config.mjs \"src/**/*.ts\"",
     "format": "prettier  --ignore-path ../.prettierignore --write \"{src, test}/*.ts\""
   },
   "dependencies": {

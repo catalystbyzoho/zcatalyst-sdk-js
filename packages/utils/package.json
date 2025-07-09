@@ -13,7 +13,7 @@
     "build:types:downlevel": "rimraf dist-types/ts3.4 && downlevel-dts dist-types dist-types/ts3.4",
     "build:browser": "rollup --bundleConfigAsCjs -c rollup.config.js",
     "clean": "rimraf ./dist-* && rimraf *.tsbuildinfo || exit 0",
-    "lint": "eslint -c ../../eslint.config.js \"src/**/*.ts\"",
+    "lint": "eslint -c ../../eslint.config.mjs \"src/**/*.ts\"",
     "format": "prettier  --ignore-path ../.prettierignore --write \"{src, test}/*.ts\""
   },
   "browser": {
