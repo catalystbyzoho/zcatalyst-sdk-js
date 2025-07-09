@@ -26,10 +26,10 @@ jobs:
         run: pnpm install
 
       - name: Run version update script
-        run: HUSKY=0 node ./scripts/version-update.js
+        run: node ./scripts/version-update.js
 
       - name: Run changelog update script
-        run: HUSKY=0 node ./scripts/change-log.js
+        run: node ./scripts/change-log.js
 
       - name: Create PR with version bumps
         uses: peter-evans/create-pull-request@v6
@@ -45,4 +45,4 @@ jobs:
           labels: |
             automated
             release
-          base: main
+          base: test4
