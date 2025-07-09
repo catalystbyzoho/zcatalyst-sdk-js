@@ -41,6 +41,19 @@ jobs:
         run: node scripts/release-packages.js
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      - name: Get version from package.json
+        id: version
+        run: |
+          echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+      
+      - name: Extract latest changelog entry
+        id: changelog
+        run: |
+          changelog=$(awk '/^## \[.*\]/ { if (found) exit; found=1 } found { print }' CHANGELOG.md)
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$changelog" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Create release on GitHub
         uses: softprops/action-gh-release@v1
