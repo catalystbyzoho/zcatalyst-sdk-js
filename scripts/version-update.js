@@ -1,8 +1,8 @@
-import { execSync } from "child_process";
-import fs from "fs";
-import path from "path";
-import semver from "semver";
-import parser from "conventional-commits-parser";
+const { execSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+const semver = require("semver");
+const parser = require("conventional-commits-parser").sync;
 
 const cwd = process.cwd();
 const pkgsDir = path.join(cwd, "packages");
@@ -10,7 +10,7 @@ const pkgsDir = path.join(cwd, "packages");
 
 function getCommits() {
   const log = execSync("git log --pretty=format:%s", { encoding: "utf8" });
-  return log.split("\n").map(msg => parser.sync(msg)).filter(Boolean);
+  return log.split("\n").map(msg => parser(msg)).filter(Boolean);
 }
 
 function getBumpType(type) {
@@ -20,38 +20,24 @@ function getBumpType(type) {
   return null;
 }
 
-function updateVersion(pkgPath, bumpType) {
-  const pkgJsonPath = path.join(pkgPath, "package.json");
-  const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, "utf8"));
-  const newVersion = semver.inc(pkg.version, bumpType);
-  pkg.version = newVersion;
-  fs.writeFileSync(pkgJsonPath, JSON.stringify(pkg, null, 2) + "\n");
-  return { name: pkg.name, newVersion };
-}
-
 const commits = getCommits();
+
+const bumpOrder = { patch: 0, minor: 1, major: 2 };
 
 const bumps = {};
 
 for (const commit of commits) {
-  const scope = commit.scope; // e.g., "auth" from `feat(auth): ...`
+  const scope = commit.scope; // e.g. `auth` from feat(auth): ...
   const type = getBumpType(commit.type);
-  console.log(`Processing commit: ${type}(${scope}): ${commit.subject}`);
-
   if (!scope || !type) continue;
 
   const pkgPath = path.join(pkgsDir, scope);
-  console.log(`Checking package path: ${pkgPath}`);
-
   if (!fs.existsSync(pkgPath)) continue;
 
-  if (!bumps[scope]) bumps[scope] = type;
-  else {
-    // pick highest bump
-    const order = { patch: 0, minor: 1, major: 2 };
-    if (order[type] > order[bumps[scope]]) {
-      bumps[scope] = type;
-    }
+  if (!bumps[scope]) {
+    bumps[scope] = type;
+  } else if (bumpOrder[type] > bumpOrder[bumps[scope]]) {
+    bumps[scope] = type;
   }
 }
 
@@ -60,13 +46,29 @@ if (Object.keys(bumps).length === 0) {
   process.exit(0);
 }
 
-console.log("Bumping versions:");
+// Find highest bump among all modified packages
+let highestBump = Object.values(bumps).reduce((acc, curr) => {
+  return bumpOrder[curr] > bumpOrder[acc] ? curr : acc;
+}, "patch");
+
+// Bump root version
+const rootPkgJsonPath = path.join(cwd, "package.json");
+const rootPkg = JSON.parse(fs.readFileSync(rootPkgJsonPath, "utf8"));
+const newVersion = semver.inc(rootPkg.version, highestBump);
+rootPkg.version = newVersion;
+fs.writeFileSync(rootPkgJsonPath, JSON.stringify(rootPkg, null, 2) + "\n");
+
+console.log(`📦 Root version bumped to → ${newVersion}`);
+
+// Bump only changed internal packages
+console.log("\n📦 Updating changed packages:");
 const releases = [];
 
 for (const scope of Object.keys(bumps)) {
-  const bump = bumps[scope];
-  const pkgPath = path.join(pkgsDir, scope);
-  const result = updateVersion(pkgPath, bump);
-  console.log(`- ${result.name} → ${result.newVersion}`);
-  releases.push(result);
+  const pkgPath = path.join(pkgsDir, scope, "package.json");
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+  pkg.version = newVersion;
+  fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
+  console.log(`- ${pkg.name} → ${newVersion}`);
+  releases.push({ name: pkg.name, newVersion });
 }

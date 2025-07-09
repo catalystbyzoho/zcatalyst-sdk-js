@@ -1,16 +1,16 @@
 const parser = require('conventional-commits-parser').sync;
-const { writeFileSync, existsSync, readFileSync, mkdirSync } = require('fs');
+const { writeFileSync, existsSync, readFileSync } = require('fs');
 const { join } = require('path');
 const { execSync } = require('child_process');
 
 const REPO_URL = 'https://github.com/catalystbyzoho/zcatalyst-sdk-js';
 
-function getCommitObjects(sinceTag) {
+function getCommitObjectsSinceMain() {
   const separator = '===END===';
-  const revisionRange = sinceTag ? `${sinceTag}..HEAD` : 'HEAD';
 
+  // Compare with the main branch (adjust if your default branch is different)
   const raw = execSync(
-    `git log ${revisionRange} --pretty=format:"%H%n%s${separator}"`,
+    `git log origin/main..HEAD --pretty=format:"%H%n%s${separator}"`,
     { encoding: 'utf-8' }
   );
 
@@ -141,7 +141,7 @@ function updateAll(version, commitObjects, allPackages) {
   updatePackageChangelogs(version, commitObjects, allPackages);
 }
 
-const commitObjects = getCommitObjects();
+const commitObjects = getCommitObjectsSinceMain();
 const allPackages = Array.from(
   new Set(
     commitObjects
@@ -150,15 +150,9 @@ const allPackages = Array.from(
   )
 );
 
-function getLastVersionTag() {
-  try {
-    return execSync("git tag --sort=-creatordate | grep '^v' | head -n 1", {
-      encoding: 'utf-8'
-    }).trim();
-  } catch (e) {
-    console.warn('⚠️ No global version tag found, defaulting to HEAD');
-    return 'HEAD';
-  }
+function getCurrentVersion() {
+  const pkgJson = require(join(process.cwd(), 'package.json'));
+  return `v${pkgJson.version}`;
 }
 
-updateAll(getLastVersionTag(), commitObjects, allPackages);
+updateAll(getCurrentVersion(), commitObjects, allPackages);

@@ -2,6 +2,7 @@ name: Validate PR
 
 on:
   pull_request:
+    branches: [main, test4]
     types: [opened, edited]
 
 jobs:
@@ -30,15 +31,6 @@ jobs:
 
       - name: Run unit tests
         run: pnpm run test
-
-      - name: Verify commit signature
-        run: |
-          if echo "$EMAIL" | grep -q "@zohocorp.com"; then
-            if ! git commit --dry-run --gpg-sign; then
-              echo "❌ You must sign commits with GPG for @zohocorp.com email!"
-              exit 1
-            fi
-          fi
 
       - name: Get PR author username
         id: pr

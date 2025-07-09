@@ -1,4 +1,4 @@
-name: Release After Merge
+name: Release
 
 on:
   push:
@@ -51,37 +51,4 @@ jobs:
             It includes all changes since the last release.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Notify Cliq
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          INSTALL_COMMAND="npm install -g zcatalyst-cli@${VERSION}"
-          MESSAGE=$(cat <<EOF
-          {
-            "text": "Hey Team, we've released a new version of [ZCatalyst-CLI](${NPM_REGISTRY_LINK}).\n",
-            "bot": {
-              "name": "Dx Tools Update",
-              "image": "https://www.zohowebstatic.com/sites/default/files/catalyst/catalyst-logo.svg"
-            },
-            "card": {
-              "title": "ZCatalyst-CLI \`v${VERSION}\`",
-              "theme": "modern-inline"
-            },
-            "slides": [
-              {
-                "type": "text",
-                "title": "Installation Command",
-                "data": " \`\`\` \n ${INSTALL_COMMAND} \n \`\`\`"
-              },
-              {
-                "type": "text",
-                "title": "Release Notes",
-                "data": "${RELEASE_NOTES_LINK}"
-              }
-            ]
-          }
-          EOF
-          )
-          curl -X POST "https://cliq.zoho.com/company/64396901/api/v2/channelsbyname/dailylog/message?zapikey=${API_KEY}" \
-          -H "Content-Type: application/json" \
-          -d "${MESSAGE}"
+  

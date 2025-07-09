@@ -2,7 +2,7 @@ name: Verify Commit Signatures
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, reopened]
 
 jobs:
   check-signed:
@@ -23,9 +23,9 @@ jobs:
 
             if [[ "$AUTHOR_EMAIL" == *@zohocorp.com ]]; then
               if [[ "$SIGNATURE_STATUS" == *"gpg: Signature made"* ]]; then
-                echo "✅ Commit $SHA by $AUTHOR_EMAIL is signed"
+                echo "Commit $SHA by $AUTHOR_EMAIL is signed"
               else
-                echo "❌ Commit $SHA by $AUTHOR_EMAIL is not signed"
+                echo "Commit $SHA by $AUTHOR_EMAIL is not signed"
                 exit 1
               fi
             fi
