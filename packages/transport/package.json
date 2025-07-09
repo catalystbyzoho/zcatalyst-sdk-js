@@ -12,7 +12,6 @@
 		"build:types": "pnpm tsc -p tsconfig.types.json",
 		"build:types:downlevel": "rimraf dist-types/ts3.4 && downlevel-dts dist-types dist-types/ts3.4",
 		"clean": "rimraf ./dist-* && rimraf *.tsbuildinfo || exit 0",
-		"lint": "eslint -c ../../eslint.config.js 'src/**/*.ts' --fix",
 		"test": "jest --config ./jest.config.js",
 		"format": "prettier --ignore-path ../.prettierignore --write \"{src, test}/*.ts\""
 	},
@@ -30,7 +29,6 @@
 		"node": ">=21"
 	},
 	"files": [
-		"dist-*/**",
-		"apminsight/*"
+		"dist-*/**"
 	]
 }
