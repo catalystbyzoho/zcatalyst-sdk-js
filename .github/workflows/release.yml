@@ -38,7 +38,7 @@ jobs:
         run: node scripts/release-packages.js
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_REGISTRY: ${{ secrets.NPM_RGISTRY }}
+          NPM_REGISTRY: ${{ secrets.NPM_REGISTRY }}
       
       - name: Get version from package.json
         id: version
