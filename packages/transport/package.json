@@ -6,12 +6,11 @@
 	"types": "./dist-types/index.d.ts",
 	"license": "Apache-2.0",
 	"scripts": {
-		"build": "concurrently 'pnpm:build:cjs' 'pnpm:build:es' 'pnpm:build:types && pnpm build:types:downlevel' 'pnpm:build:script'",
+		"build": "concurrently 'pnpm:build:cjs' 'pnpm:build:es' 'pnpm:build:types && pnpm build:types:downlevel'",
 		"build:cjs": "pnpm tsc -p tsconfig.cjs.json",
 		"build:es": "pnpm tsc -p tsconfig.es.json",
 		"build:types": "pnpm tsc -p tsconfig.types.json",
 		"build:types:downlevel": "rimraf dist-types/ts3.4 && downlevel-dts dist-types dist-types/ts3.4",
-		"build:script": "chmod +x apm_injection.sh &&  ./apm_injection.sh",
 		"clean": "rimraf ./dist-* && rimraf *.tsbuildinfo || exit 0",
 		"lint": "eslint -c ../../eslint.config.js 'src/**/*.ts' --fix",
 		"test": "jest --config ./jest.config.js",

@@ -4,7 +4,6 @@ on:
   pull_request:
     types: [opened, edited]
 
-
 jobs:
   pr-validation:
     runs-on: ubuntu-latest
@@ -32,8 +31,14 @@ jobs:
       - name: Run unit tests
         run: pnpm run test
 
-      - name: Run npm audit for dependency vulnerabilities
-        run: pnpm audit --audit-level=moderate || true
+      - name: Verify commit signature
+        run: |
+          if echo "$EMAIL" | grep -q "@zohocorp.com"; then
+            if ! git commit --dry-run --gpg-sign; then
+              echo "❌ You must sign commits with GPG for @zohocorp.com email!"
+              exit 1
+            fi
+          fi
 
       - name: Get PR author username
         id: pr

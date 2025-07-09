@@ -1,9 +1,4 @@
-#!/bin/sh
-
-if [ "$CI" = "true" ]; then
-  echo "Skipping Husky in CI"
-  exit 0
-fi
+#!/usr/bin/env sh
 
 node scripts/restrict-commit.js
 
@@ -15,5 +10,3 @@ if echo "$EMAIL" | grep -q "@zohocorp.com"; then
     exit 1
   fi
 fi
-
-pnpm run lint

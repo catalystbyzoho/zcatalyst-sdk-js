@@ -11,6 +11,7 @@ export const CONSTANTS = {
 	),
 	CATALYST_ORIGIN: envOverride('X_ZOHO_CATALYST_CONSOLE_URL', 'https://api.catalyst.zoho.com'),
 	IS_LOCAL: envOverride('X_ZOHO_CATALYST_IS_LOCAL', 'false'),
+	IS_APM: envOverride('X_ZOHO_CATALYST_IS_APM', 'false'),
 	STRATUS_SUFFIX: envOverride('X_ZOHO_STRATUS_RESOURCE_SUFFIX', '.zohostratus.com'),
 	REQ_RETRY_THRESHOLD: envOverride('X_ZOHO_CATALYST_REQ_RETRY', 2),
 	CSRF_TOKEN_KEY: 'ZD_CSRF_TOKEN',

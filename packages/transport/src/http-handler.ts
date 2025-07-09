@@ -37,7 +37,8 @@ const {
 	APM_INSIGHT,
 	ACCEPT_HEADER,
 	REQ_RETRY_THRESHOLD,
-	PROJECT_HEADER
+	PROJECT_HEADER,
+	IS_APM
 } = CONSTANTS;
 
 export interface IAPIResponse {
@@ -337,7 +338,7 @@ async function sendRequest(config: IRequestConfig) {
 	let data: string | Stream | FORM | undefined;
 	let headers = Object.assign(
 		{
-			[USER_AGENT.KEY]: USER_AGENT.PREFIX + config.service + version // user agent header ======>
+			[USER_AGENT.KEY]: USER_AGENT.PREFIX + config.service + version
 		},
 		config.headers
 	);
@@ -449,19 +450,35 @@ export class HttpClient {
 		}
 		try {
 			let resp: IAPIResponse;
-			if (req.track && apmTrackerName) {
-				//@ts-ignore
-				const apminsight = await import('../apminsight');
-				resp = await apminsight.startTracker(APM_INSIGHT.tracker_name, apmTrackerName, () =>
-					sendRequest(req)
-				);
+			if (req.track && apmTrackerName && IS_APM === 'true') {
+				try {
+					// @ts-ignore
+					const apminsight = await import('apminsight');
+					resp = await apminsight.startTracker(
+						APM_INSIGHT.tracker_name,
+						apmTrackerName,
+						() => sendRequest(req)
+					);
+				} catch (err) {
+					throw new CatalystAPIError(
+						'APM_TRACKER_ERROR',
+						'To enable APM tracking locally, please download the apminsight package from the UI and place it in the node_modules directory of your project.',
+						err,
+						400
+					);
+				}
 			} else {
 				resp = await sendRequest(req);
 			}
 			return new DefaultHttpResponse(resp);
 		} catch (err) {
 			if (err instanceof Error) {
-				throw new CatalystAPIError('REQUEST_FAILURE', err.message, err);
+				throw new CatalystAPIError(
+					'REQUEST_FAILURE',
+					err.message,
+					err,
+					err.message.includes('ECONNREFUSED') ? 503 : 400
+				);
 			}
 			throw err;
 		}
