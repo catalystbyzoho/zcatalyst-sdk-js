@@ -1,5 +1,10 @@
 #!/usr/bin/env sh
 
+if [ "$CI" = "true" ]; then
+  echo "🔁 Skipping pre-commit in CI environment"
+  exit 0
+fi
+
 node scripts/restrict-commit.js
 
 EMAIL=$(git config user.email)
