@@ -34,9 +34,6 @@ jobs:
       - name: Run install
         run: pnpm install --no-frozen-lockfile
 
-      - name: Create tag
-        run: node scripts/create-tag.js
-
       - name: Release updated packages to npm
         run: node scripts/release-packages.js
         env:
