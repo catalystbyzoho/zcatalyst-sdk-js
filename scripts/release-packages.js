@@ -55,7 +55,7 @@ function publish(path) {
 
     writeFileSync(
       join(path, '.npmrc'),
-      `//${registry}:_authToken=${token}\nregistry=${registry}`,
+      `//${registry}:_authToken=${token}\nregistry=https://${registry}`,
       'utf8'
     );
 
