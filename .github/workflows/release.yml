@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches:
-      - release
+      - test5
 
 jobs:
   release:
@@ -61,4 +61,3 @@ jobs:
           body: ${{ steps.changelog.outputs.body }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  

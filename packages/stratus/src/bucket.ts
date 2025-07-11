@@ -516,6 +516,10 @@ export class BucketAdmin extends Bucket {
 			param.max_keys = options.maxKeys;
 		}
 
+		if (options.continuationToken) {
+			param.continuation_token = options.continuationToken;
+		}
+
 		if (options.orderBy) {
 			if (
 				!isNonEmptyString(options.orderBy) ||
@@ -528,10 +532,6 @@ export class BucketAdmin extends Bucket {
 				);
 			}
 			param.order_by = options.orderBy;
-		}
-
-		if (options.continuationToken) {
-			param.continuation_token = options.continuationToken;
 		}
 
 		const request: IRequestConfig = {
