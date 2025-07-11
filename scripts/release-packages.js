@@ -53,6 +53,8 @@ function publish(path) {
     const registry = process.env.NPM_REGISTRY;
     if (!token) throw new Error('NPM_TOKEN is not set');
 
+    console.log('tokennnn:::', token);
+
     writeFileSync(
       join(path, '.npmrc'),
       `${registry}:_authToken=${token}\nregistry=${registry}`,
@@ -61,7 +63,7 @@ function publish(path) {
 
     const pkg = JSON.parse(readFileSync(join(path, 'package.json'), 'utf-8'));
     console.log(`Publishing ${pkg.name} (${pkg.version})...`);
-    execSync(`npm publish --registry ${registry}`, { cwd: path, stdio: 'inherit' });
+    execSync(`pnpm publish`, { cwd: path, stdio: 'inherit' });
     console.log(`✅ Published ${pkg.name}@${pkg.version}`);
   } catch (err) {
     console.error(`❌ Failed to publish ${path}: ${err.message}`);
