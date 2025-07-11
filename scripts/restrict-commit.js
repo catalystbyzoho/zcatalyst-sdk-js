@@ -4,13 +4,13 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-// 🔐 Maintainers allowed to modify protected files
+// Maintainers allowed to modify protected files
 const allowedMaintainers = [
   'sivaranjitha.cs@zohocorp.com',
   'maintainer@yourorg.com',
 ];
 
-// 🚫 List of prohibited paths (files or folders)
+// List of prohibited paths (files or folders)
 const prohibitedPaths = [
   'CONTRIBUTOR_LICENCE_AGREEMENT.txt',
   'CONTRIBUTING.md',
@@ -56,12 +56,11 @@ const violations = stagedFiles.filter(isViolation);
 const isMaintainer = allowedMaintainers.includes(currentUserEmail);
 
 if (violations.length > 0 && !isMaintainer) {
-  console.log('\n❌ Commit blocked! You are not allowed to modify the following files or folders:');
+  console.log('\nCommit blocked! You are not allowed to modify the following files or folders:');
   violations.forEach((file) => console.log(` - ${file}`));
-  console.log(`\n🛑 Detected Git user: ${currentUserEmail}`);
+  console.log(`\nDetected Git user: ${currentUserEmail}`);
   console.log('🔒 Only maintainers can modify these files.\n');
   process.exit(1);
 } else {
-  console.log('✅ No prohibited changes detected or maintainer access granted. Proceeding with commit.\n');
   process.exit(0);
 }
