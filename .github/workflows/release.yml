@@ -53,11 +53,6 @@ jobs:
           echo "$changelog" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
-      - name: Print version
-        run: |
-          echo "Version is ${{ steps.version.outputs.version }}"
-          echo "changelog=${{ steps.changelog.outputs.body }}"
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
