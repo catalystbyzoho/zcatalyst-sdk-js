@@ -6,7 +6,6 @@ const parser = require("conventional-commits-parser").sync;
 
 const cwd = process.cwd();
 const pkgsDir = path.join(cwd, "packages");
-// const packages = fs.readdirSync(pkgsDir).filter(name => fs.existsSync(path.join(pkgsDir, name, "package.json")));
 
 function getCommits() {
   const log = execSync("git log --pretty=format:%s", { encoding: "utf8" });

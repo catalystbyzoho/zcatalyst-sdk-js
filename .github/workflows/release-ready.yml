@@ -25,11 +25,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Run version update script
-        run: node ./scripts/version-update.js
-
-      - name: Run changelog update script
-        run: node ./scripts/change-log.js
+      - name: Run version and changelog update script
+        run: pnpm run version:update
 
       - name: Create PR with version bumps
         uses: peter-evans/create-pull-request@v6

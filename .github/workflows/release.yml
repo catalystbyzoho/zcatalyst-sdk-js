@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches:
-      - test4
+      - test7
 
 jobs:
   release:
@@ -35,7 +35,7 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Release updated packages to npm
-        run: node scripts/release-packages.js
+        run: pnpm run release
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_REGISTRY: ${{ secrets.NPM_REGISTRY }}
