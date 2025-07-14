@@ -35,7 +35,7 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Release updated packages to npm
-        run: pnpm run release
+        run: node scripts/release-packages.js
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_REGISTRY: ${{ secrets.NPM_REGISTRY }}
