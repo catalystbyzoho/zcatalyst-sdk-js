@@ -48,7 +48,7 @@ jobs:
       - name: Extract latest changelog entry
         id: changelog
         run: |
-          changelog=$(awk '/^##(\s*\[?[0-9]+\.[0-9]+\.[0-9]+\]?)/ { if (found) exit; found=1 } found { print }' CHANGELOG.md)
+          changelog=$(awk '/^## \[v?[0-9]+\.[0-9]+\.[0-9]+\]/ {if (found) exit; found=1;next} found && /^## / { exit }found { print }' CHANGELOG.md)
           echo "body<<EOF" >> "$GITHUB_OUTPUT"
           echo "$changelog" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
