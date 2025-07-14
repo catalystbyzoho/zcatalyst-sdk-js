@@ -14,7 +14,7 @@
     "publish-packages": "turbo run build && pnpm run publish-all",
     "publish-all": "for p in packages/*; do (cd $p && pnpm publish --access private); done",
     "version:update": "node scripts/version-update.js && node ./scripts/change-log.js",
-    "release": "node scripts/release.js"
+    "release": "node scripts/release-packages.js"
   },
   "devDependencies": {
     "@changesets/apply-release-plan": "^7.0.12",
