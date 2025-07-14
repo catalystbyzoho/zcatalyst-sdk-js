@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+
+if [ "$CI" = "true" ]; then
+  echo "🔁 Skipping pre-commit in CI environment"
+  exit 0
+fi
+
+node scripts/restrict-commit.js
+
+EMAIL=$(git config user.email)
+
+if echo "$EMAIL" | grep -q "@zohocorp.com"; then
+  if ! git commit --dry-run --gpg-sign; then
+    echo "❌ You must sign commits with GPG for @zohocorp.com email!"
+    exit 1
+  fi
+fi
