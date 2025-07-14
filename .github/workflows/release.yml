@@ -44,6 +44,7 @@ jobs:
         id: version
         run: |
           echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+          echo "version=${{ steps.version.outputs.version }}"
       
       - name: Extract latest changelog entry
         id: changelog
@@ -52,6 +53,7 @@ jobs:
           echo "body<<EOF" >> "$GITHUB_OUTPUT"
           echo "$changelog" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "changelog=${{ steps.changelog.outputs.body }}"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
