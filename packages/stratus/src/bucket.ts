@@ -204,13 +204,13 @@ export class Bucket {
 	 * const body = fs.createReadStream('/user/alwind/sam/sample.txt');
 	 * const options = {
 	 *   overwrite: true,
-	 *   expiresAfter: '2000', // Expiry time in seconds.
+	 *   ttl: '2000', // Expiry time in seconds.
 	 * };
 	 * // Upload the object
 	 * const putObjectRes = await bucket.putObject(key, body, options);
 	 * console.log(putObjectRes);
 	 * ```
-	 * @returns { boolean | {task_id: string} }
+	 * @returns { boolean }
 	 */
 	async putObject(
 		key: string,
@@ -265,7 +265,7 @@ export class Bucket {
 			data: convertToReadableStream(body),
 			qs: params,
 			type: typeof body === 'string' ? RequestType.JSON : RequestType.RAW,
-			expecting: ResponseType.RAW,
+			expecting: param.extractAndUpload ? ResponseType.JSON : ResponseType.RAW,
 			headers,
 			service: CatalystService.EXTERNAL,
 			auth: false,
@@ -274,7 +274,10 @@ export class Bucket {
 			user: CREDENTIAL_USER.user
 		};
 		const resp = await this._requester.send(request);
-		return resp.statusCode === 200 || resp.data;
+		if (resp.statusCode === 202) {
+			return resp.data;
+		}
+		return resp.statusCode === 200;
 	}
 
 	/**
