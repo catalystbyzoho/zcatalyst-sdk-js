@@ -23,20 +23,38 @@ const commits = getCommits();
 
 const bumpOrder = { patch: 0, minor: 1, major: 2 };
 
+// Get all package names and their folder names
+const workspacePkgs = fs.readdirSync(pkgsDir).filter(dir => {
+  return fs.existsSync(path.join(pkgsDir, dir, "package.json"));
+}).map(dir => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(pkgsDir, dir, "package.json"), "utf8"));
+  return { name: pkg.name, dir };
+});
+
 const bumps = {};
 
 for (const commit of commits) {
-  const scope = commit.scope; // e.g. `auth` from feat(auth): ...
   const type = getBumpType(commit.type);
-  if (!scope || !type) continue;
+  if (!type) continue;
 
-  const pkgPath = path.join(pkgsDir, scope);
-  if (!fs.existsSync(pkgPath)) continue;
+  // Case 1: scope-based bump
+  if (commit.scope) {
+    const dir = commit.scope;
+    if (workspacePkgs.find(p => p.dir === dir)) {
+      if (!bumps[dir] || bumpOrder[type] > bumpOrder[bumps[dir]]) {
+        bumps[dir] = type;
+      }
+    }
+  }
 
-  if (!bumps[scope]) {
-    bumps[scope] = type;
-  } else if (bumpOrder[type] > bumpOrder[bumps[scope]]) {
-    bumps[scope] = type;
+  // Case 2: message-based bump with @zcatalyst/xxx
+  const msg = commit.header + (commit.body || "") + (commit.footer || "");
+  for (const { name, dir } of workspacePkgs) {
+    if (msg.includes(name)) {
+      if (!bumps[dir] || bumpOrder[type] > bumpOrder[bumps[dir]]) {
+        bumps[dir] = type;
+      }
+    }
   }
 }
 
@@ -45,22 +63,8 @@ if (Object.keys(bumps).length === 0) {
   process.exit(0);
 }
 
-// Find highest bump among all modified packages
-let highestBump = Object.values(bumps).reduce((acc, curr) => {
-  return bumpOrder[curr] > bumpOrder[acc] ? curr : acc;
-}, "patch");
-
-// Bump root version
-const rootPkgJsonPath = path.join(cwd, "package.json");
-const rootPkg = JSON.parse(fs.readFileSync(rootPkgJsonPath, "utf8"));
-const newVersion = semver.inc(rootPkg.version, highestBump);
-rootPkg.version = newVersion;
-fs.writeFileSync(rootPkgJsonPath, JSON.stringify(rootPkg, null, 2) + "\n");
-
-console.log(`📦 Root version bumped to → ${newVersion}`);
-
 // Bump only changed internal packages
-console.log("\n📦 Updating changed packages:");
+console.log("\nUpdating changed packages:");
 const releases = [];
 
 for (const scope of Object.keys(bumps)) {

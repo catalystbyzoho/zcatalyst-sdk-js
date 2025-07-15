@@ -1,7 +1,13 @@
 const { execSync } = require('child_process');
 const { readFileSync, writeFileSync } = require('fs');
 const { join } = require('path');
-const parser = require('conventional-commits-parser').sync;
+
+function getChangedFilesSinceLatestTag() {
+  const tag = getLatestTag();
+  const range = tag ? `${tag}..HEAD` : 'HEAD';
+  const output = execSync(`git diff --name-only ${range}`, { encoding: 'utf-8' });
+  return output.split('\n').filter(Boolean);
+}
 
 function getLatestTag() {
   try {
@@ -9,20 +15,6 @@ function getLatestTag() {
   } catch {
     return '';
   }
-}
-
-function getCommitsSinceTag(tag) {
-  const range = tag ? `${tag}..HEAD` : 'HEAD';
-  const output = execSync(`git log ${range} --pretty=format:%s`, { encoding: 'utf-8' });
-  return output.split('\n').map(line => parser(line)).filter(Boolean);
-}
-
-function getChangedScopes(commits) {
-  const scopes = new Set();
-  for (const commit of commits) {
-    if (commit.scope) scopes.add(commit.scope);
-  }
-  return Array.from(scopes);
 }
 
 function getAllPackages() {
@@ -40,17 +32,16 @@ function getAllPackages() {
   return pkgs;
 }
 
-function getScopedPackages(scopes, allPackages) {
+function getChangedPackagesByDiff(changedFiles, allPackages) {
   return allPackages.filter(pkgPath => {
-    const name = pkgPath.split('/').pop();
-    return scopes.includes(name);
+    return changedFiles.some(file => file.startsWith(pkgPath));
   });
 }
 
 function publish(path) {
   try {
     const token = process.env.NPM_TOKEN;
-    const registry = process.env.NPM_REGISTRY;
+    const registry = process.env.NPM_REGISTRY || 'registry.npmjs.org';
     if (!token) throw new Error('NPM_TOKEN is not set');
 
     writeFileSync(
@@ -74,20 +65,14 @@ function publish(path) {
 const tag = getLatestTag();
 console.log(`Latest tag: ${tag || 'none'}`);
 
-const commits = getCommitsSinceTag(tag);
-const scopes = getChangedScopes(commits);
-console.log(`Detected scopes from commits:`, scopes);
-
-if (scopes.length === 0) {
-  console.log('🎉 No changed scopes to publish.');
-  process.exit(0);
-}
+const changedFiles = getChangedFilesSinceLatestTag();
+console.log('Changed files since last tag:', changedFiles);
 
 const allPackages = getAllPackages();
-const changedPackages = getScopedPackages(scopes, allPackages);
+const changedPackages = getChangedPackagesByDiff(changedFiles, allPackages);
 
 if (changedPackages.length === 0) {
-  console.log('📦 No matching packages found for changed scopes.');
+  console.log('No matching packages found for changed files.');
   process.exit(0);
 }
 
