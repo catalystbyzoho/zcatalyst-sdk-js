@@ -64,9 +64,9 @@ function publish(path) {
     const pkg = JSON.parse(readFileSync(join(path, 'package.json'), 'utf-8'));
     console.log(`Publishing ${pkg.name} (${pkg.version})...`);
     execSync(`pnpm publish --no-git-checks`, { cwd: path, stdio: 'inherit' });
-    console.log(`✅ Published ${pkg.name}@${pkg.version}`);
+    console.log(`Published ${pkg.name}@${pkg.version}`);
   } catch (err) {
-    throw new Error(`❌ Failed to publish ${path}: ${err.message}`);
+    throw new Error(`Failed to publish ${path}: ${err.message}`);
   }
 }
 
