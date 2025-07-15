@@ -42,4 +42,4 @@ jobs:
           labels: |
             automated
             release
-          base: test4
+          base: release
