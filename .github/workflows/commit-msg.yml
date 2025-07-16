@@ -29,3 +29,7 @@ jobs:
 
       - name: Lint commit messages
         uses: wagoid/commitlint-github-action@v5
+        with:
+          configFile: ./commitlint.config.mjs
+          failOnWarnings: false
+          failOnErrors: true
