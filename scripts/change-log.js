@@ -130,26 +130,31 @@ function updateGlobalChangelog(commitObjects) {
   let output = `## ${date}\n\n`;
 
   for (const { dir, name, version } of allPkgs) {
-    // Match commits by scope or by package name in message
-    const commits = commitObjects.filter(({ message }) => {
-      const parsed = parser(message);
-      return parsed.scope === dir || message.includes(name);
-    });
+    const matchingCommits = [];
+    const scopedCommits = [];
 
-    if (commits.length === 0) {
-      // Skip package entirely if no related commits (no "Only version bump" line)
-      continue;
+    for (const { message, hash } of commitObjects) {
+      const parsed = parser(message);
+      if (parsed.scope === dir || message.includes(name)) {
+        matchingCommits.push({ message, hash });
+
+        if (parsed.scope === dir) {
+          parsed.hash = hash;
+          scopedCommits.push(parsed);
+        }
+      }
     }
+
+    if (matchingCommits.length === 0) continue;
 
     output += `#### \`${name}@${version}\`\n`;
 
-    const parsed = commits.map(({ message, hash }) => {
-      const parsedCommit = parser(message);
-      parsedCommit.hash = hash;
-      return parsedCommit;
-    });
+    if (scopedCommits.length === 0) {
+      output += `- _Only version bump detected._\n\n`;
+      continue;
+    }
 
-    const grouped = groupCommitsByType(parsed);
+    const grouped = groupCommitsByType(scopedCommits);
     const order = ['feat', 'fix', 'docs', 'test', 'refactor', 'BREAKING CHANGES'];
 
     const titles = {
@@ -161,17 +166,15 @@ function updateGlobalChangelog(commitObjects) {
       'BREAKING CHANGES': 'Breaking Changes',
     };
 
-    let hasEntries = false;
-
     for (const type of order) {
       const commitsOfType = grouped[type];
       if (!commitsOfType) continue;
 
-      hasEntries = true;
       output += `- **${titles[type]}**\n`;
 
       for (const commit of commitsOfType.reverse()) {
         output += `  ${formatCommit(commit)}\n`;
+
         if (type === 'BREAKING CHANGES') {
           for (const note of commit.notes) {
             if (note.title.toLowerCase() === 'breaking change') {
@@ -180,10 +183,6 @@ function updateGlobalChangelog(commitObjects) {
           }
         }
       }
-    }
-
-    if (!hasEntries) {
-      output += `- _Only version bump detected._\n`;
     }
 
     output += `\n`;
@@ -204,36 +203,37 @@ function updatePackageChangelogs(commitObjects) {
     const tagVersion = `v${version}`;
     const date = new Date().toISOString().split('T')[0];
 
-    // Match commits where scope matches directory or message includes the full package name
-    const commits = commitObjects.filter(({ message }) => {
+    // Collect all matching commits (scope or message includes name)
+    const matchingCommits = commitObjects.filter(({ message }) => {
       const parsed = parser(message);
       return parsed.scope === dir || message.includes(name);
     });
 
-    // Skip changelog update if the package is not mentioned at all
-    if (commits.length === 0) {
-      continue;
-    }
+    if (matchingCommits.length === 0) continue;
+
+    // Extract only commits with the package name as scope
+    const scopedCommits = commitObjects
+      .map(({ message, hash }) => {
+        const parsed = parser(message);
+        parsed.hash = hash;
+        return parsed;
+      })
+      .filter(commit => commit.scope === dir);
 
     let entry;
 
-    const meaningfulCommits = commits.filter(({ message }) => {
-      const parsed = parser(message);
-      return parsed.scope === dir;
-    });
-
-    if (meaningfulCommits.length === 0) {
-      // Only mentioned in message (e.g., bump @zcatalyst/logger)
+    if (scopedCommits.length === 0) {
+      // No scoped commits → version bump only
       entry = `## [${tagVersion}](${REPO_URL}/releases/tag/${tagVersion}) - ${date}\n\n_Only version bump detected._\n\n`;
     } else {
-      entry = generateChangelog(tagVersion, commits, true);
+      // Show full changelog with scoped commits
+      entry = generateChangelog(tagVersion, scopedCommits, true);
     }
 
     writeChangelog(changelogPath, entry);
-    console.log(`📦 Updated packages/${dir}/CHANGELOG.md`);
+    console.log(`Updated packages/${dir}/CHANGELOG.md`);
   }
 }
-
 
 
 function updateAll(commitObjects, allPackages) {
