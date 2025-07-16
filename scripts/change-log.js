@@ -137,6 +137,7 @@ function updatePackageChangelogs(commitObjects) {
           if (parsed.scope === dir || line.includes(name)) {
             parsed.hash = hash;
             parsed.message = line;
+            parsed.subject = parsed.subject || `_Only version bump detected._`;
             matchingCommits.push({ message, hash });
             scopedCommits.push(parsed);
           }
@@ -172,7 +173,8 @@ function updateGlobalChangelog(commitObjects) {
           const parsed = parser(line);
           if (parsed.scope === dir || line.includes(name)) {
             parsed.hash = hash;
-            parsed.message = message;
+            parsed.message = line;
+            parsed.subject = parsed.subject || `_Only version bump detected._`;
             scopedCommits.push(parsed);
           }
         } catch {}
@@ -181,13 +183,6 @@ function updateGlobalChangelog(commitObjects) {
 
     if (scopedCommits.length === 0) continue;
     output += `#### \`${name}@${version}\`\n`;
-
-    const hasScoped = scopedCommits.some(c => c.scope === dir);
-    const hasValid = scopedCommits.filter(c => c.scope !== dir).some(c => c.subject && c.subject.trim());
-    if (!hasScoped && !hasValid) {
-      output += `- _Only version bump detected._\n\n`;
-      continue;
-    }
 
     const grouped = groupCommitsByType(scopedCommits);
     const order = ['feat', 'fix', 'docs', 'test', 'refactor', 'BREAKING CHANGES'];
