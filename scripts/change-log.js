@@ -212,13 +212,14 @@ function updatePackageChangelogs(commitObjects) {
     if (matchingCommits.length === 0) continue;
 
     // Extract only commits with the package name as scope
-    const scopedCommits = commitObjects
-      .map(({ message, hash }) => {
+    const scopedCommits = commitObjects.filter(({ message }) => {
+      try {
         const parsed = parser(message);
-        parsed.hash = hash;
-        return parsed;
-      })
-      .filter(commit => commit.scope === dir);
+        return parsed.scope === dir;
+      } catch {
+        return false;
+      }
+    });
 
     let entry;
 

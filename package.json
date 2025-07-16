@@ -1,6 +1,5 @@
 {
   "name": "zcatalyst-sdk-js",
-  "version": "0.0.0",
   "scripts": {
     "clean": "turbo run clean --force --parallel",
     "build": "turbo run build",
