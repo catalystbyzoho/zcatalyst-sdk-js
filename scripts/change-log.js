@@ -1,18 +1,21 @@
 const parser = require('conventional-commits-parser').sync;
-const { writeFileSync, existsSync, readFileSync } = require('fs');
+const { writeFileSync, existsSync, readFileSync, readdirSync } = require('fs');
 const { join } = require('path');
 const { execSync } = require('child_process');
 
 const REPO_URL = 'https://github.com/catalystbyzoho/zcatalyst-sdk-js';
 
-function getCommitObjectsSinceMain() {
+function getCommitObjectsSinceTag() {
   const separator = '===END===';
-  const raw = execSync(
-    `git log origin/main..HEAD --pretty=format:"%H%n%s${separator}"`,
-    { encoding: 'utf-8' }
-  );
+  let log;
+  try {
+    const latestTag = execSync("git describe --tags --abbrev=0", { encoding: "utf8" }).trim();
+    log = execSync(`git log ${latestTag}..HEAD --pretty=format:%H%n%B${separator}`, { encoding: "utf8" });
+  } catch (err) {
+    log = execSync(`git log --pretty=format:%H%n%B${separator}`, { encoding: "utf8" });
+  }
 
-  const chunks = raw.split(separator).map(chunk => chunk.trim()).filter(Boolean);
+  const chunks = log.split(separator).map(chunk => chunk.trim()).filter(Boolean);
 
   return chunks.map(chunk => {
     const [hashLine, ...messageLines] = chunk.split('\n');
@@ -39,9 +42,7 @@ function groupCommitsByType(parsedCommits) {
 
 function formatCommit(commit) {
   const summary = commit.subject || commit.header || '';
-  const hashLink = commit.hash
-    ? ` ([\`${commit.hash.slice(0, 7)}\`](${REPO_URL}/commit/${commit.hash}))`
-    : '';
+  const hashLink = commit.hash ? ` ([\`${commit.hash.slice(0, 7)}\`](${REPO_URL}/commit/${commit.hash}))` : '';
   return `- ${summary}${hashLink}`;
 }
 
@@ -64,25 +65,21 @@ function generateChangelog(version, commitObjects, linkVersion = true) {
     : `## ${date}\n\n`;
 
   const order = ['feat', 'fix', 'docs', 'test', 'refactor', 'BREAKING CHANGES'];
-
   const titles = {
     feat: '### Features',
     fix: '### Bug Fixes',
     docs: '### Documentation',
     test: '### Tests',
     refactor: '### Refactors',
-    'BREAKING CHANGES': '### Breaking Changes',
+    'BREAKING CHANGES': '### Breaking Changes'
   };
 
   for (const type of order) {
     const commits = grouped[type];
     if (!commits) continue;
-
     output += `${titles[type]}\n`;
-
     for (const commit of commits.reverse()) {
       output += `${formatCommit(commit)}\n`;
-
       if (type === 'BREAKING CHANGES') {
         for (const note of commit.notes) {
           if (note.title.toLowerCase() === 'breaking change') {
@@ -91,7 +88,6 @@ function generateChangelog(version, commitObjects, linkVersion = true) {
         }
       }
     }
-
     output += `\n`;
   }
 
@@ -103,7 +99,6 @@ function writeChangelog(filePath, entry) {
     const lines = readFileSync(filePath, 'utf-8').split('\n');
     const preserved = lines.slice(0, 1).join('\n');
     const rest = lines.slice(1).join('\n');
-
     const finalContent = `${preserved}\n\n${entry.trim()}\n\n${rest.trim()}\n`;
     writeFileSync(filePath, finalContent.trim() + '\n', 'utf-8');
   }
@@ -111,89 +106,17 @@ function writeChangelog(filePath, entry) {
 
 function getAllPackagesFromFs() {
   const packagesDir = join(process.cwd(), 'packages');
-  const all = [];
-
-  for (const dir of require('fs').readdirSync(packagesDir)) {
-    const pkgJsonPath = join(packagesDir, dir, 'package.json');
-    if (existsSync(pkgJsonPath)) {
-      const pkgJson = JSON.parse(readFileSync(pkgJsonPath, 'utf8'));
-      all.push({ dir, name: pkgJson.name, version: pkgJson.version });
-    }
-  }
-
-  return all;
-}
-
-function updateGlobalChangelog(commitObjects) {
-  const allPkgs = getAllPackagesFromFs();
-  const date = new Date().toISOString().split('T')[0];
-  let output = `## ${date}\n\n`;
-
-  for (const { dir, name, version } of allPkgs) {
-    const matchingCommits = [];
-    const scopedCommits = [];
-
-    for (const { message, hash } of commitObjects) {
-      const parsed = parser(message);
-      if (parsed.scope === dir || message.includes(name)) {
-        matchingCommits.push({ message, hash });
-
-        if (parsed.scope === dir) {
-          parsed.hash = hash;
-          scopedCommits.push(parsed);
-        }
+  return readdirSync(packagesDir)
+    .map(dir => {
+      const pkgJsonPath = join(packagesDir, dir, 'package.json');
+      if (existsSync(pkgJsonPath)) {
+        const pkgJson = JSON.parse(readFileSync(pkgJsonPath, 'utf8'));
+        return { dir, name: pkgJson.name, version: pkgJson.version };
       }
-    }
-
-    if (matchingCommits.length === 0) continue;
-
-    output += `#### \`${name}@${version}\`\n`;
-
-    if (scopedCommits.length === 0) {
-      output += `- _Only version bump detected._\n\n`;
-      continue;
-    }
-
-    const grouped = groupCommitsByType(scopedCommits);
-    const order = ['feat', 'fix', 'docs', 'test', 'refactor', 'BREAKING CHANGES'];
-
-    const titles = {
-      feat: 'Features',
-      fix: 'Bug Fixes',
-      docs: 'Documentation',
-      test: 'Tests',
-      refactor: 'Refactors',
-      'BREAKING CHANGES': 'Breaking Changes',
-    };
-
-    for (const type of order) {
-      const commitsOfType = grouped[type];
-      if (!commitsOfType) continue;
-
-      output += `- **${titles[type]}**\n`;
-
-      for (const commit of commitsOfType.reverse()) {
-        output += `  ${formatCommit(commit)}\n`;
-
-        if (type === 'BREAKING CHANGES') {
-          for (const note of commit.notes) {
-            if (note.title.toLowerCase() === 'breaking change') {
-              output += `    - ${note.text.trim()}\n`;
-            }
-          }
-        }
-      }
-    }
-
-    output += `\n`;
-  }
-
-  const changelogPath = join(process.cwd(), 'CHANGELOG.md');
-  writeChangelog(changelogPath, output);
-  console.log(`Updated global CHANGELOG.md`);
+      return null;
+    })
+    .filter(Boolean);
 }
-
-
 
 function updatePackageChangelogs(commitObjects) {
   const allPkgs = getAllPackagesFromFs();
@@ -203,52 +126,107 @@ function updatePackageChangelogs(commitObjects) {
     const tagVersion = `v${version}`;
     const date = new Date().toISOString().split('T')[0];
 
-    // Collect all matching commits (scope or message includes name)
-    const matchingCommits = commitObjects.filter(({ message }) => {
-      const parsed = parser(message);
-      return parsed.scope === dir || message.includes(name);
-    });
+    const matchingCommits = [];
+    const scopedCommits = [];
+
+    for (const { message, hash } of commitObjects) {
+      const lines = message.split('\n').map(l => l.trim()).filter(Boolean);
+      for (const line of lines) {
+        try {
+          const parsed = parser(line);
+          if (parsed.scope === dir || line.includes(name)) {
+            parsed.hash = hash;
+            parsed.message = line;
+            matchingCommits.push({ message, hash });
+            scopedCommits.push(parsed);
+          }
+        } catch {}
+      }
+    }
 
     if (matchingCommits.length === 0) continue;
 
-    // Extract only commits with the package name as scope
-    const scopedCommits = commitObjects.filter(({ message }) => {
-      try {
-        const parsed = parser(message);
-        return parsed.scope === dir;
-      } catch {
-        return false;
-      }
-    });
-
-    let entry;
-
-    if (scopedCommits.length === 0) {
-      // No scoped commits → version bump only
-      entry = `## [${tagVersion}](${REPO_URL}/releases/tag/${tagVersion}) - ${date}\n\n_Only version bump detected._\n\n`;
-    } else {
-      // Show full changelog with scoped commits
-      entry = generateChangelog(tagVersion, scopedCommits, true);
-    }
+    const hasScoped = scopedCommits.some(c => c.scope === dir);
+    const hasValid = scopedCommits.filter(c => c.scope !== dir).some(c => c.subject && c.subject.trim());
+    const entry = hasScoped || hasValid
+      ? generateChangelog(tagVersion, scopedCommits, true)
+      : `## [${tagVersion}](${REPO_URL}/releases/tag/${tagVersion}) - ${date}\n\n_Only version bump detected._\n\n`;
 
     writeChangelog(changelogPath, entry);
     console.log(`Updated packages/${dir}/CHANGELOG.md`);
   }
 }
 
+function updateGlobalChangelog(commitObjects) {
+  const allPkgs = getAllPackagesFromFs();
+  const date = new Date().toISOString().split('T')[0];
+  let output = `## ${date}\n\n`;
 
-function updateAll(commitObjects, allPackages) {
-  updateGlobalChangelog(commitObjects);
-  updatePackageChangelogs(commitObjects, allPackages);
+  for (const { dir, name, version } of allPkgs) {
+    const scopedCommits = [];
+
+    for (const { message, hash } of commitObjects) {
+      const lines = message.split('\n').map(l => l.trim()).filter(Boolean);
+      for (const line of lines) {
+        try {
+          const parsed = parser(line);
+          if (parsed.scope === dir || line.includes(name)) {
+            parsed.hash = hash;
+            parsed.message = message;
+            scopedCommits.push(parsed);
+          }
+        } catch {}
+      }
+    }
+
+    if (scopedCommits.length === 0) continue;
+    output += `#### \`${name}@${version}\`\n`;
+
+    const hasScoped = scopedCommits.some(c => c.scope === dir);
+    const hasValid = scopedCommits.filter(c => c.scope !== dir).some(c => c.subject && c.subject.trim());
+    if (!hasScoped && !hasValid) {
+      output += `- _Only version bump detected._\n\n`;
+      continue;
+    }
+
+    const grouped = groupCommitsByType(scopedCommits);
+    const order = ['feat', 'fix', 'docs', 'test', 'refactor', 'BREAKING CHANGES'];
+    const titles = {
+      feat: 'Features',
+      fix: 'Bug Fixes',
+      docs: 'Documentation',
+      test: 'Tests',
+      refactor: 'Refactors',
+      'BREAKING CHANGES': 'Breaking Changes'
+    };
+
+    for (const type of order) {
+      const commitsOfType = grouped[type];
+      if (!commitsOfType) continue;
+      output += `- **${titles[type]}**\n`;
+      for (const commit of commitsOfType.reverse()) {
+        output += `  ${formatCommit(commit)}\n`;
+        if (type === 'BREAKING CHANGES') {
+          for (const note of commit.notes || []) {
+            if (note.title.toLowerCase() === 'breaking change') {
+              output += `    - ${note.text.trim()}\n`;
+            }
+          }
+        }
+      }
+    }
+    output += `\n`;
+  }
+
+  const changelogPath = join(process.cwd(), 'CHANGELOG.md');
+  writeChangelog(changelogPath, output);
+  console.log(`Updated global CHANGELOG.md`);
 }
 
-const commitObjects = getCommitObjectsSinceMain();
-const allPackages = Array.from(
-  new Set(
-    commitObjects
-      .map(({ message }) => parser(message).scope)
-      .filter(scope => !!scope)
-  )
-);
+function updateAll(commitObjects) {
+  updateGlobalChangelog(commitObjects);
+  updatePackageChangelogs(commitObjects);
+}
 
-updateAll(commitObjects, allPackages);
+const commitObjects = getCommitObjectsSinceTag();
+updateAll(commitObjects);

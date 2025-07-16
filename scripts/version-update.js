@@ -8,8 +8,14 @@ const cwd = process.cwd();
 const pkgsDir = path.join(cwd, "packages");
 
 function getCommits() {
-  const latestTag = execSync("git describe --tags --abbrev=0", { encoding: "utf8" }).trim();
-  const log = execSync(`git log ${latestTag}..HEAD --pretty=format:%s`, { encoding: "utf8" });
+  let log;
+  try {
+    const latestTag = execSync("git describe --tags --abbrev=0", { encoding: "utf8" }).trim();
+    log = execSync(`git log ${latestTag}..HEAD --pretty=format:%B`, { encoding: "utf8" });
+  } catch (err) {
+    // If no tags exist, fallback to all commit messages
+    log = execSync("git log --pretty=format:%B", { encoding: "utf8" });
+  }
 
   return log
     .split("\n")
