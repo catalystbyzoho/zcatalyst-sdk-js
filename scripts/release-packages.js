@@ -2,20 +2,19 @@ const { execSync } = require('child_process');
 const { readFileSync, writeFileSync } = require('fs');
 const { join } = require('path');
 
+function getChangedFilesSinceLatestTag() {
+  const tag = getLatestTag();
+  const range = tag ? `${tag}..HEAD` : 'HEAD';
+  const output = execSync(`git diff --name-only ${range}`, { encoding: 'utf-8' });
+  return output.split('\n').filter(Boolean);
+}
+
 function getLatestTag() {
   try {
     return execSync('git describe --tags --abbrev=0', { encoding: 'utf-8' }).trim();
   } catch {
     return '';
   }
-}
-
-function getChangedFilesSince(tag) {
-  const cmd = tag ? `git diff --name-only ${tag}..HEAD` : 'git ls-files';
-  return execSync(cmd, { encoding: 'utf-8' })
-    .split('\n')
-    .filter(f => f.startsWith('packages/') && f.endsWith('.js') || f.endsWith('.ts') || f.endsWith('package.json'))
-    .filter(Boolean);
 }
 
 function getAllPackages() {
@@ -33,51 +32,47 @@ function getAllPackages() {
   return pkgs;
 }
 
-function getChangedPackages(changedFiles, allPackages) {
-  const changedPkgs = new Set();
-  for (const file of changedFiles) {
-    const match = file.match(/^packages\/([^\/]+)\//);
-    if (match) {
-      changedPkgs.add(match[1]);
-    }
-  }
-
-  return allPackages.filter(p => {
-    const name = p.split('/').pop();
-    return changedPkgs.has(name);
+function getChangedPackagesByDiff(changedFiles, allPackages) {
+  return allPackages.filter(pkgPath => {
+    return changedFiles.some(file => file.startsWith(pkgPath));
   });
 }
 
 function publish(path) {
   try {
     const token = process.env.NPM_TOKEN;
+    const registry = process.env.NPM_REGISTRY || 'registry.npmjs.org';
     if (!token) throw new Error('NPM_TOKEN is not set');
 
-    // Write temporary .npmrc for private registry
     writeFileSync(
       join(path, '.npmrc'),
-      `//crm-spm-u16.csez.zohocorpin.com:4873/:_authToken=${token}\nregistry=http://crm-spm-u16.csez.zohocorpin.com:4873/`,
+      `//${registry}:_authToken=${token}\nregistry=https://${registry}`,
       'utf8'
     );
 
+    console.log('rc file created for', readFileSync(join(path, '.npmrc'), 'utf-8'));
+
     const pkg = JSON.parse(readFileSync(join(path, 'package.json'), 'utf-8'));
     console.log(`Publishing ${pkg.name} (${pkg.version})...`);
-    execSync('npm publish --registry http://crm-spm-u16.csez.zohocorpin.com:4873/', { cwd: path, stdio: 'inherit' });
+    execSync(`pnpm publish --registry ${registry} --no-git-checks`, { cwd: path, stdio: 'inherit' });
     console.log(`Published ${pkg.name}@${pkg.version}`);
   } catch (err) {
-    console.error(`Failed to publish ${path}: ${err.message}`);
+    throw new Error(`Failed to publish ${path}: ${err.message}`);
   }
 }
 
+// --- Flow ---
 const tag = getLatestTag();
 console.log(`Latest tag: ${tag || 'none'}`);
 
-const changedFiles = getChangedFilesSince(tag);
+const changedFiles = getChangedFilesSinceLatestTag();
+console.log('Changed files since last tag:', changedFiles);
+
 const allPackages = getAllPackages();
-const changedPackages = getChangedPackages(changedFiles, allPackages);
+const changedPackages = getChangedPackagesByDiff(changedFiles, allPackages);
 
 if (changedPackages.length === 0) {
-  console.log('🎉 No changed packages to publish.');
+  console.log('No matching packages found for changed files.');
   process.exit(0);
 }
 

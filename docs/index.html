@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZCATALYST Modules</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #fafafa;
+    }
+
+    .container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: #fff;
+      border-right: 1px solid #e0e0e0;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 1000;
+    }
+
+    .sidebar-header {
+      padding: 24px 20px;
+      border-bottom: 1px solid #e0e0e0;
+      background: #f8f9fa;
+    }
+
+    .sidebar-header h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #2c3e50;
+      letter-spacing: -0.5px;
+    }
+
+    .sidebar-nav {
+      padding: 16px 0;
+    }
+
+    .sidebar-nav ol {
+      list-style: none;
+    }
+
+    .sidebar-nav li {
+      margin: 0;
+    }
+
+    .sidebar-nav a {
+      display: block;
+      padding: 12px 20px;
+      color: #555;
+      text-decoration: none;
+      font-size: 14px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      border-left: 3px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-nav a:hover {
+      background-color: #f0f7ff;
+      color: #9600cc;
+      border-left-color: #9600cc;
+    }
+
+    .sidebar-nav a:active {
+      background-color: #e6f3ff;
+    }
+
+    /* Main content */
+    .main-content {
+      flex: 1;
+      /* margin-left: 280px; */
+      padding: 40px;
+      background: #fff;
+      min-height: 100vh;
+    }
+
+    .header {
+      margin-bottom: 40px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .header p {
+      font-size: 16px;
+      color: #666;
+      line-height: 1.7;
+      max-width: 600px;
+    }
+
+    /* Module grid */
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .module-card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 24px;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .module-card:hover {
+      border-color: #0066cc;
+      box-shadow: 0 4px 12px rgba(0, 102, 204, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .module-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, #9600cc, #4da6ff);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .module-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .module-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .module-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #9600cc, #4da6ff);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 16px;
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
+      text-transform: uppercase;
+    }
+
+    .module-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2c3e50;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      margin: 0;
+    }
+
+    .module-description {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-top: 8px;
+    }
+
+    .module-link {
+      display: inline-flex;
+      align-items: center;
+      margin-top: 16px;
+      color: #ad3bd7;
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+    }
+
+    .module-link:hover {
+      color: #ad3bd7;
+    }
+
+    .module-link::after {
+      content: '→';
+      margin-left: 8px;
+      transition: transform 0.2s ease;
+    }
+
+    .module-card:hover .module-link::after {
+      transform: translateX(4px);
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 60px;
+      padding-top: 24px;
+      border-top: 1px solid #e0e0e0;
+      text-align: center;
+      color: #888;
+      font-size: 13px;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main-content {
+        margin-left: 0;
+        padding: 20px;
+      }
+
+      .modules-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+
+      .module-card {
+        padding: 20px;
+      }
+    }
+
+    /* Scrollbar styling */
+    .sidebar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="header">
+        <h1>ZCATALYST Modules</h1>
+        <p>A comprehensive collection of cloud platform modules designed to accelerate your application development. Each module provides specific functionality with robust APIs and extensive documentation.</p>
+      </div>
+
+      <div class="modules-grid">
+        <a href="./cache" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">CA</div>
+            <h3 class="module-title">cache</h3>
+          </div>
+          <p class="module-description">Caching system for improved performance and faster data retrieval</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./circuit" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">CI</div>
+            <h3 class="module-title">circuit</h3>
+          </div>
+          <p class="module-description">Circuit breaker pattern implementation for resilient applications</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./connector" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">CO</div>
+            <h3 class="module-title">connector</h3>
+          </div>
+          <p class="module-description">External service connectors and third-party integrations</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./datastore" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">DS</div>
+            <h3 class="module-title">datastore</h3>
+          </div>
+          <p class="module-description">Data storage and management utilities for structured data</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./filestore" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">FS</div>
+            <h3 class="module-title">filestore</h3>
+          </div>
+          <p class="module-description">File storage and management system for digital assets</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./functions" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">FN</div>
+            <h3 class="module-title">functions</h3>
+          </div>
+          <p class="module-description">Serverless function execution platform for scalable computing</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./job-scheduling" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">JS</div>
+            <h3 class="module-title">job-scheduling</h3>
+          </div>
+          <p class="module-description">Task scheduling and job management for automated workflows</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./mail" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">MA</div>
+            <h3 class="module-title">mail</h3>
+          </div>
+          <p class="module-description">Email sending and management services with template support</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./nosql" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">NO</div>
+            <h3 class="module-title">nosql</h3>
+          </div>
+          <p class="module-description">NoSQL database operations and flexible data queries</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./pipeline" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">PI</div>
+            <h3 class="module-title">pipeline</h3>
+          </div>
+          <p class="module-description">Data processing pipelines and automated workflows</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./push-notification" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">PN</div>
+            <h3 class="module-title">push-notification</h3>
+          </div>
+          <p class="module-description">Push notification delivery system for mobile and web</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./quick-ml" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">ML</div>
+            <h3 class="module-title">quick-ml</h3>
+          </div>
+          <p class="module-description">Machine learning model deployment and inference platform</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./search" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">SE</div>
+            <h3 class="module-title">search</h3>
+          </div>
+          <p class="module-description">Full-text search and indexing capabilities for content discovery</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./smartbrowz" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">SB</div>
+            <h3 class="module-title">smartbrowz</h3>
+          </div>
+          <p class="module-description">Intelligent web browsing automation and data extraction</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./stratus" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">ST</div>
+            <h3 class="module-title">stratus</h3>
+          </div>
+          <p class="module-description">Cloud infrastructure management and deployment services</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./user-management" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">UM</div>
+            <h3 class="module-title">user-management</h3>
+          </div>
+          <p class="module-description">User authentication, authorization, and profile management</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./zcql" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">ZQ</div>
+            <h3 class="module-title">zcql</h3>
+          </div>
+          <p class="module-description">Zoho Cloud Query Language interface for data operations</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./zia" target="_blank"  class="module-card">
+          <div class="module-header">
+            <div class="module-icon">ZI</div>
+            <h3 class="module-title">zia</h3>
+          </div>
+          <p class="module-description">AI-powered business intelligence and analytics platform</p>
+          <span class="module-link">View documentation</span>
+        </a>
+      </div>
+
+      <div class="footer">
+        <p>Built with ZCATALYST · Last updated: <span id="current-date"></span></p>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Set current date
+    document.getElementById('current-date').textContent = new Date().toLocaleDateString();
+  </script>
+</body>
+</html>

@@ -1,7 +1,6 @@
 # CATALYST SDK for JavaScript
 
 ![catalyst](https://img.shields.io/badge/%E2%9A%A1-catalyst-blue.svg)
-![npm](https://img.shields.io/npm/v/zcatalyst-sdk-node.svg?color=green)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://opensource.org/licenses/Apache-2.0)
 
 A powerful and flexible JavaScript SDK designed for building modern cloud applications with Zoho Catalyst. This SDK provides a comprehensive set of tools and services through modular packages that work seamlessly across both browser and Node.js environments.
@@ -40,25 +39,27 @@ const cron = new Cron();
 
 The SDK includes the following services:
 
-| Package | Description |
-|---------|------------|
-| Authentication | User authentication and authorization |
-| Cache | In-memory caching service |
-| Filestore | File storage and management |
-| Datastore | Database and data management |
-| Circuit | Function orchestration |
-| Connector | External service integration |
-| Function | Execute the serverless catalyst functions |
-| PushNotification | Push notification service |
-| Search | Search on data store |
-| Quickml | Machine learning service |
-| Smartbrowz | Browser automation |
-| Stratus | Cloud infrastructure management |
-| Transport | Http Clients to process request and responses |
-| UserManagement | User and role management |
-| Zia | AI and ML capabilities |
-| ZCQL | SQL-like query language |
-| Utils | SDK utilities |
+| **Component**       | **Description** |
+|---------------------|-----------------|
+| **Cache**           | In-memory data storage for fast access and reduced latency. |
+| **Filestore**       | Upload, store, and manage files securely in the cloud. |
+| **Datastore**       | Scalable relational database to store and manage structured data. |
+| **Circuit**         | Orchestrate workflows using multiple Catalyst components and services. |
+| **Connector**       | Connect and communicate with external APIs and services. |
+| **Functions**       | Deploy and run custom serverless backend functions. |
+| **Job Scheduling**  | Schedule and execute recurring or one-time tasks using job queues. |
+| **Mail**            | Send transactional and bulk emails from your Catalyst app. |
+| **NoSQL**           | Schema-less, scalable NoSQL database for flexible data storage. |
+| **Pipelines**       | Automate build and deployment workflows using CI/CD pipelines. |
+| **PushNotification**| Send real-time push notifications to mobile and web apps. |
+| **Search**          | Perform fast and accurate searches on Datastore records. |
+| **QuickML**         | Train and deploy custom machine learning models easily. |
+| **SmartBrowz**      | Automate browser actions like form fills and navigation in the cloud. |
+| **Stratus**         | Manage Catalyst infrastructure with secure and scalable backend services. |
+| **UserManagement**  | Handle user authentication, roles, and permissions. |
+| **Zia**             | Add AI features like OCR, object detection, and sentiment analysis. |
+| **ZCQL**            | Use SQL-like queries to retrieve and manipulate data from Datastore. |
+
 
 ## Usage in Serverless Functions
 

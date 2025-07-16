@@ -1,5 +1,4 @@
 import { CONSTANTS } from './constants';
-import { ICatalystAppConfig } from './interface';
 import { isNonEmptyString } from './validators';
 
 const { X_ZOHO_CATALYST_ORG_ID, ZAID } = CONSTANTS;

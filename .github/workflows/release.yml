@@ -1,10 +1,9 @@
-name: Release After Merge
-
+name: Release
 
 on:
   push:
     branches:
-      - test1
+      - test7
 
 jobs:
   release:
@@ -35,21 +34,30 @@ jobs:
       - name: Run install
         run: pnpm install --no-frozen-lockfile
 
-      - name: Create tag
-        run: node scripts/create-tag.js
-
       - name: Release updated packages to npm
         run: node scripts/release-packages.js
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Generate changelogs
-        run: node scripts/change-log.js
-
-      - name: Push updated changelog and tag
+          NPM_REGISTRY: ${{ secrets.NPM_REGISTRY }}
+      
+      - name: Get version from package.json
+        id: version
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .
-          git commit -m "chore: update changelogs"
-          git push origin test1 --follow-tags
+          echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Extract latest changelog entry
+        id: changelog
+        run: |
+          changelog=$(awk '/^## \[v?[0-9]+\.[0-9]+\.[0-9]+\]/ {if (found) exit; found=1;next} found && /^## / { exit }found { print }' CHANGELOG.md)
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$changelog" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          body: ${{ steps.changelog.outputs.body }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

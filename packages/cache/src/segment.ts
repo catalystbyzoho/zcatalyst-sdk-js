@@ -80,6 +80,9 @@ export class Segment implements ParsableComponent<ICatalystSegment> {
 	 * @throws {CatalystCacheError} If the cache key or value is invalid.
 	 */
 	async update(key: string, value: string, expiry?: number): Promise<ICatalystCacheRes> {
+		await wrapValidatorsWithPromise(() => {
+			isNonEmptyString(key, 'cache_key', true);
+		}, CatalystCacheError);
 		const apiUrl = this.id === null ? '/cache' : `/segment/${this.id}/cache`;
 		const postData = {
 			cache_name: key,
