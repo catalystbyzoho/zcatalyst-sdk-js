@@ -31,7 +31,7 @@ jobs:
 
       - name: Extract changelog entries
         run: |
-            node scripts/extract-releases.js
+            node scripts/extract-release.js
 
       - name: Create release matrix
         id: set-matrix
