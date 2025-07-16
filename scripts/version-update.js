@@ -8,8 +8,19 @@ const cwd = process.cwd();
 const pkgsDir = path.join(cwd, "packages");
 
 function getCommits() {
-  const log = execSync("git log --pretty=format:%s", { encoding: "utf8" });
-  return log.split("\n").map(msg => parser(msg)).filter(Boolean);
+  const latestTag = execSync("git describe --tags --abbrev=0", { encoding: "utf8" }).trim();
+  const log = execSync(`git log ${latestTag}..HEAD --pretty=format:%s`, { encoding: "utf8" });
+
+  return log
+    .split("\n")
+    .map(msg => {
+      try {
+        return parser(msg);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
 }
 
 function getBumpType(type) {
@@ -19,16 +30,15 @@ function getBumpType(type) {
   return null;
 }
 
+const bumpOrder = { patch: 0, minor: 1, major: 2 };
 const commits = getCommits();
 
-const bumpOrder = { patch: 0, minor: 1, major: 2 };
-
-// Get all package names and their folder names
 const workspacePkgs = fs.readdirSync(pkgsDir).filter(dir => {
   return fs.existsSync(path.join(pkgsDir, dir, "package.json"));
 }).map(dir => {
-  const pkg = JSON.parse(fs.readFileSync(path.join(pkgsDir, dir, "package.json"), "utf8"));
-  return { name: pkg.name, dir };
+  const pkgPath = path.join(pkgsDir, dir, "package.json");
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+  return { name: pkg.name, dir, version: pkg.version, path: pkgPath };
 });
 
 const bumps = {};
@@ -39,15 +49,16 @@ for (const commit of commits) {
 
   // Case 1: scope-based bump
   if (commit.scope) {
-    const dir = commit.scope;
-    if (workspacePkgs.find(p => p.dir === dir)) {
+    const pkgMatch = workspacePkgs.find(p => p.dir === commit.scope);
+    if (pkgMatch) {
+      const dir = pkgMatch.dir;
       if (!bumps[dir] || bumpOrder[type] > bumpOrder[bumps[dir]]) {
         bumps[dir] = type;
       }
     }
   }
 
-  // Case 2: message-based bump with @zcatalyst/xxx
+  // Case 2: message includes @package/name
   const msg = commit.header + (commit.body || "") + (commit.footer || "");
   for (const { name, dir } of workspacePkgs) {
     if (msg.includes(name)) {
@@ -63,15 +74,16 @@ if (Object.keys(bumps).length === 0) {
   process.exit(0);
 }
 
-// Bump only changed internal packages
 console.log("\nUpdating changed packages:");
-const releases = [];
 
-for (const scope of Object.keys(bumps)) {
-  const pkgPath = path.join(pkgsDir, scope, "package.json");
+for (const { name, dir, version, path: pkgPath } of workspacePkgs) {
+  const bumpType = bumps[dir];
+  if (!bumpType) continue;
+
+  const newVersion = semver.inc(version, bumpType);
   const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
   pkg.version = newVersion;
   fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
-  console.log(`- ${pkg.name} → ${newVersion}`);
-  releases.push({ name: pkg.name, newVersion });
+
+  console.log(`- ${name} → ${newVersion}`);
 }
