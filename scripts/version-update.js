@@ -8,6 +8,18 @@ const cwd = process.cwd();
 const pkgsDir = path.join(cwd, "packages");
 const dryRun = process.argv.includes("--dry-run");
 
+const parseOptions = {
+  noteKeywords: ['BREAKING CHANGE', 'BREAKING CHANGES'],
+  headerPattern: /^(\w*)(?:\(([\w\$\.\*/-]*)\))?(!)?: (.*)$/,
+  headerCorrespondence: ['type', 'scope', 'breaking', 'subject'],
+};
+
+function normalizeCommitMessage(msg) {
+  return msg
+    // Treat `breaking(scope):` as `BREAKING CHANGE(scope):`
+    .replace(/^breaking(\([^)]+\))?:/i, 'BREAKING CHANGE$1:');
+}
+
 function getCommits() {
   const separator = '===END===';
   let log;
@@ -23,7 +35,7 @@ function getCommits() {
   return chunks
     .map(msg => {
       try {
-        return parser(msg);
+        return parser(normalizeCommitMessage(msg), parseOptions);
       } catch {
         console.warn("Parse failed for:", msg);
         return null;
@@ -58,7 +70,7 @@ const workspacePkgs = fs.readdirSync(pkgsDir).filter(dir => {
 const bumps = {};
 
 for (const commit of commits) {
-  let type = getBumpType(commit.type);
+  let type = commit.breaking ? getBumpType('BREAKING CHANGE') : getBumpType(commit.type);
   if (!type) continue;
 
   // Case 1: scope-based bump
@@ -77,8 +89,9 @@ for (const commit of commits) {
   // Case 2: message based bump
   const msg = commit.body.split('\n').map(l => l.trim()).filter(Boolean);
   for (const line of msg) {
-    const parseLine = parser(line, {});
-    type = getBumpType(parseLine.type);
+    const parseLine = parser(normalizeCommitMessage(line), parseOptions);
+    console.log(`Parsing line: ${line}`);
+    type = parseLine.breaking ? getBumpType('BREAKING CHANGE') : getBumpType(commit.type);
     if (!type) continue;
     if (parseLine.scope) {
       const pkgMatch = workspacePkgs.find(p => p.dir === parseLine.scope);

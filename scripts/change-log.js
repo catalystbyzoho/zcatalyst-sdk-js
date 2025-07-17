@@ -5,6 +5,19 @@ const { execSync } = require('child_process');
 
 const REPO_URL = 'https://github.com/catalystbyzoho/zcatalyst-sdk-js';
 
+const parseOptions = {
+  noteKeywords: ['BREAKING CHANGE', 'BREAKING CHANGES'],
+  headerPattern: /^(\w*)(?:\(([\w\$\.\*/-]*)\))?(!)?: (.*)$/,
+  headerCorrespondence: ['type', 'scope', 'breaking', 'subject'],
+};
+
+function normalizeCommitMessage(msg) {
+  return msg
+    // Treat `breaking(scope):` as `BREAKING CHANGE(scope):`
+    .replace(/^breaking(\([^)]+\))?:/i, 'BREAKING CHANGE$1:');
+}
+
+
 function getCommitObjectsSinceTag() {
   const separator = '===END===';
   let log;
@@ -31,7 +44,7 @@ function groupCommitsByType(parsedCommits) {
   for (const commit of parsedCommits) {
     const isBreaking = commit.notes?.some(n => n.title.toLowerCase() === 'breaking change');
     let type = commit.type;
-    if (isBreaking) type = 'BREAKING CHANGE';
+    if (isBreaking || commit.breaking) type = 'BREAKING CHANGE';
     if (['feat', 'chore'].includes(type)) type = 'feat';
     if (!['feat', 'fix', 'docs', 'test', 'refactor', 'BREAKING CHANGE'].includes(type)) type = 'others';
     if (!groups[type]) groups[type] = [];
@@ -49,7 +62,8 @@ function formatCommit(commit) {
 
 function generateChangelog(version,tagVersion, commitObjects, linkVersion = true) {
   const parsed = commitObjects.map(({ message, hash }) => {
-    const parsedCommit = parser(message);
+    const parsedCommit = parser(normalizeCommitMessage(message), parseOptions);
+
     parsedCommit.hash = hash;
     return parsedCommit;
   });
@@ -135,8 +149,7 @@ function updatePackageChangelogs(commitObjects) {
       const lines = message.split('\n').map(l => l.trim()).filter(Boolean);
       for (const line of lines) {
         try {
-          const parsed = parser(line);
-          console.log(parsed);
+          const parsed = parser(normalizeCommitMessage(line), parseOptions);
           if (parsed.scope === dir || line.includes(name)) {
             parsed.hash = hash;
             parsed.message = line;
@@ -174,7 +187,7 @@ function updateGlobalChangelog(commitObjects) {
       const lines = message.split('\n').map(l => l.trim()).filter(Boolean);
       for (const line of lines) {
         try {
-          const parsed = parser(line);
+          const parsed = parser(normalizeCommitMessage(line), parseOptions);
           if (parsed.scope === dir || line.includes(name)) {
             parsed.hash = hash;
             parsed.message = line;
@@ -223,7 +236,12 @@ function updateGlobalChangelog(commitObjects) {
 }
 
 function updateAll(commitObjects) {
-  const parsedCommits = commitObjects.filter(commit => (/\(#(\d+)\)/).test(commit.message));
+  const parsedCommits = commitObjects
+  .map(commit => {
+    commit.message = normalizeCommitMessage(commit.message);
+    return commit;
+  })
+  .filter(commit => (/\(#(\d+)\)/).test(commit.message));
   updateGlobalChangelog(parsedCommits);
   updatePackageChangelogs(parsedCommits);
 }
