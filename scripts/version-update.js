@@ -103,7 +103,6 @@ for (const commit of commits) {
   for (const line of msgLines) {
     try {
       const parsedLine = parser(normalizeCommitMessage(line), parseOptions);
-      console.log("Parsed line:", parsedLine);
       const lineType = getBumpType(parsedLine);
       if (!lineType) continue;
       if (parsedLine.scope) {
