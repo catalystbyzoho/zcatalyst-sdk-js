@@ -12,6 +12,7 @@ Add any other context about the PR here.
 
 ### Checklist
 - [ ] I have read and agree to the [Contributor License Agreement (CLA)](../CONTRIBUTOR_LICENCE_AGREEMENT.txt)
+- [ ] The PR title follows the format: `<type><scope>:<description><prid(#123)>`
 
 Your PR will not be merged unless the CLA is signed.
 
