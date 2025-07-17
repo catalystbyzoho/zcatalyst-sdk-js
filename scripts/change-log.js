@@ -42,8 +42,9 @@ function groupCommitsByType(parsedCommits) {
 
 function formatCommit(commit) {
   const summary = commit.subject || commit.header || '';
-  const hashLink = commit.hash ? ` ([\`${commit.hash.slice(0, 7)}\`](${REPO_URL}/commit/${commit.hash}))` : '';
-  return `- ${summary}${hashLink}`;
+  const prMatch = summary.match(/\(#(\d+)\)$/);
+  const prLink = prMatch ? ` ([#${prMatch[1]}](${REPO_URL}/pull/${prMatch[1]}))` : '';
+  return `- ${summary}${prLink}`;
 }
 
 function generateChangelog(version, commitObjects, linkVersion = true) {
@@ -57,11 +58,11 @@ function generateChangelog(version, commitObjects, linkVersion = true) {
   const date = new Date().toISOString().split('T')[0];
 
   if (parsed.length === 0) {
-    return `## ${linkVersion ? `[${version}](${REPO_URL}/releases/tag/${version})` : date} - ${date}\n\n_No significant changes_\n\n`;
+    return `## ${linkVersion ? `[${version}](${REPO_URL}/releases/tag/${tagVersion})` : date} - ${date}\n\n_No significant changes_\n\n`;
   }
 
   let output = linkVersion
-    ? `## [${version}](${REPO_URL}/releases/tag/${version}) - ${date}\n\n`
+    ? `## [${version}](${REPO_URL}/releases/tag/${tagVersion}) - ${date}\n\n`
     : `## ${date}\n\n`;
 
   const order = ['feat', 'fix', 'docs', 'test', 'refactor', 'BREAKING CHANGES'];
@@ -120,10 +121,11 @@ function getAllPackagesFromFs() {
 
 function updatePackageChangelogs(commitObjects) {
   const allPkgs = getAllPackagesFromFs();
+  const rootPkg = require(join(process.cwd(), 'package.json'));
+  const tagVersion = `v${rootPkg.version}`;
 
   for (const { dir, name, version } of allPkgs) {
     const changelogPath = join(process.cwd(), 'packages', dir, 'CHANGELOG.md');
-    const tagVersion = `v${version}`;
     const date = new Date().toISOString().split('T')[0];
 
     const matchingCommits = [];
@@ -133,7 +135,16 @@ function updatePackageChangelogs(commitObjects) {
       const lines = message.split('\n').map(l => l.trim()).filter(Boolean);
       for (const line of lines) {
         try {
-          const parsed = parser(line);
+            const prRegex = /\(#(\d+)\)$/;
+
+            const parsed = commitObjects
+            .map(({ message, hash }) => {
+              const parsedCommit = parser(message);
+              parsedCommit.hash = hash;
+              return parsedCommit;
+            })
+            .filter(commit => prRegex.test(commit.subject || commit.header || ''));
+
           if (parsed.scope === dir || line.includes(name)) {
             parsed.hash = hash;
             parsed.message = line;
@@ -150,20 +161,21 @@ function updatePackageChangelogs(commitObjects) {
     const hasScoped = scopedCommits.some(c => c.scope === dir);
     const hasValid = scopedCommits.filter(c => c.scope !== dir).some(c => c.subject && c.subject.trim());
     const entry = hasScoped || hasValid
-      ? generateChangelog(tagVersion, scopedCommits, true)
-      : `## [${tagVersion}](${REPO_URL}/releases/tag/${tagVersion}) - ${date}\n\n_Only version bump detected._\n\n`;
+      ? generateChangelog(version, tagVersion, scopedCommits, true)
+      : `## [v${version}](${REPO_URL}/releases/tag/${tagVersion}) - ${date}\n\n_Only version bump detected._\n\n`;
 
     writeChangelog(changelogPath, entry);
     console.log(`Updated packages/${dir}/CHANGELOG.md`);
   }
 }
-
 function updateGlobalChangelog(commitObjects) {
   const allPkgs = getAllPackagesFromFs();
+  const rootPkg = require(join(process.cwd(), 'package.json'));
+  const tagVersion = `v${rootPkg.version}`;
   const date = new Date().toISOString().split('T')[0];
-  let output = `## ${date}\n\n`;
+  let output = `## [${tagVersion}](${REPO_URL}/releases/tag/${tagVersion}) - ${date}\n\n`;
 
-  for (const { dir, name, version } of allPkgs) {
+  for (const { dir, name } of allPkgs) {
     const scopedCommits = [];
 
     for (const { message, hash } of commitObjects) {
@@ -182,7 +194,7 @@ function updateGlobalChangelog(commitObjects) {
     }
 
     if (scopedCommits.length === 0) continue;
-    output += `#### \`${name}@${version}\`\n`;
+    output += `#### \`${name}@${tagVersion}\`\n`;
 
     const grouped = groupCommitsByType(scopedCommits);
     const order = ['feat', 'fix', 'docs', 'test', 'refactor', 'BREAKING CHANGES'];
@@ -219,9 +231,9 @@ function updateGlobalChangelog(commitObjects) {
 }
 
 function updateAll(commitObjects) {
-  updateGlobalChangelog(commitObjects);
-  updatePackageChangelogs(commitObjects);
+  const parsedCommits = commitObjects.filter(commit => (/\(#(\d+)\)$/).test(commit.subject));
+  updateGlobalChangelog(parsedCommits);
+  updatePackageChangelogs(parsedCommits);
 }
 
-const commitObjects = getCommitObjectsSinceTag();
-updateAll(commitObjects);
+updateAll(getCommitObjectsSinceTag());

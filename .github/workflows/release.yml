@@ -4,47 +4,11 @@ on:
   push:
     branches:
       - test10
- 
+
 jobs:
-  extract-changelog:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Run install
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Extract changelog entries
-        run: |
-            node scripts/extract-release.js
-
-      - name: Create release matrix
-        id: set-matrix
-        run: |
-            echo "matrix=$(jq -c '.' release-matrix.json)" >> $GITHUB_OUTPUT
-
   release:
     name: Publish to npm
-    needs: extract-changelog
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include: ${{ fromJson(needs.extract-changelog.outputs.matrix) }}
 
     permissions:
       contents: write
@@ -75,12 +39,25 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_REGISTRY: ${{ secrets.NPM_REGISTRY }}
+      
+      - name: Get version from package.json
+        id: version
+        run: |
+          echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
 
-      - name: Create release for ${{ matrix.name }}
+      - name: Extract latest changelog entry
+        id: changelog
+        run: |
+          changelog=$(awk '/^## \[v?[0-9]+\.[0-9]+\.[0-9]+\]/ {if (found) exit; found=1;next} found && /^## / { exit }found { print }' CHANGELOG.md)
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$changelog" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ matrix.name }}@${{ matrix.version }}
-          name: ${{ matrix.name }}@${{ matrix.version }}
-          body: ${{ matrix.body }}
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          body: ${{ steps.changelog.outputs.body }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -37,7 +37,8 @@ function getBumpType(type) {
 }
 
 const bumpOrder = { patch: 0, minor: 1, major: 2 };
-const commits = getCommits();
+const prRegex = /\(#(\d+)\)$/;
+const commits = getCommits().filter(commit => commit && prRegex.test(commit.subject));
 
 const workspacePkgs = fs.readdirSync(pkgsDir).filter(dir => {
   return fs.existsSync(path.join(pkgsDir, dir, "package.json"));
@@ -79,6 +80,24 @@ if (Object.keys(bumps).length === 0) {
   console.log("No versionable changes.");
   process.exit(0);
 }
+
+
+// bump root package version
+let highestBump = 'patch';
+
+for (const type of Object.values(bumps)) {
+  if (bumpOrder[type] > bumpOrder[highestBump]) {
+    highestBump = type;
+  }
+}
+
+const rootPkgPath = 'package.json';
+const rootPkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf-8'));
+const newRootVersion = semver.inc(rootPkg.version, highestBump);
+rootPkg.version = newRootVersion;
+fs.writeFileSync(rootPkgPath, JSON.stringify(rootPkg, null, 2) + '\n');
+
+console.log(`\n- root package → ${newRootVersion}`);
 
 console.log("\nUpdating changed packages:");
 
