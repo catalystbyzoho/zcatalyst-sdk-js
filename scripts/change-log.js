@@ -31,9 +31,9 @@ function groupCommitsByType(parsedCommits) {
   for (const commit of parsedCommits) {
     const isBreaking = commit.notes?.some(n => n.title.toLowerCase() === 'breaking change');
     let type = commit.type;
-    if (isBreaking) type = 'BREAKING CHANGES';
+    if (isBreaking) type = 'BREAKING CHANGE';
     if (['feat', 'chore'].includes(type)) type = 'feat';
-    if (!['feat', 'fix', 'docs', 'test', 'refactor', 'BREAKING CHANGES'].includes(type)) type = 'others';
+    if (!['feat', 'fix', 'docs', 'test', 'refactor', 'BREAKING CHANGE'].includes(type)) type = 'others';
     if (!groups[type]) groups[type] = [];
     groups[type].push(commit);
   }
@@ -65,14 +65,14 @@ function generateChangelog(version,tagVersion, commitObjects, linkVersion = true
     ? `## [${version}](${REPO_URL}/releases/tag/${tagVersion}) - ${date}\n\n`
     : `## ${date}\n\n`;
 
-  const order = ['feat', 'fix', 'docs', 'test', 'refactor', 'BREAKING CHANGES'];
+  const order = ['feat', 'fix', 'docs', 'test', 'refactor', 'BREAKING CHANGE'];
   const titles = {
     feat: '### Features',
     fix: '### Bug Fixes',
     docs: '### Documentation',
     test: '### Tests',
     refactor: '### Refactors',
-    'BREAKING CHANGES': '### Breaking Changes'
+    'BREAKING CHANGE': '### Breaking Changes'
   };
 
   for (const type of order) {
@@ -81,7 +81,7 @@ function generateChangelog(version,tagVersion, commitObjects, linkVersion = true
     output += `${titles[type]}\n`;
     for (const commit of commits.reverse()) {
       output += `${formatCommit(commit)}\n`;
-      if (type === 'BREAKING CHANGES') {
+      if (type === 'BREAKING CHANGE') {
         for (const note of commit.notes) {
           if (note.title.toLowerCase() === 'breaking change') {
             output += `  - ${note.text.trim()}\n`;
@@ -136,6 +136,7 @@ function updatePackageChangelogs(commitObjects) {
       for (const line of lines) {
         try {
           const parsed = parser(line);
+          console.log(parsed);
           if (parsed.scope === dir || line.includes(name)) {
             parsed.hash = hash;
             parsed.message = line;
@@ -188,14 +189,14 @@ function updateGlobalChangelog(commitObjects) {
     output += `#### \`${name}@${tagVersion}\`\n`;
 
     const grouped = groupCommitsByType(scopedCommits);
-    const order = ['feat', 'fix', 'docs', 'test', 'refactor', 'BREAKING CHANGES'];
+    const order = ['feat', 'fix', 'docs', 'test', 'refactor', 'BREAKING CHANGE'];
     const titles = {
       feat: 'Features',
       fix: 'Bug Fixes',
       docs: 'Documentation',
       test: 'Tests',
       refactor: 'Refactors',
-      'BREAKING CHANGES': 'Breaking Changes'
+      'BREAKING CHANGE': 'Breaking Changes'
     };
 
     for (const type of order) {
@@ -204,7 +205,7 @@ function updateGlobalChangelog(commitObjects) {
       output += `- **${titles[type]}**\n`;
       for (const commit of commitsOfType.reverse()) {
         output += `  ${formatCommit(commit)}\n`;
-        if (type === 'BREAKING CHANGES') {
+        if (type === 'BREAKING CHANGE') {
           for (const note of commit.notes || []) {
             if (note.title.toLowerCase() === 'breaking change') {
               output += `    - ${note.text.trim()}\n`;
