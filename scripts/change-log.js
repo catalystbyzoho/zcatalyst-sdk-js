@@ -27,13 +27,13 @@ function getCommitObjectsSinceTag() {
   let log;
   try {
     const latestTag = execSync("git describe --tags --abbrev=0", { encoding: "utf8" }).trim();
-    log = execSync(`git log ${latestTag}..HEAD --pretty=format:%H%n%B${separator}`, { encoding: "utf8" });
+    log = execSync(`git log ${latestTag}..HEAD --pretty=format:%B${separator}`, { encoding: "utf8" });
   } catch (err) {
-    log = execSync(`git log --pretty=format:%H%n%B${separator}`, { encoding: "utf8" });
+    log = execSync(`git log --pretty=format:%B${separator}`, { encoding: "utf8" });
   }
   return log.split(separator).map(chunk => {
     const lines = chunk.trim().split('\n');
-    return { hash: lines[0].trim(), message: lines.slice(1).join('\n').trim() };
+    return { hash: lines[0].split(/\(#(\d+)\)/)[1], message: lines.join('\n').trim() };
   }).filter(c => c.hash && c.message);
 }
 
@@ -54,12 +54,10 @@ function groupCommitsByType(parsedCommits) {
   }
   return groups;
 }
-
 function formatCommit(commit) {
   const summary = commit.subject;
-  const prMatch = summary.match(/\(#(\d+)\)$/);
-  const prLink = prMatch ? ` ([#${prMatch[1]}](${REPO_URL}/pull/${prMatch[1]}))` : '';
-  return `- ${summary}${prLink}`;
+  const prLink = `(${REPO_URL}/pull/${commit.hash})`;
+  return `- ${summary}[\`#${commit.hash}\`]${prLink}`;
 }
 
 function generateChangelog(version, tagVersion, commitObjects, linkVersion = true) {
