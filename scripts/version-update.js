@@ -10,14 +10,33 @@ const dryRun = process.argv.includes("--dry-run");
 
 const parseOptions = {
   noteKeywords: ['BREAKING CHANGE', 'BREAKING CHANGES'],
-  headerPattern: /^(\w*)(?:\(([\w\$\.\*/-]*)\))?(!)?: (.*)$/,
+  headerPattern: /^([\w\s]+)(?:\(([\w\$\.\*/-]*)\))?(!)?: (.*)$/,
   headerCorrespondence: ['type', 'scope', 'breaking', 'subject'],
 };
 
 function normalizeCommitMessage(msg) {
-  return msg
-    // Treat `breaking(scope):` as `BREAKING CHANGE(scope):`
-    .replace(/^breaking(\([^)]+\))?:/i, 'BREAKING CHANGE$1:');
+  // breaking(scope): ... → BREAKING CHANGE(scope): ...
+  msg = msg.replace(/^breaking(\([^)]+\))?:/i, 'BREAKING CHANGE$1:');
+  // feat(scope)!: ... → BREAKING CHANGE(scope): ...
+  msg = msg.replace(/^feat(\([^)]+\))?!:/i, 'BREAKING CHANGE$1:');
+  // fix(scope)!: ... → BREAKING CHANGE(scope): ...
+  msg = msg.replace(/^fix(\([^)]+\))?!:/i, 'BREAKING CHANGE$1:');
+  // BREAKING CHANGE(scope): ... (already correct)
+  return msg;
+}
+
+function getBumpType(commit) {
+  // Major bump for any breaking change pattern
+  if (
+    commit.type === "BREAKING CHANGE" ||
+    commit.breaking === true ||
+    (commit.notes && commit.notes.some(n => n.title && n.title.toLowerCase().includes("breaking change")))
+  ) {
+    return "major";
+  }
+  if (commit.type === "feat") return "minor";
+  if (commit.type === "fix" || commit.type === "chore") return "patch";
+  return null;
 }
 
 function getCommits() {
@@ -44,13 +63,6 @@ function getCommits() {
     .filter(Boolean);
 }
 
-function getBumpType(type) {
-  if (type === "feat") return "minor";
-  if (type === "fix" || type === "chore") return "patch";
-  if (type === "BREAKING CHANGE" || type === "breaking") return "major";
-  return null;
-}
-
 const bumpOrder = { patch: 0, minor: 1, major: 2 };
 const commits = getCommits().filter(commit => (/\(#(\d+)\)$/).test(commit.subject));
 
@@ -70,7 +82,7 @@ const workspacePkgs = fs.readdirSync(pkgsDir).filter(dir => {
 const bumps = {};
 
 for (const commit of commits) {
-  let type = commit.breaking ? getBumpType('BREAKING CHANGE') : getBumpType(commit.type);
+  let type = getBumpType(commit);
   if (!type) continue;
 
   // Case 1: scope-based bump
@@ -86,23 +98,27 @@ for (const commit of commits) {
     }
   }
 
-  // Case 2: message based bump
-  const msg = commit.body.split('\n').map(l => l.trim()).filter(Boolean);
-  for (const line of msg) {
-    const parseLine = parser(normalizeCommitMessage(line), parseOptions);
-    console.log(`Parsing line: ${line}`);
-    type = parseLine.breaking ? getBumpType('BREAKING CHANGE') : getBumpType(commit.type);
-    if (!type) continue;
-    if (parseLine.scope) {
-      const pkgMatch = workspacePkgs.find(p => p.dir === parseLine.scope);
-      if (pkgMatch) {
-        const dir = pkgMatch.dir;
-        if (!bumps[dir] || bumpOrder[type] > bumpOrder[bumps[dir]]) {
-          bumps[dir] = type;
+  // Case 2: message based bump (for multi-line commit bodies)
+  const msgLines = (commit.body || "").split('\n').map(l => l.trim()).filter(Boolean);
+  for (const line of msgLines) {
+    try {
+      const parsedLine = parser(normalizeCommitMessage(line), parseOptions);
+      console.log("Parsed line:", parsedLine);
+      const lineType = getBumpType(parsedLine);
+      if (!lineType) continue;
+      if (parsedLine.scope) {
+        const pkgMatch = workspacePkgs.find(p => p.dir === parsedLine.scope);
+        if (pkgMatch) {
+          const dir = pkgMatch.dir;
+          if (!bumps[dir] || bumpOrder[lineType] > bumpOrder[bumps[dir]]) {
+            bumps[dir] = lineType;
+          }
+        } else {
+          console.log(`Scope "${parsedLine.scope}" not found in packages, skipping.`);
         }
-      } else {
-        console.log(`Scope "${parseLine.scope}" not found in packages, skipping.`);
       }
+    } catch {
+      // Ignore parse errors for lines
     }
   }
 }
