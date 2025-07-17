@@ -41,13 +41,13 @@ function groupCommitsByType(parsedCommits) {
 }
 
 function formatCommit(commit) {
-  const summary = commit.subject || commit.header || '';
+  const summary = commit.subject;
   const prMatch = summary.match(/\(#(\d+)\)$/);
   const prLink = prMatch ? ` ([#${prMatch[1]}](${REPO_URL}/pull/${prMatch[1]}))` : '';
   return `- ${summary}${prLink}`;
 }
 
-function generateChangelog(version, commitObjects, linkVersion = true) {
+function generateChangelog(version,tagVersion, commitObjects, linkVersion = true) {
   const parsed = commitObjects.map(({ message, hash }) => {
     const parsedCommit = parser(message);
     parsedCommit.hash = hash;
@@ -135,16 +135,7 @@ function updatePackageChangelogs(commitObjects) {
       const lines = message.split('\n').map(l => l.trim()).filter(Boolean);
       for (const line of lines) {
         try {
-            const prRegex = /\(#(\d+)\)$/;
-
-            const parsed = commitObjects
-            .map(({ message, hash }) => {
-              const parsedCommit = parser(message);
-              parsedCommit.hash = hash;
-              return parsedCommit;
-            })
-            .filter(commit => prRegex.test(commit.subject || commit.header || ''));
-
+          const parsed = parser(line);
           if (parsed.scope === dir || line.includes(name)) {
             parsed.hash = hash;
             parsed.message = line;
@@ -231,7 +222,7 @@ function updateGlobalChangelog(commitObjects) {
 }
 
 function updateAll(commitObjects) {
-  const parsedCommits = commitObjects.filter(commit => (/\(#(\d+)\)$/).test(commit.subject));
+  const parsedCommits = commitObjects.filter(commit => (/\(#(\d+)\)/).test(commit.message));
   updateGlobalChangelog(parsedCommits);
   updatePackageChangelogs(parsedCommits);
 }

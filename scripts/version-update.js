@@ -6,23 +6,26 @@ const parser = require("conventional-commits-parser").sync;
 
 const cwd = process.cwd();
 const pkgsDir = path.join(cwd, "packages");
+const dryRun = process.argv.includes("--dry-run");
 
 function getCommits() {
+  const separator = '===END===';
   let log;
   try {
     const latestTag = execSync("git describe --tags --abbrev=0", { encoding: "utf8" }).trim();
-    log = execSync(`git log ${latestTag}..HEAD --pretty=format:%B`, { encoding: "utf8" });
+    log = execSync(`git log ${latestTag}..HEAD --pretty=format:%B${separator}`, { encoding: "utf8" });
   } catch (err) {
-    // If no tags exist, fallback to all commit messages
-    log = execSync("git log --pretty=format:%B", { encoding: "utf8" });
+    log = execSync(`git log --pretty=format:%B${separator}`, { encoding: "utf8" });
   }
 
-  return log
-    .split("\n")
+  const chunks = log.split(separator).map(chunk => chunk.trim()).filter(Boolean);
+
+  return chunks
     .map(msg => {
       try {
         return parser(msg);
       } catch {
+        console.warn("Parse failed for:", msg);
         return null;
       }
     })
@@ -37,21 +40,25 @@ function getBumpType(type) {
 }
 
 const bumpOrder = { patch: 0, minor: 1, major: 2 };
-const prRegex = /\(#(\d+)\)$/;
-const commits = getCommits().filter(commit => commit && prRegex.test(commit.subject));
+const commits = getCommits().filter(commit => (/\(#(\d+)\)$/).test(commit.subject));
 
 const workspacePkgs = fs.readdirSync(pkgsDir).filter(dir => {
   return fs.existsSync(path.join(pkgsDir, dir, "package.json"));
 }).map(dir => {
   const pkgPath = path.join(pkgsDir, dir, "package.json");
-  const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
-  return { name: pkg.name, dir, version: pkg.version, path: pkgPath };
-});
+  try {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+    return { name: pkg.name, dir, version: pkg.version, path: pkgPath };
+  } catch (err) {
+    console.error(`Error reading package.json for ${dir}:`, err.message);
+    return null;
+  }
+}).filter(Boolean);
 
 const bumps = {};
 
 for (const commit of commits) {
-  const type = getBumpType(commit.type);
+  let type = getBumpType(commit.type);
   if (!type) continue;
 
   // Case 1: scope-based bump
@@ -62,15 +69,26 @@ for (const commit of commits) {
       if (!bumps[dir] || bumpOrder[type] > bumpOrder[bumps[dir]]) {
         bumps[dir] = type;
       }
+    } else {
+      console.log(`Scope "${commit.scope}" not found in packages, skipping.`);
     }
   }
 
-  // Case 2: message includes @package/name
-  const msg = commit.header + (commit.body || "") + (commit.footer || "");
-  for (const { name, dir } of workspacePkgs) {
-    if (msg.includes(name)) {
-      if (!bumps[dir] || bumpOrder[type] > bumpOrder[bumps[dir]]) {
-        bumps[dir] = type;
+  // Case 2: message based bump
+  const msg = commit.body.split('\n').map(l => l.trim()).filter(Boolean);
+  for (const line of msg) {
+    const parseLine = parser(line, {});
+    type = getBumpType(parseLine.type);
+    if (!type) continue;
+    if (parseLine.scope) {
+      const pkgMatch = workspacePkgs.find(p => p.dir === parseLine.scope);
+      if (pkgMatch) {
+        const dir = pkgMatch.dir;
+        if (!bumps[dir] || bumpOrder[type] > bumpOrder[bumps[dir]]) {
+          bumps[dir] = type;
+        }
+      } else {
+        console.log(`Scope "${parseLine.scope}" not found in packages, skipping.`);
       }
     }
   }
@@ -81,8 +99,7 @@ if (Object.keys(bumps).length === 0) {
   process.exit(0);
 }
 
-
-// bump root package version
+// bump root package.json version
 let highestBump = 'patch';
 
 for (const type of Object.values(bumps)) {
@@ -92,23 +109,56 @@ for (const type of Object.values(bumps)) {
 }
 
 const rootPkgPath = 'package.json';
-const rootPkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf-8'));
+let rootPkg;
+try {
+  rootPkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf-8'));
+} catch (err) {
+  console.error("Error reading root package.json:", err.message);
+  process.exit(1);
+}
 const newRootVersion = semver.inc(rootPkg.version, highestBump);
+if (!newRootVersion) {
+  console.error("Invalid root version bump.");
+  process.exit(1);
+}
 rootPkg.version = newRootVersion;
-fs.writeFileSync(rootPkgPath, JSON.stringify(rootPkg, null, 2) + '\n');
-
+if (!dryRun) {
+  fs.writeFileSync(rootPkgPath, JSON.stringify(rootPkg, null, 2) + '\n');
+}
 console.log(`\n- root package → ${newRootVersion}`);
 
 console.log("\nUpdating changed packages:");
+const summary = [];
 
 for (const { name, dir, version, path: pkgPath } of workspacePkgs) {
   const bumpType = bumps[dir];
-  if (!bumpType) continue;
+  if (!bumpType) {
+    console.log(`- ${name}: no bump`);
+    continue;
+  }
 
   const newVersion = semver.inc(version, bumpType);
-  const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
-  pkg.version = newVersion;
-  fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
+  if (!newVersion) {
+    console.error(`Invalid version bump for ${name} (${version} → ${bumpType})`);
+    continue;
+  }
+  if (!dryRun) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+      pkg.version = newVersion;
+      fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
+    } catch (err) {
+      console.error(`Error updating ${name}:`, err.message);
+      continue;
+    }
+  }
+  summary.push({ name, old: version, new: newVersion, bump: bumpType });
+  console.log(`- ${name} → ${newVersion} (${bumpType})`);
+}
 
-  console.log(`- ${name} → ${newVersion}`);
+console.log("\nSummary:");
+console.table(summary);
+
+if (dryRun) {
+  console.log("\nDry run mode: No files were changed.");
 }
