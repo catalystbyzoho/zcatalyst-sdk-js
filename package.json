@@ -13,8 +13,8 @@
     "prepare": "husky",
     "publish-packages": "turbo run build && pnpm run publish-all",
     "publish-all": "for p in packages/*; do (cd $p && pnpm publish --access private); done",
-    "unpublish-all": "for p in packages/*; do (cd $p && pnpm unpublish --registry https://wfx9cfh0-4873.inc1.devtunnels.ms/ --force); done",
-    "version:update": "node scripts/version-update.js && node ./scripts/change-log.js",
+    "version:update": "node scripts/version-update.js",
+    "changelog:update": "node ./scripts/change-log.js",
     "release": "node scripts/release-packages.js"
   },
   "devDependencies": {

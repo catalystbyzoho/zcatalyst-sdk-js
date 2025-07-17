@@ -1,13 +1,11 @@
 #!/usr/bin/env node
 
 const { execSync } = require('child_process');
-const path = require('path');
-const fs = require('fs');
 
 // Maintainers allowed to modify protected files
 const allowedMaintainers = [
   'sivaranjitha.cs@zohocorp.com',
-  'maintainer@yourorg.com',
+  'prasanna.ga@zohocorp.com',
 ];
 
 // List of prohibited paths (files or folders)

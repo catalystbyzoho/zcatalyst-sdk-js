@@ -61,7 +61,6 @@ function publish(path) {
   }
 }
 
-// --- Flow ---
 const tag = getLatestTag();
 console.log(`Latest tag: ${tag || 'none'}`);
 
