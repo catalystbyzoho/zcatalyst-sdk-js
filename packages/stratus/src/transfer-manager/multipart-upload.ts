@@ -1,5 +1,4 @@
 import { Handler } from '@zcatalyst/transport';
-import { Stream } from 'stream';
 
 import { Bucket } from '../bucket';
 import { IStratusMultipartSummaryRes } from '../utils/interface';

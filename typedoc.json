@@ -1,0 +1,29 @@
+{
+  "entryPoints": [
+    "packages/filestore/src/index.ts",
+    "packages/connector/src/index.ts",
+    "packages/cache/src/index.ts",
+    "packages/circuit/src/index.ts",
+    "packages/datastore/src/index.ts",
+    "packages/filestore/src/index.ts",
+    "packages/functions/src/index.ts",
+    "packages/job-scheduling/src/index.ts",
+    "packages/mail/src/index.ts",
+    "packages/nosql/src/index.ts",
+    "packages/pipeline/src/index.ts",
+    "packages/push-notification/src/index.ts",
+    "packages/quick-ml/src/index.ts",
+    "packages/search/src/index.ts",
+    "packages/smartbrowz/src/index.ts",
+    "packages/stratus/src/index.ts",
+    "packages/user-management/src/index.ts",
+    "packages/zcql/src/index.ts",
+    "packages/zia/src/index.ts",
+  ],
+  "out": "docs",
+  "tsconfig": "tsconfig.json", // your root config
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "excludeExternals": true
+}

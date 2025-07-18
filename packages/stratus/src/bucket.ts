@@ -57,7 +57,7 @@ export class Bucket {
 					? `${(this._requester.app?.config?.environment as string).toLowerCase()}${STRATUS_SUFFIX}`
 					: (window.__catalyst?.environment as string)?.toLowerCase() +
 						'' +
-						window.__catalyst?.stratus_suffix; // TODO: need to validate
+						window.__catalyst?.stratus_suffix;
 			this.bucketDetails = {
 				bucket_name: bucket,
 				bucket_url: `https://${bucket}-${suffix}`
@@ -204,13 +204,13 @@ export class Bucket {
 	 * const body = fs.createReadStream('/user/alwind/sam/sample.txt');
 	 * const options = {
 	 *   overwrite: true,
-	 *   expiresAfter: '2000', // Expiry time in seconds.
+	 *   ttl: '2000', // Expiry time in seconds.
 	 * };
 	 * // Upload the object
 	 * const putObjectRes = await bucket.putObject(key, body, options);
 	 * console.log(putObjectRes);
 	 * ```
-	 * @returns { boolean | {task_id: string} }
+	 * @returns { boolean }
 	 */
 	async putObject(
 		key: string,
@@ -265,7 +265,7 @@ export class Bucket {
 			data: convertToReadableStream(body),
 			qs: params,
 			type: typeof body === 'string' ? RequestType.JSON : RequestType.RAW,
-			expecting: ResponseType.RAW,
+			expecting: param.extractAndUpload ? ResponseType.JSON : ResponseType.RAW,
 			headers,
 			service: CatalystService.EXTERNAL,
 			auth: false,
@@ -274,7 +274,10 @@ export class Bucket {
 			user: CREDENTIAL_USER.user
 		};
 		const resp = await this._requester.send(request);
-		return resp.statusCode === 200 || resp.data;
+		if (resp.statusCode === 202) {
+			return resp.data;
+		}
+		return resp.statusCode === 200;
 	}
 
 	/**
@@ -457,6 +460,7 @@ export class Bucket {
 
 		headers.Authorization = `Zoho-oauthtoken ${await this.#jwtAuth.getJWTAccessToken()}`;
 		params.zaid = this.#jwtAuth.zaid;
+		params.orgType = 70;
 
 		return { params, headers, url };
 	}
@@ -502,14 +506,37 @@ export class BucketAdmin extends Bucket {
 	 * @returns { IStratusObjects } An object containing details of the listed objects.
 	 */
 	async listPagedObjects(options: IStratusPagedObjectOptions = {}): Promise<IStratusObjects> {
-		const param = {
+		const param: Record<string, string> = {
 			bucket_name: this.bucketDetails.bucket_name,
-			folder_listing: options.folderListing || 'false',
-			max_keys: options.maxKeys,
-			prefix: options.prefix,
-			continuation_token: options.continuationToken,
-			order_by: options.orderBy
+			folder_listing: options.folderListing || 'false'
 		};
+
+		if (options.prefix) {
+			param.prefix = options.prefix;
+		}
+
+		if (options.maxKeys) {
+			param.max_keys = options.maxKeys;
+		}
+
+		if (options.continuationToken) {
+			param.continuation_token = options.continuationToken;
+		}
+
+		if (options.orderBy) {
+			if (
+				!isNonEmptyString(options.orderBy) ||
+				!['asc', 'desc'].includes(options.orderBy.toLocaleLowerCase())
+			) {
+				throw new CatalystStratusError(
+					'INVALID_ARGUMENT',
+					'orderBy must be a non-empty string with value "asc" or "desc"',
+					options.orderBy
+				);
+			}
+			param.order_by = options.orderBy;
+		}
+
 		const request: IRequestConfig = {
 			method: REQ_METHOD.get,
 			path: '/bucket/objects',
