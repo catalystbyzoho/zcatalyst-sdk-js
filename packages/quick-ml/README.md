@@ -1,7 +1,5 @@
 # @zcatalyst/quickml
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript QuickML for Node.js and Browser.
 
 <p></p>

@@ -1,7 +1,5 @@
 # @zcatalyst/filestore
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript Filestore for Node.js and Browser.
 
 <p></p>

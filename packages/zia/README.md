@@ -1,7 +1,5 @@
 # @zcatalyst/zia
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript zia for Node.js and Browser.
 
 <p></p>

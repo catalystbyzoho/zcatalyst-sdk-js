@@ -34,6 +34,9 @@ jobs:
       - name: Run install
         run: pnpm install --no-frozen-lockfile
 
+      - name: Build packages
+        run: pnpm run build
+
       - name: Release updated packages to npm
         run: node scripts/release-packages.js
         env:
