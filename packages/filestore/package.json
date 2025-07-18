@@ -1,6 +1,6 @@
 {
   "name": "@zcatalyst/filestore",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "main": "./dist-cjs/index.js",
   "module": "./dist-es/index.js",
   "types": "./dist-types/index.d.ts",
@@ -14,7 +14,7 @@
     "clean": "rimraf ./dist-* && rimraf *.tsbuildinfo || exit 0",
     "typedoc": "npx typedoc",
     "docs": "pnpm run typedoc",
-    "lint": "eslint -c ../../eslint.config.js \"src/**/*.ts\"",
+    "lint": "eslint -c ../../eslint.config.mjs \"src/**/*.ts\"",
     "test": "jest --config ./jest.config.js",
     "format": "prettier  --ignore-path ../.prettierignore --write \"{src, test}/*.ts\""
   },

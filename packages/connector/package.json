@@ -1,6 +1,6 @@
 {
   "name": "@zcatalyst/connector",
-  "version": "1.0.1",
+  "version": "0.0.1",
   "main": "./dist-cjs/index.js",
   "module": "./dist-es/index.js",
   "types": "./dist-types/index.d.ts",
@@ -10,11 +10,11 @@
     "build:cjs": "pnpm tsc -p tsconfig.cjs.json",
     "build:es": "pnpm tsc -p tsconfig.es.json",
     "build:types": "pnpm tsc -p tsconfig.types.json",
+    "docs": "pnpm run typedoc",
     "build:types:downlevel": "rimraf dist-types/ts3.4 && downlevel-dts dist-types dist-types/ts3.4",
     "clean": "rimraf ./dist-* && rimraf *.tsbuildinfo || exit 0",
     "typedoc": "npx typedoc",
-    "docs": "pnpm run typedoc",
-    "lint": "eslint -c ../../eslint.config.js \"src/**/*.ts\"",
+    "lint": "eslint -c ../../eslint.config.mjs \"src/**/*.ts\"",
     "format": "prettier  --ignore-path ../.prettierignore --write \"{src, test}/*.ts\""
   },
   "dependencies": {

@@ -121,5 +121,6 @@ dist-*/
 __snapshots__/
 
 # typdoc
+docs/*/
 .qodo
 .npmrc

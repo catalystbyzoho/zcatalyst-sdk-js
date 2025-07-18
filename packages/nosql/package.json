@@ -1,6 +1,6 @@
 {
   "name": "@zcatalyst/nosql",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "main": "./dist-cjs/index.js",
   "module": "./dist-es/index.js",
   "types": "./dist-types/index.d.ts",
@@ -11,10 +11,10 @@
     "build:es": "pnpm tsc -p tsconfig.es.json",
     "build:types": "pnpm tsc -p tsconfig.types.json",
     "build:types:downlevel": "rimraf dist-types/ts3.4 && downlevel-dts dist-types dist-types/ts3.4",
-    "clean": "rimraf ./dist-* && rimraf *.tsbuildinfo",
     "typedoc": "npx typedoc",
     "docs": "pnpm run typedoc",
-    "lint": "eslint -c ../../eslint.config.js \"src/**/*.ts\"",
+    "clean": "rimraf ./dist-* && rimraf *.tsbuildinfo",
+    "lint": "eslint -c ../../eslint.config.mjs \"src/**/*.ts\"",
     "test": "jest --config ./jest.config.js",
     "format": "prettier  --ignore-path ../.prettierignore --write \"{src, test}/*.ts\""
   },

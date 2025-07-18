@@ -1,8 +1,9 @@
-name: Validate PR Title and Description
+name: Validate PR
 
 on:
   pull_request:
-    types: [opened, edited, synchronize]
+    branches: [main]
+    types: [opened, synchronize, edited]
 
 jobs:
   pr-validation:
@@ -25,11 +26,11 @@ jobs:
       - name: Run install
         run: pnpm install --no-frozen-lockfile
 
+      - name: Run lint
+        run: pnpm run lint
+
       - name: Run unit tests
         run: pnpm run test
-
-      - name: Run npm audit for dependency vulnerabilities
-        run: pnpm audit --audit-level=moderate || true
 
       - name: Get PR author username
         id: pr
@@ -44,7 +45,7 @@ jobs:
           echo "PR by $PR_USER"
 
           if grep -Fxq "$PR_USER" .contributor-list.txt; then
-            echo "✅ $PR_USER has signed the CLA"
+            echo "$PR_USER has signed the CLA"
           else
             echo "::error ::$PR_USER has not signed the CLA. Please email the signed CLA to support@zohocatalyst.com"
             exit 1
