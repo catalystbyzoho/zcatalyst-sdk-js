@@ -58,8 +58,8 @@ Please be aware of the following notes prior to opening a pull request:
    percentage are unlikely to be merged until tests have been added.
 
 4. Commit tile and message and pull request title and description must adhere to
-   [conventional commits][conventional commits]. Title must begin with `feat(module): title`,
-   `fix(module): title`, `docs(module): title`, `test(module): title`, `chore(module): title`.
+   [conventional commits][conventional commits]. Title must begin with `feat(package_name): title`,
+   `fix(package_name): title`, `docs(package_name): title`, `test(package_name): title`, `chore(package_name): title`.
    Title should be lowercase and not period at the end of it. If the commit includes
    a breaking change, the commit message must end with a single paragraph: `BREAKING CHANGE: a description of what broke`
 
