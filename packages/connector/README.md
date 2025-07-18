@@ -1,7 +1,5 @@
 # @zcatalyst/connector
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript Connector for Node.js and Browser.
 
 <p></p>

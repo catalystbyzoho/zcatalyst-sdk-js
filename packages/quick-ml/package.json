@@ -28,5 +28,10 @@
   },
   "files": [
     "dist-*/**"
-  ]
+  ],
+  "keywords": [
+		"quickml",
+		"zcatalyst",
+		"catalyst"
+  	]
 }

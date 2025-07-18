@@ -1,7 +1,5 @@
 # @zcatalyst/circuit
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript Circuit for Node.js and Browser.
 
 <p></p>

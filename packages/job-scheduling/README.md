@@ -1,7 +1,5 @@
 # @zcatalyst/job-scheduling
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript JobScheduling for Node.js and Browser.
 
 <p></p>

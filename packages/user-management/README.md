@@ -1,7 +1,5 @@
 # @zcatalyst/user-management
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript User Management for Node.js and Browser.
 
 <p></p>

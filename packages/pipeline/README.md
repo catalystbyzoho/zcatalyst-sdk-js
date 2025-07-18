@@ -1,7 +1,5 @@
 # @zcatalyst/pipelines
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript Pipelines for Node.js and Browser.
 
 <p></p>

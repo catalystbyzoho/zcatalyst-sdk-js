@@ -1,7 +1,5 @@
 # @zcatalyst/datastore
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript Datastore for Node.js and Browser.
 
 <p></p>

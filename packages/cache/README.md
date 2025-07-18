@@ -1,7 +1,5 @@
 # @zcatalyst/cache
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript Cache for Node.js and Browser.
 
 <p></p>

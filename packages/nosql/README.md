@@ -1,7 +1,5 @@
 # @zcatalyst/nosql
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript NoSQL for Node.js and Browser.
 
 <p></p>

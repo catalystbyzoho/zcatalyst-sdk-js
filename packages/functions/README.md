@@ -1,7 +1,5 @@
 # @zcatalyst/functions
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript Functions for Node.js and Browser.
 
 <p></p>

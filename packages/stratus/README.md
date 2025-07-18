@@ -1,7 +1,5 @@
 # @zcatalyst/stratus
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript stratus for Node.js and Browser.
 
 <p></p>

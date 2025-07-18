@@ -1,7 +1,5 @@
 # @zcatalyst/push-notification
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript PushNotification for Node.js and Browser.
 
 <p></p>

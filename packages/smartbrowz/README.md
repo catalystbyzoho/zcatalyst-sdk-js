@@ -1,7 +1,5 @@
 # @zcatalyst/smartbrowz
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript Search for Node.js and Browser.
 
 <p></p>

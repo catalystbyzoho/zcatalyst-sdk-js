@@ -34,5 +34,10 @@
   },
   "files": [
     "dist-*/**"
-  ]
+  ],
+  "keywords": [
+		"stratus",
+		"zcatalyst",
+		"catalyst"
+  	]
 }
