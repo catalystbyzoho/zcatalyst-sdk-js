@@ -1,6 +1,6 @@
 {
   "name": "@zcatalyst/auth-client",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "./dist-cjs/index.js",
   "module": "./dist-es/index.js",
   "types": "./dist-types/index.d.ts",
@@ -23,7 +23,7 @@
     "@types/node": "^22.7.5"
   },
   "engines": {
-    "node": ">=21"
+    "node": ">=20"
   },
   "files": [
     "dist-*/**",

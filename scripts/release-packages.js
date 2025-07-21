@@ -9,6 +9,7 @@ function getChangedFilesSinceLatestTag() {
   return output.split('\n').filter(Boolean);
 }
 
+
 function getLatestTag() {
   try {
     return execSync('git describe --tags --abbrev=0', { encoding: 'utf-8' }).trim();

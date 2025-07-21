@@ -1,6 +1,6 @@
 {
   "name": "@zcatalyst/search",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "./dist-cjs/index.js",
   "module": "./dist-es/index.js",
   "types": "./dist-types/index.d.ts",
@@ -24,9 +24,14 @@
     "@zcatalyst/auth-client": "workspace:^"
   },
   "engines": {
-    "node": ">=21"
+    "node": ">=20"
   },
   "files": [
     "dist-*/**"
+  ],
+  "keywords": [
+    "search",
+    "zcatalyst",
+    "catalyst"
   ]
 }
