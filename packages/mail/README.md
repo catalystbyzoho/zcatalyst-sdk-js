@@ -1,7 +1,5 @@
 # @zcatalyst/mail
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript Mail for Node.js and Browser.
 
 <p></p>

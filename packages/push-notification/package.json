@@ -33,5 +33,10 @@
 	},
 	"files": [
 		"dist-*/**"
-	]
+	],
+	"keywords": [
+		"push-notification",
+		"zcatalyst",
+		"catalyst"
+  	]
 }
