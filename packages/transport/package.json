@@ -31,5 +31,10 @@
 	},
 	"files": [
 		"dist-*/**"
-	]
+	],
+	"keywords": [
+		"transport",
+		"zcatalyst",
+		"catalyst"
+  	]
 }

@@ -1,7 +1,5 @@
 # @zcatalyst/zcql
 
-## Description
-
 ZOHO CATALYST SDK for JavaScript zcql for Node.js and Browser.
 
 <p></p>

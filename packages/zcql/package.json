@@ -27,5 +27,10 @@
   },
   "files": [
     "dist-*/**"
+  ],
+    "keywords": [
+    "zcql",
+    "zcatalyst",
+    "catalyst"
   ]
 }

@@ -29,5 +29,10 @@
   },
   "files": [
     "dist-*/**"
+  ],
+  "keywords": [
+    "circuit",
+    "zcatalyst",
+    "catalyst"
   ]
 }
