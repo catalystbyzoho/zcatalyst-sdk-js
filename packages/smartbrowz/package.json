@@ -28,5 +28,10 @@
   },
   "files": [
     "dist-*/**"
-  ]
+  ],
+  "keywords": [
+		"smartbrowz",
+		"zcatalyst",
+		"catalyst"
+  	]
 }
