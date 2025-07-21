@@ -23,7 +23,7 @@
     "@types/node": "^22.7.5"
   },
   "engines": {
-    "node": ">=21"
+    "node": ">=20"
   },
   "files": [
     "dist-*/**",

@@ -30,7 +30,7 @@
     "stream": false
   },
   "engines": {
-    "node": ">=21"
+    "node": ">=20"
   },
   "files": [
     "dist-*/**"

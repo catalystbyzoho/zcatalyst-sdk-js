@@ -29,7 +29,7 @@
 		"./dist-types/index.d.ts": "./dist-types/index.browser.d.ts"
 	},
 	"engines": {
-		"node": ">=21"
+		"node": ">=20"
 	},
 	"files": [
 		"dist-*/**"
