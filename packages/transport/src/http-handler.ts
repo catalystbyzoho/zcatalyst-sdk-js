@@ -1,13 +1,7 @@
 'use strict';
 
-import { CatalystApp } from '@zcatalyst/auth';
-import {
-	CatalystService,
-	CONSTANTS,
-	getServicePath,
-	isNonEmptyString,
-	LOGGER
-} from '@zcatalyst/utils';
+import { addDefaultAppHeaders, CatalystApp } from '@zcatalyst/auth';
+import { CatalystService, CONSTANTS, getServicePath, LOGGER } from '@zcatalyst/utils';
 import http, { ClientRequest, IncomingHttpHeaders, IncomingMessage } from 'http';
 import https from 'https';
 import { ReadableStream } from 'node:stream/web';
@@ -25,19 +19,14 @@ import { Component, IRequestConfig } from './utils/interfaces';
 import RequestAgent from './utils/request-agent';
 
 const {
-	PROJECT_KEY_NAME,
 	IS_LOCAL,
-	ENVIRONMENT_KEY_NAME,
-	ENVIRONMENT,
 	USER_KEY_NAME,
 	CREDENTIAL_USER,
 	CATALYST_ORIGIN,
-	X_ZOHO_CATALYST_ORG_ID,
 	USER_AGENT,
 	APM_INSIGHT,
 	ACCEPT_HEADER,
 	REQ_RETRY_THRESHOLD,
-	PROJECT_HEADER,
 	IS_APM
 } = CONSTANTS;
 
@@ -411,22 +400,13 @@ export class HttpClient {
 		req.retry = req.retry || true;
 		if (this.app !== undefined && req.service !== CatalystService.EXTERNAL) {
 			this.user = this.app.credential.getCurrentUser();
+
 			// added header only for catalyst calls and client portal calls (exclude external domain calls(ex: stratus))
-			req.headers[PROJECT_KEY_NAME] = this.app.config.projectKey as string;
-			req.headers[ENVIRONMENT_KEY_NAME] = this.app.config.environment as string;
-			req.headers[ENVIRONMENT] = this.app.config.environment as string; // handle indide the quick ml
-
-			if (isNonEmptyString(process.env.X_ZOHO_CATALYST_ORG_ID)) {
-				req.headers[X_ZOHO_CATALYST_ORG_ID] = process.env.X_ZOHO_CATALYST_ORG_ID as string;
-			}
-
-			if (isNonEmptyString(this.app.config.projectSecretKey)) {
-				req.headers[PROJECT_HEADER.projectSecretKey] = this.app.config
-					.projectSecretKey as string;
-			}
+			req.headers = addDefaultAppHeaders(req.headers, this.app.config);
 
 			// assign user headers
 			req.headers[USER_KEY_NAME] = this.app.credential.getCurrentUserType();
+
 			// spcl handling for CLI
 			if (IS_LOCAL === 'true') {
 				switch (this.user) {

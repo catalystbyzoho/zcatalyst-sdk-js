@@ -314,3 +314,42 @@ export class ConfigManager {
 		return ConfigManager.INSTANCE;
 	}
 }
+
+export function addDefaultAppHeaders(
+	headers: Record<string, string> = {},
+	values?: Record<string, string>
+) {
+	const normalizedHeaders = headers as Record<string, string>;
+	// Modify the "Accept" header
+	const currentAccept = normalizedHeaders['Accept'];
+	if (!currentAccept) {
+		normalizedHeaders['Accept'] = 'application/vnd.catalyst.v2+json';
+	} else {
+		normalizedHeaders['Accept'] = `application/vnd.catalyst.v2+json, ${currentAccept}`;
+	}
+	normalizedHeaders['CATALYST-COMPONENT'] = 'true';
+
+	const conf = ConfigManager.getInstance();
+	if (typeof conf?.OrgId === 'string') {
+		normalizedHeaders['CATALYST-ORG'] = conf.OrgId;
+	}
+
+	return normalizedHeaders;
+}
+
+export function getToken(key?: string) {
+	let jwtAuthToken = '';
+	const cookies = document.cookie.split(';');
+	const cookiesLen = cookies.length;
+	for (let i = 0; i < cookiesLen; i++) {
+		const keyValuePairSplitted = cookies[i].split('=');
+		if (keyValuePairSplitted[0].trim() === (key ? key : 'cookie')) {
+			jwtAuthToken = keyValuePairSplitted[1];
+		}
+	}
+	return jwtAuthToken;
+}
+
+export function setToken(authObj: { access_token?: string; expires_in?: number }, key?: string) {
+	document.cookie = `${key ? key : 'cookie'}=${authObj.access_token}; max-age=${authObj.expires_in}; path=/`;
+}

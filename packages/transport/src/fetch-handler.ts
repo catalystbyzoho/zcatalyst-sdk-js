@@ -1,5 +1,11 @@
-import { Auth_Protocol, ConfigManager, zcAuth } from '@zcatalyst/auth-client';
-import { CatalystService, CONSTANTS, getServicePath, getToken } from '@zcatalyst/utils';
+import {
+	addDefaultAppHeaders,
+	Auth_Protocol,
+	ConfigManager,
+	getToken,
+	zcAuth
+} from '@zcatalyst/auth-client';
+import { CatalystService, CONSTANTS, getServicePath } from '@zcatalyst/utils';
 
 import {
 	HTTP_HEADER_MAP as HEADER_MAP,
@@ -224,20 +230,15 @@ export class ResponseHandler {
 
 	// Helper method to attach app-specific headers
 	static #attachAppSpecificHeaders(headers: HeadersInit): HeadersInit {
-		const normalizedHeaders = headers as Record<string, string>;
-		// Modify the "Accept" header
-		const currentAccept = normalizedHeaders['Accept'];
-		if (!currentAccept) {
-			normalizedHeaders['Accept'] = 'application/vnd.catalyst.v2+json';
-		} else {
-			normalizedHeaders['Accept'] = `application/vnd.catalyst.v2+json, ${currentAccept}`;
-		}
+		let normalizedHeaders = headers as Record<string, string>;
+
+		// Add default app headers
+		normalizedHeaders = addDefaultAppHeaders(normalizedHeaders);
 
 		// Add app-specific headers
 		if (typeof this.configManager?.OrgId === 'string') {
 			normalizedHeaders['CATALYST-ORG'] = this.configManager.OrgId;
 		}
-		normalizedHeaders['CATALYST-COMPONENT'] = 'true';
 
 		return normalizedHeaders;
 	}
@@ -285,7 +286,7 @@ export class ResponseHandler {
 	public static getJWTZCAuthToken(): Promise<jwtAccessTokenResponse> {
 		const conf = ConfigManager.getInstance();
 		return new Promise((resolve, reject) => {
-			const jwtZCAuthToken = getToken();
+			const jwtZCAuthToken = getToken() as unknown as string;
 			if (jwtZCAuthToken === '') {
 				reject('Unable to get the JWT Access Token.');
 			} else {

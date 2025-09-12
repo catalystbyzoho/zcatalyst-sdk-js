@@ -1,5 +1,5 @@
 import { Handler, IRequestConfig } from '@zcatalyst/transport';
-import { CatalystService, CONSTANTS, getToken, setToken } from '@zcatalyst/utils';
+import { CatalystService, CONSTANTS } from '@zcatalyst/utils';
 
 import { Bucket } from '../bucket';
 import { IJWTResponse } from './interface';
@@ -51,7 +51,8 @@ export class JWTAuthHandler {
 		this.accessTokenObj = await this.convertJwtToToken(res);
 		this.accessTokenObj.expires_in = (this.accessTokenObj.expires_in as number) + Date.now();
 		if (typeof window !== 'undefined') {
-			const jwt = getToken('stratus_jwt');
+			const { setToken, getToken } = await import('@zcatalyst/auth-client');
+			const jwt = getToken('stratus_jwt') as unknown as string;
 			if (!jwt) {
 				setToken(this.accessTokenObj, 'stratus_jwt');
 			}

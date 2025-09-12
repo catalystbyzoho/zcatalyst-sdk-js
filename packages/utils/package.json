@@ -16,12 +16,6 @@
     "lint": "eslint -c ../../eslint.config.mjs \"src/**/*.ts\"",
     "format": "prettier  --ignore-path ../.prettierignore --write \"{src, test}/*.ts\""
   },
-  "browser": {
-    "./dist-cjs/index.js": "./dist-cjs/index.browser.js",
-    "./dist-es/index.js": "./dist-es/index.browser.js",
-    "./dist-types/index.d.ts": "./dist-types/index.browser.d.ts",
-    "url": false
-  },
   "engines": {
     "node": ">=20"
   },

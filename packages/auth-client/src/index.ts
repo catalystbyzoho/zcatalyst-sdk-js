@@ -1,10 +1,10 @@
 import { getServicePath, isNonEmptyString, wrapValidatorsWithPromise } from '@zcatalyst/utils';
 
-import { ConfigManager } from './config-manager';
+import { addDefaultAppHeaders, ConfigManager, getToken, setToken } from './config-manager';
 import {
 	AUTH_ERROR_MSG,
 	AUTH_STATIC_FILES,
-	CSRF_TOKEN_KEY, // TODO: chec is it needed
+	CSRF_TOKEN_KEY,
 	REQUIREMENT,
 	UM_PROPERTY,
 	UM_URL_DIVIDER,
@@ -34,67 +34,116 @@ export interface ICatalystAuthConfig {
 	is_local_zoho?: string;
 	project_domain?: string;
 	environment?: string;
-	credentialQR?: ICatalystAuthConfig; // TODO: check it is needed
+	credentialQR?: ICatalystAuthConfig;
 }
 
-const urlRegex = /^((https?:\/\/)?[\w.-]+(\.[\w.-]+)+\.?(:\d+)?(\/\S*)?(\?\S+)?)$/;
+const isValidUrl = (url: string): boolean => {
+	try {
+		new URL(url);
+		return true;
+	} catch {
+		return /^https?:\/\/[^\s]+$/.test(url);
+	}
+};
 
+/**
+ * Modern ZCAuth class with improved error handling, async/await, and better type safety
+ */
 class ZCAuth {
-	configManager = ConfigManager.getInstance();
+	private readonly configManager = ConfigManager.getInstance();
+	private readonly abortController = new AbortController();
 
-	constructor() {}
+	constructor() {
+		// Bind methods to preserve 'this' context
+		this.signIn = this.signIn.bind(this);
+		this.signOut = this.signOut.bind(this);
+		this.isUserAuthenticated = this.isUserAuthenticated.bind(this);
+	}
 
-	async getCredentials() {
-		this.configManager.CredentialJson = (
-			await this.makeRequest(`/${URL_DIVIDER.RESERVED_URL}/sdk/init`, {
+	/**
+	 * Fetches credentials from the server with modern error handling
+	 */
+	async getCredentials(): Promise<Record<string, unknown>> {
+		try {
+			const response = await this.makeRequest(`/${URL_DIVIDER.RESERVED_URL}/sdk/init`, {
 				method: 'GET',
 				headers: {
 					Accept: 'application/json'
-				}
-			})
-		).data;
-		return this.configManager.CredentialJson;
+				},
+				signal: this.abortController.signal
+			});
+
+			this.configManager.CredentialJson = response.data;
+			return response.data;
+		} catch (error) {
+			throw new CatalystAuthError(
+				'CREDENTIAL_FETCH_ERROR',
+				`Failed to fetch credentials: ${error instanceof Error ? error.message : 'Unknown error'}`,
+				500
+			);
+		}
 	}
 
-	async init() {
-		if (!this.configManager.Initialized) {
-			let credentialJson: ICatalystAuthConfig =
+	/**
+	 * Initialize the auth client with better error handling and validation
+	 */
+	async init(): Promise<void> {
+		if (this.configManager.Initialized) {
+			setGlobal('__catalyst', this.configManager.CredentialJson);
+			return;
+		}
+
+		try {
+			const credentialJson: ICatalystAuthConfig =
 				(await this.getCredentials()) as ICatalystAuthConfig;
-			credentialJson = credentialJson.hasOwnProperty('credentialQR') // when the request contains this key
-				? (credentialJson['credentialQR'] as ICatalystAuthConfig)
+
+			// Handle nested credential structure
+			const finalCredentials = credentialJson.hasOwnProperty('credentialQR')
+				? (credentialJson.credentialQR as ICatalystAuthConfig)
 				: credentialJson;
-			for (const requirement of REQUIREMENT.INIT_REQUIRE) {
-				if (!credentialJson.hasOwnProperty(requirement)) {
-					throw new CatalystAuthError(
-						'PROPERTY_NOT_FOUND',
-						`Unable to get the property ${[requirement]} from the given credentials.`,
-						400
-					);
-				}
+
+			// Validate required properties
+			this.validateRequiredCredentials(finalCredentials);
+
+			// Set configuration with default values
+			this.configManager.CredentialJson = finalCredentials;
+			this.configManager.ZAID = finalCredentials.zaid as string;
+			this.configManager.ProjectID = finalCredentials.project_id as string;
+			this.configManager.IAMDomainUrl =
+				finalCredentials.auth_domain ?? 'https://accounts.zohoportal.com';
+			this.configManager.APIDomain = finalCredentials.api_domain as string;
+			this.configManager.StratusDomain = `-${finalCredentials.environment}${finalCredentials.stratus_suffix}`;
+			this.configManager.Environment = finalCredentials.environment as string;
+			this.configManager.ProjectDomain = finalCredentials.project_domain as string;
+			this.configManager.IsAppSail = String(finalCredentials.is_appsail ?? false);
+
+			if (finalCredentials.org_id) {
+				this.configManager.OrgId = finalCredentials.org_id as string;
 			}
-			this.configManager.CredentialJson = credentialJson;
-			this.configManager.ZAID = credentialJson?.zaid as string;
-			this.configManager.ProjectID = credentialJson?.project_id as string;
-			this.configManager.IAMDomainUrl = credentialJson?.auth_domain
-				? (credentialJson?.auth_domain as string)
-				: 'https://accounts.zohoportal.com';
-			this.configManager.APIDomain = credentialJson?.api_domain as string;
-			this.configManager.StratusDomain = `-
-				${credentialJson?.environment}${credentialJson?.stratus_suffix}`;
-			this.configManager.Environment = credentialJson?.environment as string;
-			this.configManager.ProjectDomain = credentialJson?.project_domain as string;
-			this.configManager.IsAppSail = (
-				credentialJson?.is_appsail as unknown as string
-			).toString(); // test
-			if (credentialJson?.org_id) {
-				this.configManager.OrgId = credentialJson.org_id as string;
-			}
+
 			this.configManager.Initialized = true;
 			setGlobal('__catalyst', this.configManager.CredentialJson);
-		} else {
-			// eslint-disable-next-line no-console
-			console.log('app already initialized!');
-			setGlobal('__catalyst', this.configManager.CredentialJson);
+		} catch (error) {
+			throw new CatalystAuthError(
+				'INIT_ERROR',
+				`Failed to initialize ZCAuth: ${error instanceof Error ? error.message : 'Unknown error'}`,
+				500
+			);
+		}
+	}
+
+	/**
+	 * Validates required credential properties
+	 */
+	private validateRequiredCredentials(credentialJson: ICatalystAuthConfig): void {
+		for (const requirement of REQUIREMENT.INIT_REQUIRE) {
+			if (!credentialJson.hasOwnProperty(requirement)) {
+				throw new CatalystAuthError(
+					'PROPERTY_NOT_FOUND',
+					`Missing required property: ${requirement}`,
+					400
+				);
+			}
 		}
 	}
 
@@ -123,11 +172,11 @@ class ZCAuth {
 		}
 	}
 
-	async hostedSignIn() {
+	async hostedSignIn(redirectUrl?: string): Promise<void> {
 		if (!this.configManager.Initialized) {
 			await this.init();
 		}
-		window.location.href = `/${URL_DIVIDER.RESERVED_URL}/${URL_DIVIDER.AUTH}/${URL_DIVIDER.LOGIN}`;
+		window.location.href = `/${URL_DIVIDER.RESERVED_URL}/${URL_DIVIDER.AUTH}/${URL_DIVIDER.LOGIN}?redirect_url=${encodeURIComponent(redirectUrl ?? '/')}`;
 	}
 
 	async #isValidUser(org_id?: string): Promise<Boolean> {
@@ -272,7 +321,7 @@ class ZCAuth {
 			body: null
 		});
 		return response.data as unknown as string;
-	} // TODO: test this method
+	}
 
 	async #errorMsgHandler() {
 		this.#attachMutationObserver(ZCAuth.#getEmailInpErrorDiv(), this.#trackErrorMsgCnt);
@@ -286,7 +335,6 @@ class ZCAuth {
 	}
 
 	async #trackErrorMsgCnt(mutationList: Array<MutationRecord>, observer: unknown) {
-		// TODO: check why observer defined here
 		for (const mutation of mutationList) {
 			if (
 				mutation.type === 'attributes' &&
@@ -334,9 +382,14 @@ class ZCAuth {
 
 	#overrideValuesInI18N(iframe: HTMLIFrameElement) {
 		if (iframe.contentWindow?.I18N) {
-			const IAMi18nData = (iframe.contentWindow?.I18xN as Window)['data'] as Window;
-			IAMi18nData['IAM.PHONE.ENTER.VALID.MOBILE_NUMBER'] = AUTH_ERROR_MSG.emptyEmailAddress;
-			IAMi18nData['IAM.NEW.SIGNIN.ENTER.EMAIL.OR.MOBILE'] = AUTH_ERROR_MSG.emptyEmailAddress;
+			const IAMi18nData = (iframe.contentWindow?.I18N as { data?: Record<string, unknown> })
+				?.data;
+			if (IAMi18nData) {
+				IAMi18nData['IAM.PHONE.ENTER.VALID.MOBILE_NUMBER'] =
+					AUTH_ERROR_MSG.emptyEmailAddress;
+				IAMi18nData['IAM.NEW.SIGNIN.ENTER.EMAIL.OR.MOBILE'] =
+					AUTH_ERROR_MSG.emptyEmailAddress;
+			}
 		}
 	}
 
@@ -358,8 +411,7 @@ class ZCAuth {
 		}
 	}
 
-	async signOut(redirectURL: string): Promise<void> {
-		// TODO: check logics
+	async signOut(redirectURL = '/'): Promise<void> {
 		if (this.configManager.AuthProtocol === Auth_Protocol.JwtTokenProtocol) {
 			document.cookie = `${this.configManager.jwtTokenCookieKey}=; path=/; expires=${new Date().toUTCString()};`;
 			document.cookie = `user_cred=; path=/; expires=${new Date().toUTCString()};`;
@@ -389,12 +441,6 @@ class ZCAuth {
 				window.location.href = this.#constructSignOutUrl(redirectURL);
 			}
 		}
-	}
-
-	async signOutUrl(redirectURL: string): Promise<unknown> {
-		return await this.makeRequest(this.#constructSignOutUrl(redirectURL), {
-			body: JSON.stringify({ data: { signout_url: this.#constructSignOutUrl(redirectURL) } })
-		});
 	}
 
 	public async signUp(body: BodyData): Promise<unknown> {
@@ -469,7 +515,7 @@ class ZCAuth {
 		if (
 			redirectUrl &&
 			!redirectUrl.includes(window.location.origin) &&
-			!urlRegex.test(redirectUrl)
+			!isValidUrl(redirectUrl)
 		) {
 			redirectUrl = `${window.location.origin}${redirectUrl}`;
 		}
@@ -485,19 +531,20 @@ class ZCAuth {
 					? AUTH_STATIC_FILES.SIGNIN_WITH_PROVIDERS_ONLY
 					: AUTH_STATIC_FILES.SIGNIN
 			});
-		let serviceUrl: string =
+		const serviceUrl: string =
 			config.redirect_url ??
 			config.service_url ??
 			(new URLSearchParams(window.location.search).get('service_url') as string);
-		serviceUrl = encodeURIComponent(this.#constructRedirectUrl(serviceUrl));
+		const appDomain = `${location.protocol}//${location.host}`;
+		const signInRedirect = encodeURIComponent(this.#constructRedirectUrl(serviceUrl));
 
-		const recoveryUrl = `${location.protocol}//${location.host}/accounts/p/70-${this.configManager.ZAID}/password?servicename=ZohoCatalyst&&serviceurl=${serviceUrl}`;
+		const recoveryUrl = `${appDomain}/accounts/p/70-${this.configManager.ZAID}/password?servicename=ZohoCatalyst&&serviceurl=${signInRedirect}`;
 
-		const urlParams = {
+		const urlParams: Record<string, string | boolean> = {
 			css_url: cssUrl,
 			portal: this.configManager.ZAID,
 			servicename: 'ZohoCatalyst',
-			serviceurl: serviceUrl,
+			serviceurl: encodeURIComponent(this.#constructRedirectUrl(serviceUrl)),
 			hide_signup: true,
 			hide_fs: `${!isPublicSignupEnabled}`,
 			dcc: true,
@@ -505,9 +552,11 @@ class ZCAuth {
 			recoveryurl: encodeURIComponent(recoveryUrl)
 		};
 
-		const baseDomain = `${location.protocol}//${location.host}/accounts/p/${this.configManager.ZAID}/signin`;
-		const url = applyQueryString(baseDomain, urlParams);
-		return url;
+		const params = Object.keys(urlParams)
+			.map((key) => `${key}=${urlParams[key]}`)
+			.join('&');
+		const baseDomain = `${appDomain}/accounts/p/${this.configManager.ZAID}/signin?${params}`;
+		return baseDomain;
 	}
 
 	#getIAMForgotPasswordURL(config: ICatalystSignInConfig): string {
@@ -525,10 +574,10 @@ class ZCAuth {
 			css_url: cssUrl,
 			portal: this.configManager.ZAID,
 			servicename: 'ZohoCatalyst',
-			serviceurl: encodeURIComponent(`${location.protocol}//${location.host}/`),
+			serviceurl: `${location.protocol}//${location.host}/`,
 			hide_signup: true,
 			dcc: true,
-			LOGIN_ID: encodeURIComponent(loginInpElem.value.toString())
+			LOGIN_ID: loginInpElem.value.toString()
 		};
 		const url = applyQueryString(
 			`${location.protocol}//${location.host}/accounts/p/${this.configManager.ZAID}/password`,
@@ -574,10 +623,13 @@ class ZCAuth {
 
 	async makeRequest(
 		url: string,
-		options?: RequestInit,
+		options: RequestInit = {},
 		otherOptions: { responseType?: string } = { responseType: 'json' }
 	): Promise<ICatalystAuthResponse> {
 		try {
+			options['headers'] = addDefaultAppHeaders(
+				options?.headers as Record<string, string>
+			) as HeadersInit;
 			const response = await fetch(url, options || {});
 			let res;
 			if (otherOptions.responseType) {
@@ -609,4 +661,13 @@ class ZCAuth {
 
 const zcAuth = new ZCAuth();
 
-export { Auth_Protocol, ConfigManager, zcAuth };
+export {
+	addDefaultAppHeaders,
+	Auth_Protocol,
+	CatalystAuthError,
+	ConfigManager,
+	getToken,
+	setToken,
+	zcAuth
+};
+export type { ICatalystSignInConfig };

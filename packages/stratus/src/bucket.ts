@@ -45,7 +45,6 @@ const { REQ_METHOD, CREDENTIAL_USER, STRATUS_SUFFIX } = CONSTANTS;
 export class Bucket {
 	_requester: Handler;
 	bucketDetails: IStratusBucket;
-	auth = true;
 	#util: Util;
 	#jwtAuth: JWTAuthHandler;
 	constructor(requester: Handler, bucket: IStratusBucket | string) {
@@ -476,7 +475,6 @@ export class Bucket {
 
 export class BucketAdmin extends Bucket {
 	_requester: Handler;
-	auth = true;
 	#util: Util;
 	#cors: Cors;
 	constructor(requester: Handler, bucket: IStratusBucket | string) {

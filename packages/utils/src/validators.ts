@@ -1,7 +1,5 @@
 'use strict';
 
-import { URL } from 'url';
-
 import { CatalystAppError, CatalystError } from './errors';
 
 /**
@@ -11,7 +9,7 @@ import { CatalystAppError, CatalystError } from './errors';
  * @return {boolean} Whether the value is byte buffer or not.
  */
 export function isBuffer(value: unknown): boolean {
-	return isBuffer(value); // check syntax --------------------> update
+	return typeof Buffer !== 'undefined' && Buffer.isBuffer(value);
 }
 
 /**
@@ -133,47 +131,52 @@ export function isEmail(email: unknown): boolean {
 }
 
 /**
- * Validates that a string is a valid web URL.
+ * Modern URL validation using native URL constructor.
+ * Validates that a string is a valid web URL with proper protocol.
  *
  * @param {unknown} urlStr The string to validate.
+ * @param {string[]} allowedProtocols Allowed protocols (default: ['http:', 'https:'])
  * @return {boolean} Whether the string is valid web URL or not.
  */
-export function isURL(urlStr: unknown): boolean {
-	if (typeof urlStr !== 'string') {
+export function isURL(
+	urlStr: unknown,
+	allowedProtocols: Array<string> = ['http:', 'https:']
+): boolean {
+	if (typeof urlStr !== 'string' || !urlStr.trim()) {
 		return false;
 	}
-	// Lookup illegal characters.
-	const re = /[^a-z0-9-._~:/?#[\]@!$&'()*+,;=]/i;
-	if (re.test(urlStr)) {
-		return false;
-	}
+
 	try {
-		const schemeTest = /^(http|https):/;
-		const uri = new URL(urlStr);
-		const scheme = uri.protocol;
-		const slashes = uri.pathname.startsWith('/');
-		const hostname = uri.hostname;
-		const pathname = uri.pathname;
-		if ((scheme !== null && !schemeTest.test(scheme)) || !slashes) {
+		const url = new URL(urlStr);
+
+		// Check if protocol is allowed
+		if (!allowedProtocols.includes(url.protocol)) {
 			return false;
 		}
-		// Validate hostname: Can contain letters, numbers, underscore and dashes separated by a dot.
-		// Each zone must not start with a hyphen or underscore.
-		if (hostname !== null && !/^[a-zA-Z0-9]+[w-]*([.]?[a-zA-Z0-9]+[w-]*)*$/.test(hostname)) {
+
+		// Check for valid hostname
+		if (!url.hostname || url.hostname.length === 0) {
 			return false;
 		}
-		// Allow for pathnames: (/chars+)*/?
-		// Where chars can be a combination of: a-z A-Z 0-9 - _ . ~ ! $ & ' ( ) * + , ; = : @ %
-		const pathnameRe = /(\/[0-9].*\?|$)/;
-		// Validate pathname.
-		if (pathname && !pathnameRe.test(pathname)) {
+
+		// Validate hostname format (basic check for valid domain characters)
+		const hostnameRegex = /^[a-z0-9.-]+$/i;
+		if (!hostnameRegex.test(url.hostname)) {
 			return false;
 		}
-		// Allow any query string and hash as long as no invalid character is used.
-	} catch (e) {
-		return false;
+
+		return true;
+	} catch {
+		// Simple fallback check for basic URL format without vulnerable nested quantifiers
+		return /^https?:\/\/[^\s]+$/.test(urlStr);
 	}
-	return true;
+}
+
+/**
+ * Alias for isURL for backward compatibility.
+ */
+export function isValidUrl(urlStr: unknown, allowedProtocols?: Array<string>): boolean {
+	return isURL(urlStr, allowedProtocols);
 }
 
 /**
