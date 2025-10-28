@@ -115,6 +115,18 @@ importers:
         specifier: workspace:^
         version: link:../utils
 
+  packages/connections:
+    dependencies:
+      '@zcatalyst/cache':
+        specifier: workspace:^
+        version: link:../cache
+      '@zcatalyst/transport':
+        specifier: workspace:^
+        version: link:../transport
+      '@zcatalyst/utils':
+        specifier: workspace:^
+        version: link:../utils
+
   packages/connector:
     dependencies:
       '@zcatalyst/cache':
@@ -2130,7 +2142,7 @@ packages:
     dependencies:
       semver: 7.7.2
       shelljs: 0.8.5
-      typescript: 5.9.0-dev.20250714
+      typescript: 6.0.0-dev.20251028
     dev: true
 
   /eastasianwidth@0.2.0:
@@ -4710,8 +4722,8 @@ packages:
     hasBin: true
     dev: true
 
-  /typescript@5.9.0-dev.20250714:
-    resolution: {integrity: sha512-bwPEUBqpLyZu/skdNU1zkNggyohtulwmjMzkJKLRZLbMrmgPQuwDeSi4W2qADOI4TA3NMxyYF9gg3HdNTWD8/g==}
+  /typescript@6.0.0-dev.20251028:
+    resolution: {integrity: sha512-y2s7oA0J5n6H/Whmzj6mm/CjzaAPtyr7obcgTxYjD6n4KxyIhXiuD8GkBhyA++mr1HdmoWGDVJoCxck0MJMdZA==}
     engines: {node: '>=14.17'}
     hasBin: true
     dev: true
