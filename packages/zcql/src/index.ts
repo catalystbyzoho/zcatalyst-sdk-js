@@ -35,31 +35,18 @@ export class ZCQL {
 	}
 
 	/**
-	 * Executes a ZCQL (Zoho Catalyst Query Language) query to fetch data from the datastore.
-	 * @param sql - The ZCQL query string to execute.
-	 *              Example: `'SELECT * FROM Users WHERE status = 'active''`.
-	 *
-	 * @throws CatalystZCQLError - Thrown if the query string is empty or invalid.
-	 * @throws CatalystApiError - Thrown if the query execution fails or returns an invalid response.
-	 *
-	 * @example
-	 *  ```js
-	 * const query = 'SELECT * FROM Users WHERE status = 'active'';
-	 * try {
-	 *      const data = await executeZCQLQuery(query);
-	 *      console.log(data); // Logs table data matching the query.
-	 * } catch (error) {
-	 *      console.error('Error executing query:', error);
-	 * }
-	 * ```
+	 * Implementation function to execute the ZCQL query.
+	 * @param query The ZCQL query string to execute.
+	 * @param olap To enable OLAP mode for the query.
 	 * @returns A promise resolving to an array of table values, each conforming to the `ICatalystTableData` interface.
 	 */
-	async executeZCQLQuery(query: string): Promise<Array<ICatalystTableData>> {
+	async #executeQuery(query: string, olap = false): Promise<Array<ICatalystTableData>> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(query, 'query', true);
 		}, CatalystZCQLError);
 		const postData = {
-			query
+			query,
+			OLAP: olap
 		};
 		const request: IRequestConfig = {
 			method: REQ_METHOD.post,
@@ -76,5 +63,53 @@ export class ZCQL {
 		};
 		const resp = await this.requester.send(request);
 		return resp.data.data as Array<ICatalystTableData>;
+	}
+
+	/**
+	 * Executes a ZCQL (Zoho Catalyst Query Language) query to fetch data from the datastore.
+	 * @param query - The ZCQL query string to execute.
+	 *              Example: `'SELECT * FROM Users WHERE status = 'active''`.
+	 *
+	 * @throws CatalystZCQLError - Thrown if the query string is empty or invalid.
+	 * @throws CatalystApiError - Thrown if the query execution fails or returns an invalid response.
+	 *
+	 * @example
+	 *  ```js
+	 * const query = "SELECT * FROM Users WHERE status = 'active'";
+	 * try {
+	 *      const data = await executeZCQLQuery(query);
+	 *      console.log(data); // Logs table data matching the query.
+	 * } catch (error) {
+	 *      console.error('Error executing query:', error);
+	 * }
+	 * ```
+	 * @returns A promise resolving to an array of table values, each conforming to the `ICatalystTableData` interface.
+	 */
+	async executeQuery(query: string): Promise<Array<ICatalystTableData>> {
+		return this.#executeQuery(query);
+	}
+
+	/**
+	 * Executes a ZCQL (Zoho Catalyst Query Language) query to fetch data from the datastore in OLAP mode.
+	 * @param query - The ZCQL query string to execute.
+	 *              Example: `'SELECT * FROM Users WHERE status = 'active''`.
+	 *
+	 * @throws CatalystZCQLError - Thrown if the query string is empty or invalid.
+	 * @throws CatalystApiError - Thrown if the query execution fails or returns an invalid response.
+	 *
+	 * @example
+	 *  ```js
+	 * const query = "SELECT * FROM Users WHERE status = 'active'";
+	 * try {
+	 *      const data = await executeZCQLQuery(query);
+	 *      console.log(data); // Logs table data matching the query.
+	 * } catch (error) {
+	 *      console.error('Error executing query:', error);
+	 * }
+	 * ```
+	 * @returns A promise resolving to an array of table values, each conforming to the `ICatalystTableData` interface.
+	 */
+	async executeOLAPQuery(query: string): Promise<Array<ICatalystTableData>> {
+		return this.#executeQuery(query, true);
 	}
 }
