@@ -36,9 +36,16 @@ describe('zcql', () => {
 	app.setRequestResponseMap(resdata);
 
 	it('execute ZCQL Query', async () => {
-		await expect(zcql.executeZCQLQuery('execute query')).resolves.toStrictEqual(
+		await expect(zcql.executeQuery('execute query')).resolves.toStrictEqual(
 			resdata['/query'].POST.data.data
 		);
-		await expect(zcql.executeZCQLQuery('')).rejects.toThrow();
+		await expect(zcql.executeQuery('')).rejects.toThrow();
+	});
+
+	it('execute ZCQL Query in OLAP mode', async () => {
+		await expect(zcql.executeOLAPQuery('execute query')).resolves.toStrictEqual(
+			resdata['/query'].POST.data.data
+		);
+		await expect(zcql.executeOLAPQuery('')).rejects.toThrow();
 	});
 });
