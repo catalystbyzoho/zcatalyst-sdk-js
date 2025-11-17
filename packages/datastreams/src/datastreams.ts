@@ -105,7 +105,7 @@ export class DataStreams implements Component {
 				method: REQ_METHOD.post,
 				path: `/datastreams/channel/${channelId}/tokenpair`,
 				data: payload,
-				headers: this._addHeader({}),
+				headers: typeof window === 'undefined' ? this._addHeader({}) : {},
 				type: RequestType.JSON,
 				expecting: ResponseType.JSON,
 				user: CREDENTIAL_USER.user,

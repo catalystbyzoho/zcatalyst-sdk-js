@@ -101,53 +101,82 @@ export class DataStreamsWebSocket extends EventEmitter {
 	/**
 	 * Create WebSocket connection with cross-platform support
 	 */
+	/**
+	 * Create WebSocket connection with cross-platform support
+	 */
 	private async createWebSocketConnection(): Promise<void> {
 		try {
 			let WebSocketConstructor: new (url: string) => WebSocketLike;
 
+			// Check if we're in a browser environment
 			if (typeof window !== 'undefined' && window.WebSocket) {
 				// Browser environment
 				WebSocketConstructor = window.WebSocket as unknown as new (
 					url: string
 				) => WebSocketLike;
-			} else {
+			} else if (typeof global !== 'undefined') {
 				// Node.js environment
 				try {
 					const ws = await import('ws');
 					WebSocketConstructor = ws.default as unknown as new (
 						url: string
 					) => WebSocketLike;
-				} catch {
+				} catch (importError) {
 					// Fallback to require for older environments
-					const WebSocketModule = require('ws');
-					WebSocketConstructor = WebSocketModule;
+					try {
+						const WebSocketModule = require('ws');
+						WebSocketConstructor = WebSocketModule;
+					} catch (requireError) {
+						throw new Error(
+							'WebSocket implementation not available. Please ensure you are running in a browser or have the "ws" package installed for Node.js'
+						);
+					}
 				}
+			} else {
+				// Neither browser nor Node.js environment detected
+				throw new Error('WebSocket not available in this environment');
 			}
 
 			this.conn = new WebSocketConstructor(this.finalUrl);
 			this.setupEventHandlers();
 		} catch (error) {
-			this.log(
-				`Error creating WebSocket connection: ${error instanceof Error ? error.message : 'Unknown error'}` +
-					error
-			);
-			this.emit('error', {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: 'Unknown error creating WebSocket connection';
+			this.log(`Error creating WebSocket connection: ${errorMessage}`);
+
+			const customError: CustomEvent = {
 				code: 1006,
-				message: 'Failed to create WebSocket connection'
-			});
+				message: `Failed to create WebSocket connection: ${errorMessage}`
+			};
+
+			this.emit('error', customError);
 		}
 	}
 
 	/**
-	 * Setup WebSocket event handlers
+	 * Setup WebSocket event handlers for both browser and Node.js environments
 	 */
 	private setupEventHandlers(): void {
 		if (!this.conn) return;
 
-		this.conn.on('open', (event) => this.handleWebSocketOpenEvent(event));
-		this.conn.on('close', (event) => this.handleWebSocketCloseEvent(event));
-		this.conn.on('message', (event) => this.handleDMSEvents(event));
-		this.conn.on('error', (event) => this.handleWebSocketErrorEvent(event));
+		// Check if this is a browser WebSocket (has onopen property) or Node.js WebSocket (has on method)
+		if (typeof this.conn.on === 'function') {
+			// Node.js WebSocket (ws package) - uses EventEmitter pattern
+			this.conn.on('open', (event) => this.handleWebSocketOpenEvent(event));
+			this.conn.on('close', (event) => this.handleWebSocketCloseEvent(event));
+			this.conn.on('message', (event) => this.handleDMSEvents(event));
+			this.conn.on('error', (event) => this.handleWebSocketErrorEvent(event));
+		} else {
+			// Browser WebSocket - uses direct event handler assignment
+			const browserWs = this.conn as unknown as WebSocket;
+
+			browserWs.onopen = (event) => this.handleWebSocketOpenEvent(event);
+			browserWs.onclose = (event) => this.handleWebSocketCloseEvent(event);
+			browserWs.onmessage = (event) => this.handleDMSEvents(event.data);
+			browserWs.onerror = (event) => this.handleWebSocketErrorEvent(event);
+		}
 	}
 
 	/**

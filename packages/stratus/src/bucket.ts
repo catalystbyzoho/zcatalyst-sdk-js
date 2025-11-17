@@ -365,7 +365,7 @@ export class Bucket {
 		uploadId: string,
 		body: StratusObjectRequest,
 		partNumber: number,
-		overwrite = 'false'
+		overwrite = false
 	): Promise<boolean> {
 		const { headers, params, url } = await this.#addAuthProperties({ uploadId, partNumber });
 		const request: IRequestConfig = {
@@ -377,7 +377,7 @@ export class Bucket {
 			headers: {
 				...headers,
 				compress: 'false',
-				overwrite
+				overwrite: overwrite + ''
 			},
 			expecting: ResponseType.RAW,
 			service: CatalystService.EXTERNAL,

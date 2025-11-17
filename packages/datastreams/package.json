@@ -1,6 +1,6 @@
 {
   "name": "@zcatalyst/datastreams",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Catalyst DataStreams service client for managing real-time data channels",
   "main": "dist-cjs/index.js",
   "module": "dist-es/index.js",
@@ -69,10 +69,6 @@
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^30.0.5",
     "typescript": "^5.4.3"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
   },
   "engines": {
     "node": ">=18.0.0"

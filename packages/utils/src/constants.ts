@@ -34,7 +34,8 @@ export const CONSTANTS = {
 		zia: 'Zia',
 		job_scheduling: 'JobScheduling',
 		pipeline: 'Pipeline',
-		no_sql: 'NoSQL'
+		no_sql: 'NoSQL',
+		data_streams: 'DataStreams'
 	},
 	PRODUCT_NAME: {
 		baas: 'baas',
@@ -46,6 +47,7 @@ export const CONSTANTS = {
 	},
 	CATALYST_AUTH_ENV_KEY: 'CATALYST_AUTH',
 	X_ZOHO_CATALYST_ORG_ID: 'CATALYST-ORG',
+	X_ZOHO_CATALYST_RESOURCE_ID: 'X-Zc-Resource-Id',
 	CREDENTIAL_SUFFIX: 'catalyst/application_auth.json',
 	AUTH_HEADER: 'Authorization',
 	COOKIE_HEADER: 'Cookie',

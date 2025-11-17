@@ -271,7 +271,7 @@ export class TransferManager {
 	 *  This method returns functions that can be called to download specific parts of an object.
 	 * @param key - The name of the object.
 	 * @param partSize - The size (in MB) of each part.
-	 * @returns { Array<() => Promise<Readable>> } An array of functions that return a readable stream for each part of the object.
+	 * @returns { Array<() => Promise<Readable> } An array of functions that return a readable stream for each part of the object.
 	 */
 	async generatePartDownloaders(
 		key: string,

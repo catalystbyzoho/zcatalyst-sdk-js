@@ -567,7 +567,7 @@ class ZCAuth {
 		}
 	}
 
-	public signinWithJwt(callbackFn: () => void): void {
+	public signInWithJwt(callbackFn: () => void): void {
 		this.configManager.fetchJwtDetailsCallBack = callbackFn;
 		this.configManager.AuthProtocol = Auth_Protocol.JwtTokenProtocol;
 	}
