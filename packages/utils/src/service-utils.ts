@@ -12,6 +12,9 @@ export function getServicePath(service?: CatalystService): string {
 		case CatalystService.SMARTBROWZ:
 			path = `/${PRODUCT_NAME.smartbrowz}/${API_VERSION.V1}`;
 			break;
+		case CatalystService.SLATE:
+			path = `/${PRODUCT_NAME.slate}/${API_VERSION.V1}`;
+			break;
 		default:
 			path = `/${PRODUCT_NAME.baas}/${API_VERSION.V1}`;
 	}
