@@ -3,5 +3,6 @@ export const enum CatalystService {
 	QUICKML = 'quickml',
 	SMARTBROWZ = 'smartbrowz',
 	STRATUS = 'stratus',
+	SLATE = 'slate',
 	EXTERNAL = 'external'
 }

@@ -34,12 +34,14 @@ export const CONSTANTS = {
 		zia: 'Zia',
 		job_scheduling: 'JobScheduling',
 		pipeline: 'Pipeline',
-		no_sql: 'NoSQL'
+		no_sql: 'NoSQL',
+		slate: 'Slate'
 	},
 	PRODUCT_NAME: {
 		baas: 'baas',
 		smartbrowz: 'browser360',
-		quickml: 'quickml'
+		quickml: 'quickml',
+		slate: 'slate'
 	},
 	API_VERSION: {
 		V1: 'v1'
