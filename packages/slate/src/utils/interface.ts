@@ -5,29 +5,42 @@
  */
 export interface LighthouseAuditResponse {
 	id: string;
-	status: string;
-	commit_id: string;
+	reportId: null;
 	domain: string;
 	type: string;
-	created_time?: string;
-	modified_time?: string;
+	status: string;
+	commit_id: string;
+	created_by: string;
+	run_time: string;
+	error_msg: null;
+	deployment_type_id: string;
+	failed_count: number;
 }
 
 /**
  * Interface for lighthouse report status
  */
-export interface LighthouseReportStatus {
+export interface LighthouseReportDetails {
+	id: string;
+	reportId: string;
+	domain: string;
+	type: string;
 	status: string;
-	report_id: string;
-	message?: string;
+	commit_id: string;
+	created_by: string;
+	run_time: string;
+	error_msg: string;
+	deployment_type_id: string;
+	failed_count: number;
 }
 
 /**
  * Interface for lighthouse details
  */
 export interface LighthouseDetails {
-	app_id: string;
-	deployment_id: string;
-	created_time?: string;
-	modified_time?: string;
+	id: string;
+	xmlfiles: string;
+	enabled_deployments: Array<string>;
+	urls_count: string;
+	is_authenticated: boolean;
 }

@@ -14,7 +14,7 @@ import { CatalystSlateError } from './utils/error';
 import {
 	LighthouseAuditResponse,
 	LighthouseDetails,
-	LighthouseReportStatus
+	LighthouseReportDetails
 } from './utils/interface';
 
 const { REQ_METHOD, COMPONENT, CREDENTIAL_USER } = CONSTANTS;
@@ -107,19 +107,17 @@ export class Lighthouse implements Component {
 	 *
 	 * @example
 	 * ```typescript
-	 * const reportData = await lighthouse.downloadReport('4000000003037');
+	 * const reportData = await lighthouse.downloadReport('4000000003037', 'https://myapp.com');
 	 * // Save to file or process the buffer
 	 * ```
 	 */
-	async downloadReport(reportId: string, name?: string): Promise<Buffer> {
+	async downloadReport(reportId: string, name: string): Promise<Buffer> {
 		await wrapValidatorsWithPromise(() => {
 			isValidInputString(reportId, 'report_id', true);
+			isValidInputString(name, 'name', true);
 		}, CatalystSlateError);
 
-		const params: Record<string, string> = { reportId };
-		if (name) {
-			params.name = name;
-		}
+		const params: Record<string, string> = { reportId, name };
 
 		const request: IRequestConfig = {
 			method: REQ_METHOD.get,
@@ -144,13 +142,13 @@ export class Lighthouse implements Component {
 	 *
 	 * @example
 	 * ```typescript
-	 * const status = await lighthouse.getReportStatus('4000000003037');
+	 * const status = await lighthouse.getReportDetails('4000000003037');
 	 * if (status.status === 'Success') {
 	 *   const report = await lighthouse.downloadReport(status.report_id);
 	 * }
 	 * ```
 	 */
-	async getReportStatus(reportId: string, name?: string): Promise<LighthouseReportStatus> {
+	async getReportDetails(reportId: string, name?: string): Promise<LighthouseReportDetails> {
 		await wrapValidatorsWithPromise(() => {
 			isValidInputString(reportId, 'report_id', true);
 		}, CatalystSlateError);
@@ -172,7 +170,7 @@ export class Lighthouse implements Component {
 		};
 
 		const resp = await this.requester.send(request);
-		return resp.data as LighthouseReportStatus;
+		return resp.data as LighthouseReportDetails;
 	}
 
 	/**
@@ -188,7 +186,7 @@ export class Lighthouse implements Component {
 	async getLighthouseDetails(): Promise<LighthouseDetails> {
 		const request: IRequestConfig = {
 			method: REQ_METHOD.get,
-			path: `${this.basePath}/lhdetailes`,
+			path: `${this.basePath}/applighthousedetailes`,
 			type: RequestType.JSON,
 			expecting: ResponseType.JSON,
 			service: CatalystService.SLATE,

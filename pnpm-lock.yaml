@@ -241,6 +241,15 @@ importers:
         specifier: workspace:^
         version: link:../utils
 
+  packages/slate:
+    dependencies:
+      '@zcatalyst/transport':
+        specifier: workspace:^
+        version: link:../transport
+      '@zcatalyst/utils':
+        specifier: workspace:^
+        version: link:../utils
+
   packages/smartbrowz:
     dependencies:
       '@zcatalyst/auth-client':
@@ -2130,7 +2139,7 @@ packages:
     dependencies:
       semver: 7.7.2
       shelljs: 0.8.5
-      typescript: 5.9.0-dev.20250714
+      typescript: 6.0.0-dev.20251127
     dev: true
 
   /eastasianwidth@0.2.0:
@@ -4710,8 +4719,8 @@ packages:
     hasBin: true
     dev: true
 
-  /typescript@5.9.0-dev.20250714:
-    resolution: {integrity: sha512-bwPEUBqpLyZu/skdNU1zkNggyohtulwmjMzkJKLRZLbMrmgPQuwDeSi4W2qADOI4TA3NMxyYF9gg3HdNTWD8/g==}
+  /typescript@6.0.0-dev.20251127:
+    resolution: {integrity: sha512-QTE6/0k3VNTwY1O+a7H83JjFnHe480mET582mPAimE9YApewxJ2PFTJl9L+8mKg/wnp3iKbQSfBoYQ3iswejSw==}
     engines: {node: '>=14.17'}
     hasBin: true
     dev: true
