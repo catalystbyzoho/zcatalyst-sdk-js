@@ -81,7 +81,7 @@ export class DataStreams implements Component {
 		await wrapValidatorsWithPromise(() => {
 			isValidInputString(channelId, 'channelId', true);
 			if (
-				!isValidInputString(userId, 'userId', false) ||
+				!isValidInputString(userId, 'userId', false) &&
 				!isValidInputString(connectionName, 'connectionName', false)
 			) {
 				throw new CatalystDataStreamError(
@@ -221,24 +221,16 @@ export class DataStreamsAdmin extends DataStreams {
 			isValidInputString(channelId, 'channelId', true);
 		}, CatalystDataStreamError);
 
-		try {
-			const request: IRequestConfig = {
-				method: REQ_METHOD.get,
-				path: `/datastreams/channel/${channelId}/liveclient`,
-				type: RequestType.JSON,
-				expecting: ResponseType.JSON,
-				user: CREDENTIAL_USER.admin,
-				service: CatalystService.BAAS
-			};
-			const resp = await this.requester.send(request);
-			return resp.data;
-		} catch (error) {
-			throw new CatalystDataStreamError(
-				'FAILED_TO_GET_LIVE_COUNT',
-				`Failed to get live count: ${error instanceof Error ? error.message : 'Unknown error'}`,
-				error
-			);
-		}
+		const request: IRequestConfig = {
+			method: REQ_METHOD.get,
+			path: `/datastreams/channel/${channelId}/liveclient`,
+			type: RequestType.JSON,
+			expecting: ResponseType.JSON,
+			user: CREDENTIAL_USER.admin,
+			service: CatalystService.BAAS
+		};
+		const resp = await this.requester.send(request);
+		return resp.data;
 	}
 
 	/**
