@@ -5,9 +5,8 @@
  * with improved error handling, type safety, and cross-platform support.
  */
 
-import { EventEmitter } from 'events';
-
 import { MessageType } from './utils/enum';
+import { EventEmitter } from './utils/event-emitter';
 import {
 	AckPayload,
 	CustomEvent,

@@ -1,6 +1,6 @@
 {
   "name": "@zcatalyst/datastreams",
-  "version": "0.0.3",
+  "version": "2.0.0",
   "description": "Catalyst DataStreams service client for managing real-time data channels",
   "main": "dist-cjs/index.js",
   "module": "dist-es/index.js",

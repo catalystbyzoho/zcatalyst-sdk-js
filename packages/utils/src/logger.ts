@@ -1,5 +1,3 @@
-import { log } from 'console';
-
 interface ICatalystLoggerOptions {
 	enable_info: boolean;
 	enable_warn: boolean;
@@ -86,7 +84,8 @@ class Logger {
 	}
 
 	#logToConsole(message: string): void {
-		log(message);
+		// eslint-disable-next-line no-console
+		console.log(message);
 	}
 
 	#resetLogLevels(): void {
@@ -155,6 +154,19 @@ class Logger {
 	}
 }
 
-const _logLvl = process.env.ZC_LOG_LVL || 'NONE';
-const processLogLvl = LEVEL[_logLvl as keyof typeof LEVEL];
+function getLogLevelFromEnv(): LEVEL {
+	if (typeof process !== 'undefined' && process && process.env && process.env.ZC_LOG_LVL) {
+		const lvl = process.env.ZC_LOG_LVL.toUpperCase();
+		return LEVEL[lvl as keyof typeof LEVEL] || LEVEL.NONE;
+	}
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	if (typeof window !== 'undefined' && (window as any).ZC_LOG_LVL) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const lvl = ((window as any).ZC_LOG_LVL as string).toUpperCase();
+		return LEVEL[lvl as keyof typeof LEVEL] || LEVEL.NONE;
+	}
+	return LEVEL.NONE;
+}
+
+const processLogLvl = getLogLevelFromEnv();
 export const LOGGER = new Logger().setLogLevel(processLogLvl);

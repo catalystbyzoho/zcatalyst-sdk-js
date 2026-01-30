@@ -1,4 +1,4 @@
-export * from './config';
+export * from './config.browser';
 export * from './constants';
 export * from './enums';
 export * from './errors';
