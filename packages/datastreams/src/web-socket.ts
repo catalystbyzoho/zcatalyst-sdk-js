@@ -38,9 +38,7 @@ export class DataStreamsWebSocket extends EventEmitter {
 
 	// State management
 	private isOpen = false;
-	private manualClosure = false;
 	private ackSent = false;
-	private ackTriggerReceived = false;
 	private reconnect = false;
 	private prevStreamingId = '';
 
@@ -163,12 +161,14 @@ export class DataStreamsWebSocket extends EventEmitter {
 		// Check if this is a browser WebSocket (has onopen property) or Node.js WebSocket (has on method)
 		if (typeof this.conn.on === 'function') {
 			// Node.js WebSocket (ws package) - uses EventEmitter pattern
+			// In Node.js ws package, the 'message' event passes raw data (string/Buffer)
 			this.conn.on('open', (event) => this.handleWebSocketOpenEvent(event));
 			this.conn.on('close', (event) => this.handleWebSocketCloseEvent(event));
-			this.conn.on('message', (event) => this.handleDMSEvents(event));
+			this.conn.on('message', (data) => this.handleDMSEvents(data));
 			this.conn.on('error', (event) => this.handleWebSocketErrorEvent(event));
 		} else {
 			// Browser WebSocket - uses direct event handler assignment
+			// In browser, the 'message' event has a MessageEvent with .data property
 			const browserWs = this.conn as unknown as WebSocket;
 
 			browserWs.onopen = (event) => this.handleWebSocketOpenEvent(event);
@@ -200,7 +200,7 @@ export class DataStreamsWebSocket extends EventEmitter {
 			if (this.conn && this.conn.readyState === this.conn.OPEN) {
 				this.log(`Subscribe payload: ${JSON.stringify(this.subscribePayload)}`);
 				if (this.ackSent) {
-					this.subscribePayload.streamingId = -2;
+					this.subscribePayload.streamingId = '-2';
 					this.conn.send(JSON.stringify(this.subscribePayload));
 				}
 			}
@@ -219,14 +219,12 @@ export class DataStreamsWebSocket extends EventEmitter {
 	 * Handle WebSocket close event
 	 */
 	private handleWebSocketCloseEvent(event: unknown): void {
-		if (!this.manualClosure) {
-			// When connection is closed by user / due to other interference
-			this.emit('close', event);
-			this.clearPingInterval();
-			this.clearReconnectInterval();
-			this.isOpen = false;
-			this.manualClosure = false;
-		}
+		// When connection is closed by user / due to other interference
+		this.emit('close', event);
+		this.clearPingInterval();
+		this.clearReconnectInterval();
+		this.isOpen = false;
+
 		// else will be closed via code for reconnect operation
 	}
 
@@ -273,13 +271,10 @@ export class DataStreamsWebSocket extends EventEmitter {
 
 			switch (mtype) {
 				case MessageType.SWITCH_URL: {
-					// Sample response: {"primarydc":"local","ct2":"ct2-dms.localzoho.com","mtype":"-1","local":"ct1-dms.localzoho.com","secondarydc":"ct2"}
-					// Should use the key in primarydc to get the current working URL
 					const msg = jsonData[0].msg as Record<string, string>;
 					this.url = msg[msg.primarydc];
 
 					if (this.conn && this.conn.readyState === this.conn.OPEN) {
-						this.manualClosure = false;
 						this.conn.close(
 							1000,
 							'Closing this connection and opening new connection!'
@@ -556,7 +551,6 @@ export class DataStreamsWebSocket extends EventEmitter {
 					this.log(
 						'Closing current connection and making new connection using sid and uid'
 					);
-					this.manualClosure = true;
 					this.conn.close(1000, 'Closing this connection and opening new connection!');
 
 					setTimeout(() => {
@@ -607,8 +601,6 @@ export class DataStreamsWebSocket extends EventEmitter {
 	 * Send acknowledgement to receive next stream data if available
 	 */
 	sendAck(): void {
-		this.ackTriggerReceived = true;
-
 		if (
 			this.conn &&
 			this.conn.readyState === this.conn.OPEN &&
@@ -616,7 +608,6 @@ export class DataStreamsWebSocket extends EventEmitter {
 		) {
 			this.conn.send(JSON.stringify(this.ackPayload));
 			this.ackSent = true;
-			this.ackTriggerReceived = false;
 			this.log(`Sent ack for streaming ID: ${this.ackPayload.streamingId}`);
 		} else {
 			this.log('Cannot send ack: connection not open or no streaming ID');
@@ -628,7 +619,6 @@ export class DataStreamsWebSocket extends EventEmitter {
 	 */
 	close(): void {
 		if (this.conn && this.conn.readyState === this.conn.OPEN) {
-			this.manualClosure = true; // Changed from false to true for manual closure
 			this.conn.close(1001, 'Closing connection intentionally');
 			this.log('WebSocket connection closed manually');
 		}

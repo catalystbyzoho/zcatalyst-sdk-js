@@ -10,7 +10,6 @@ import {
 	CatalystService,
 	Component,
 	CONSTANTS,
-	isNonEmptyObject,
 	isNonEmptyString,
 	isValidInputString,
 	wrapValidatorsWithPromise
@@ -80,16 +79,17 @@ export class DataStreams implements Component {
 	): Promise<ApiResponse<TokenResponse>> {
 		await wrapValidatorsWithPromise(() => {
 			isValidInputString(channelId, 'channelId', true);
-			if (
-				!isValidInputString(userId, 'userId', false) &&
-				!isValidInputString(connectionName, 'connectionName', false)
-			) {
-				throw new CatalystDataStreamError(
-					'INVALID_USER_IDENTIFIER',
-					'User identifier or connection name must be a non-empty string'
-				);
-			}
 		}, CatalystDataStreamError);
+
+		if (
+			!isValidInputString(userId, 'userId', false) &&
+			!isValidInputString(connectionName, 'connectionName', false)
+		) {
+			throw new CatalystDataStreamError(
+				'INVALID_PARAM',
+				'Either userId or connectionName must be provided and valid.'
+			);
+		}
 
 		let payload: Record<string, unknown> = {};
 
@@ -253,13 +253,13 @@ export class DataStreamsAdmin extends DataStreams {
 	 * console.log('publish result::', result);
 	 * ```
 	 */
-	async publishData(channelId: string, data: Record<string, unknown>): Promise<boolean> {
+	async publishData(channelId: string, data: string): Promise<boolean> {
 		await wrapValidatorsWithPromise(() => {
 			isValidInputString(channelId, 'channelId', true);
-			isNonEmptyObject(data, 'data', true);
+			isValidInputString(data, 'data', true);
 		}, CatalystDataStreamError);
 
-		const payload: Record<string, unknown> = data;
+		const payload: string = data;
 
 		const request: IRequestConfig = {
 			method: REQ_METHOD.post,
@@ -271,6 +271,6 @@ export class DataStreamsAdmin extends DataStreams {
 			service: CatalystService.BAAS
 		};
 		const resp = await this.requester.send(request);
-		return resp as unknown as boolean;
+		return resp.data.data as unknown as boolean;
 	}
 }
