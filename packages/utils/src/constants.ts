@@ -34,7 +34,8 @@ export const CONSTANTS = {
 		zia: 'Zia',
 		job_scheduling: 'JobScheduling',
 		pipeline: 'Pipeline',
-		no_sql: 'NoSQL'
+		no_sql: 'NoSQL',
+		data_streams: 'DataStreams'
 	},
 	PRODUCT_NAME: {
 		baas: 'baas',
@@ -44,7 +45,8 @@ export const CONSTANTS = {
 	API_VERSION: {
 		V1: 'v1'
 	},
-	CATALYST_AUTH_ENV_KEY: 'CATALYST_AUTH',
+	CATALYST_AUTH_ENV_KEY: 'ZC_SDK_AUTH_CONFIG',
+	X_ZOHO_CATALYST_RESOURCE_ID: 'X-Zc-Resource-Id',
 	X_ZOHO_CATALYST_ORG_ID: 'CATALYST-ORG',
 	CREDENTIAL_SUFFIX: 'catalyst/application_auth.json',
 	AUTH_HEADER: 'Authorization',
@@ -52,7 +54,7 @@ export const CONSTANTS = {
 	PROJECT_KEY_NAME: 'PROJECT_ID',
 	CSRF_TOKEN_NAME: 'ZD_CSRF_TOKEN',
 	DEFAULT_APP_NAME: '[DEFAULT]',
-	CATALYST_CONFIG_ENV_KEY: 'CATALYST_CONFIG',
+	CATALYST_CONFIG_ENV_KEY: 'ZC_SDK_PROJECT_CONFIG',
 	CREDENTIAL_TYPE: {
 		token: 'token',
 		ticket: 'ticket'

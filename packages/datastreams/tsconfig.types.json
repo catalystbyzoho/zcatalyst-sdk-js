@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.types.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": "dist-types"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["tests/**/*", "dist*/**/*", "**/*.test.ts", "**/*.spec.ts"]
+}

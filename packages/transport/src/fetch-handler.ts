@@ -216,9 +216,7 @@ export class ResponseHandler {
 		};
 		if (requestCore.method !== REQ_METHOD.get && requestCore.body !== null)
 			options.body = requestCore.body;
-		const url = this.configManager.APIDomain
-			? `${this.configManager.APIDomain}${requestCore.url}`
-			: requestCore.url;
+		const url = requestCore.url;
 		return await this.wrapResponse(await fetch(url, options));
 	}
 
@@ -364,7 +362,10 @@ export class ResponseHandler {
 		}
 
 		const request = {
-			url: options.url ?? `${options.origin ?? this.configManager.APIDomain}${options.path}`,
+			url:
+				options.url ??
+				options.origin ??
+				`${this.configManager.CurrentClientPageDomain}${options.path}`,
 			method: options.method,
 			...(data ? { body: data as BodyInit } : {}),
 			headers

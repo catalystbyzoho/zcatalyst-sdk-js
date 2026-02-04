@@ -9,7 +9,7 @@ export function addDefaultAppHeaders(
 ) {
 	headers[ZAID] = values.projectKey;
 	if (isNonEmptyString(values.orgId)) {
-		headers[X_ZOHO_CATALYST_ORG_ID] = process.env.X_ZOHO_CATALYST_ORG_ID as string;
+		headers[X_ZOHO_CATALYST_ORG_ID] = values.orgId as string;
 	}
 	headers['CATALYST-COMPONENT'] = 'true';
 	return headers;
