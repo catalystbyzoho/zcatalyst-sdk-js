@@ -1,5 +1,3 @@
-'use strict';
-
 export interface ICatalystSegment {
 	id: string;
 	segment_name: string;

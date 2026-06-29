@@ -1,9 +1,0 @@
-/node_modules/
-/build/
-/coverage/
-/dist
-*.tsbuildinfo
-*.tgz
-*.log
-*-lock.json
-!karma.conf.js

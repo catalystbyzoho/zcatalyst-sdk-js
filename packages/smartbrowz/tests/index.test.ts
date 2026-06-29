@@ -1,22 +1,9 @@
 import { Stream } from 'stream';
 
-import { ZCAuth } from '../../auth/src';
 import { Smartbrowz } from '../src';
 
-jest.mock('../../auth/src');
-
-const mockedApp = ZCAuth as jest.Mock;
-
 describe('testing smartbrowz', () => {
-	const app = new mockedApp().init();
-	const smartbrowz: Smartbrowz = new Smartbrowz(app);
-
-	const smartBrowzRequest = {
-		[`/browser360/v1/project/12345/convert`]: {
-			POST: new Stream.Readable()
-		}
-	};
-	app.setRequestResponseMap(smartBrowzRequest);
+	const smartbrowz: Smartbrowz = new Smartbrowz();
 
 	it('smartbrowz convert Pdf', async () => {
 		await expect(smartbrowz.convertToPdf('san.html')).resolves.toBeInstanceOf(Stream.Readable);

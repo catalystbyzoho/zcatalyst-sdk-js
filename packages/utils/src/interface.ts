@@ -1,7 +1,6 @@
-'use strict';
-
 export interface Component {
 	getComponentName(): string;
+	getComponentVersion?(): string;
 }
 
 export interface ParsableComponent<T> extends Component {
@@ -28,6 +27,7 @@ export interface ICatalystAppConfig {
 	projectDomain: string;
 	environment?: string;
 	projectSecretKey?: string;
+	origin?: string;
 }
 
 export interface ICatalystProject {

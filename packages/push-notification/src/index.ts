@@ -1,14 +1,23 @@
-'use strict';
+/**
+ * Catalyst Push Notifications — send push messages to mobile and web clients.
+ *
+ * @packageDocumentation
+ */
 
 import { Handler } from '@zcatalyst/transport';
 import { Component, CONSTANTS, isValidInputString, wrapValidators } from '@zcatalyst/utils';
 
+import pkg from '../package.json';
+const { version } = pkg;
 import { MobileNotification } from './mobile-notification';
 import { CatalystPushNotificationError } from './utils/error';
 import { WebNotification } from './web-notification';
 
 const { COMPONENT } = CONSTANTS;
 
+/**
+ * Provides Catalyst push notification operations.
+ */
 export class PushNotification implements Component {
 	requester: Handler;
 	constructor(app?: unknown) {
@@ -16,18 +25,28 @@ export class PushNotification implements Component {
 	}
 
 	/**
-	 * Retrieves the component name for the notification service.
-	 * @returns The string identifier for the notification component.
+	 * getComponentName operation.
 	 */
 	getComponentName(): string {
 		return COMPONENT.notification;
 	}
 
 	/**
-	 * Creates a Mobile Notification instance for a registered mobile application.
-	 * @param id - The App ID used to identify the registered mobile application.
-	 * @returns A `MobileNotification` instance for sending notifications.
-	 * @throws {CatalystPushNotificationError} If the provided `id` is not a non-empty string.
+	 * getComponentVersion operation.
+	 */
+	getComponentVersion(): string {
+		return version;
+	}
+
+	/**
+	 * Creates a mobile notification client for a registered mobile application.
+	 * @param id - The segment, app, or template identifier.
+	 * @returns MobileNotification.
+	 * @throws {CatalystPushNotificationError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const mobile = pushNotification.mobile('123456789');
+	 * ```
 	 */
 	mobile(id: string): MobileNotification {
 		wrapValidators(() => {
@@ -37,8 +56,12 @@ export class PushNotification implements Component {
 	}
 
 	/**
-	 * Creates a Web Notification instance.
-	 * @returns A `WebNotification` instance for sending web-based notifications.
+	 * Creates a web notification client.
+	 * @returns WebNotification.
+	 * @example
+	 * ```ts
+	 * const web = pushNotification.web();
+	 * ```
 	 */
 	web(): WebNotification {
 		return new WebNotification(this);

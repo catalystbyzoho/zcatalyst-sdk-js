@@ -3,18 +3,12 @@
 ![catalyst](https://img.shields.io/badge/%E2%9A%A1-catalyst-blue.svg)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://opensource.org/licenses/Apache-2.0)
 
-A powerful and flexible JavaScript SDK designed for building modern cloud applications with Zoho Catalyst. This SDK provides a comprehensive set of tools and services through modular packages that work seamlessly across both browser and Node.js environments.
-
-The SDK's modular design allows developers to import specific services like authentication, file storage, or database operations as needed, preventing unnecessary code bloat in your applications. Each module maintains consistent API patterns while being independently versioned, ensuring smooth upgrades and maintenance.
-
-This versatile approach makes the ZCATALYST SDK ideal for building everything from simple web applications to complex enterprise solutions, all while maintaining high performance and developer productivity across the full stack.
+JavaScript packages for working with Zoho Catalyst services. Each package exposes the APIs for one Catalyst component.
 
 
 ## Installation
 
-The ZCATALYST SDK for JavaScript follows a modular architecture that enables efficient integration with server-side applications. This design allows developers to import only the required components, optimizing bundle size and performance.
-
-Choose your preferred package manager to install the authentication module:
+Install the package for the Catalyst component you need. For example, to install the authentication package:
 
 ```bash
 npm install @zcatalyst/auth
@@ -24,15 +18,15 @@ yarn add @zcatalyst/auth
 
 ## Getting Started
 
-The SDK provides access to Catalyst cloud services through individual packages. Import and initialize the services you need:
+Import and initialize the services you need:
 
 ```typescript
-import { Filestore } from '@zcatalyst/filestore';
-import { Cron } from '@zcatalyst/job-scheduling';
+import { Datastore } from '@zcatalyst/datastore';
+import { JobScheduling } from '@zcatalyst/job-scheduling';
 
 // Initialize services
-const filestore = new Filestore();
-const cron = new Cron();
+const datastore = new Datastore();
+const jobScheduling = new JobScheduling();
 ```
 
 ## Available Services
@@ -41,50 +35,76 @@ The SDK includes the following services:
 
 | **Component**       | **Description** |
 |---------------------|-----------------|
-| **Cache**           | In-memory data storage for fast access and reduced latency. |
-| **Filestore**       | Upload, store, and manage files securely in the cloud. |
-| **Datastore**       | Scalable relational database to store and manage structured data. |
-| **Circuit**         | Orchestrate workflows using multiple Catalyst components and services. |
-| **Connector**       | Connect and communicate with external APIs and services. |
-| **Functions**       | Deploy and run custom serverless backend functions. |
-| **Job Scheduling**  | Schedule and execute recurring or one-time tasks using job queues. |
-| **Mail**            | Send transactional and bulk emails from your Catalyst app. |
-| **NoSQL**           | Schema-less, scalable NoSQL database for flexible data storage. |
-| **Pipelines**       | Automate build and deployment workflows using CI/CD pipelines. |
-| **PushNotification**| Send real-time push notifications to mobile and web apps. |
-| **Search**          | Perform fast and accurate searches on Datastore records. |
-| **QuickML**         | Train and deploy custom machine learning models easily. |
-| **SmartBrowz**      | Automate browser actions like form fills and navigation in the cloud. |
-| **Stratus**         | Manage Catalyst infrastructure with secure and scalable backend services. |
-| **UserManagement**  | Handle user authentication, roles, and permissions. |
-| **Zia**             | Add AI features like OCR, object detection, and sentiment analysis. |
-| **ZCQL**            | Use SQL-like queries to retrieve and manipulate data from Datastore. |
+| **Auth**            | Authentication entry point and user-management APIs. |
+| **Auth Admin**      | _Internal:_ Catalyst app initialization (consumed transitively). |
+| **Auth Client**     | _Internal:_ Browser credential and token helpers (consumed transitively). |
+| **Cache**           | Cache segment and key-value operations. |
+| **Datastore**       | Table row operations, ZCQL queries, and Catalyst Search queries. |
+| **Circuit**         | Execute, inspect, and abort Catalyst Circuit executions. |
+| **Connector**       | Create connector instances and manage OAuth access tokens. |
+| **Functions**       | Invoke deployed Catalyst functions by ID or name. |
+| **Job Scheduling**  | Job pool, cron, and job operations. |
+| **Mail**            | Send email through Catalyst Mail. |
+| **NoSQL**           | NoSQL table and item operations. |
+| **Pipelines**       | Fetch pipeline details and trigger pipeline runs. |
+| **PushNotification**| Send mobile/web notifications and receive browser notifications. |
+| **QuickML**         | Invoke deployed QuickML prediction endpoints. |
+| **SmartBrowz**      | Convert HTML/URLs, take screenshots, and query Dataverse helpers. |
+| **Stratus**         | Bucket, object, and multipart upload operations. |
+| **Transport**       | Internal HTTP/fetch transport layer. |
+| **Utils**           | Shared constants, validators, errors, logger, and service utilities. |
+| **Zia**             | OCR, barcode, image, face, AutoML, and text-analysis methods. |
+
+### Scope & Environment
+
+Each Catalyst service package belongs to one of two scopes:
+
+- **Admin-only** — server-side packages that take an admin credential. They have no browser entry point.
+- **Admin + User** — packages that expose both a user-scoped surface (callable from the browser or from a Catalyst function on behalf of an end user) and an admin-scoped surface.
+
+| Package | Scope | Environment |
+|---|---|---|
+| `@zcatalyst/auth` | Admin + User | Node + Browser |
+| `@zcatalyst/cache` | Admin-only | Node |
+| `@zcatalyst/circuit` | Admin-only | Node |
+| `@zcatalyst/connector` | Admin-only | Node |
+| `@zcatalyst/datastore` | Admin + User | Node + Browser |
+| `@zcatalyst/functions` | Admin + User | Node + Browser |
+| `@zcatalyst/job-scheduling` | Admin-only | Node |
+| `@zcatalyst/mail` | Admin-only | Node |
+| `@zcatalyst/nosql` | Admin-only | Node |
+| `@zcatalyst/pipelines` | Admin-only | Node |
+| `@zcatalyst/push-notification` | Admin + User | Node + Browser |
+| `@zcatalyst/quick-ml` | Admin-only | Node |
+| `@zcatalyst/smartbrowz` | Admin-only | Node |
+| `@zcatalyst/stratus` | Admin + User | Node + Browser |
+| `@zcatalyst/zia` | Admin-only | Node |
+
+> Internal infrastructure packages — `@zcatalyst/auth-admin`, `@zcatalyst/auth-client`, `@zcatalyst/transport`, and `@zcatalyst/utils`
 
 
 ## Usage in Serverless Functions
 
-Example of using multiple services in a Lambda function:
+Example of using multiple services:
 
 ```typescript
-import { ZCQL } from '@zcatalyst/zcql';
-import { ZCAuth } from '@zcatalyst/auth';
-import { Filestore } from '@zcatalyst/filestore';
+import { zcAuth } from '@zcatalyst/auth';
+import { Datastore } from '@zcatalyst/datastore';
 
 export async function handler(req, res) {
     // Initialize services
-    const auth = new ZCAuth().init(req);
-    const zcql = new ZCQL();
-    const filestore = new Filestore();
+    const app = await zcAuth.init(req);
+    const datastore = new Datastore(app);
 
     // Use services
-    const queryResult = await zcql.executeZCQLQuery("SELECT * FROM users");
-    const files = await filestore.getAllFiles();
+    const queryResult = await datastore.executeZCQLQuery("SELECT * FROM users");
+    const usersTable = datastore.getTableDetails('users');
 
     return {
         statusCode: 200,
         body: JSON.stringify({
             users: queryResult,
-            files: files
+            table: usersTable
         })
     };
 }
@@ -97,7 +117,7 @@ Detailed API documentation for each service is available at:
 
 ## Contributing
 
-We welcome contributions! Please see our [contributing guide](./CONTRIBUTING.md) for details.
+Please see our [contributing guide](./CONTRIBUTING.md) for details.
 
 ## Security
 

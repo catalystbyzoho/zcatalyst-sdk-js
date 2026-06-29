@@ -1,4 +1,8 @@
-'use strict';
+/**
+ * Catalyst Circuit — orchestrate workflows that span multiple Catalyst components.
+ *
+ * @packageDocumentation
+ */
 
 import { Handler, IRequestConfig, RequestType } from '@zcatalyst/transport';
 import {
@@ -10,31 +14,55 @@ import {
 	wrapValidatorsWithPromise
 } from '@zcatalyst/utils';
 
+import pkg from '../package.json';
+const { version } = pkg;
 import { CatalystCircuitError } from './utils/error';
 
 const { REQ_METHOD, COMPONENT, CREDENTIAL_USER } = CONSTANTS;
 
+/**
+ * Client for executing, inspecting and aborting Catalyst Circuit executions.
+ *
+ * @example
+ * ```ts
+ * const circuit = new Circuit(app);
+ * const execution = await circuit.execute('12345', 'daily-sync');
+ * ```
+ */
 export class Circuit implements Component {
 	requester: Handler;
+
+	/** Creates a Circuit client bound to the optional Catalyst app instance. */
 	constructor(app?: unknown) {
 		this.requester = new Handler(app, this);
 	}
 
-	/**
-	 * Returns the component name.
-	 * @returns {string} The name of the circuit component.
-	 */
+	/** Returns the component name used by the SDK transport layer. */
 	getComponentName(): string {
 		return COMPONENT.circuit;
 	}
 
+	/** Returns the version of this component as published on npm. */
+	getComponentVersion(): string {
+		return version;
+	}
+
 	/**
-	 * Executes a specific circuit.
-	 * @param {string} id - The circuit ID.
-	 * @param {string} name - The execution name.
-	 * @param {{ [x: string]: string }} [input] - Optional input parameters.
-	 * @returns {unknown} The execution response.
-	 * @throws {CatalystCircuitError} If the circuit ID or name is invalid.
+	 * Starts a Catalyst Circuit execution with a name and optional input payload.
+	 * The response contains the execution details returned by Catalyst.
+	 *
+	 * @param id - The unique identifier of the circuit to execute.
+	 * @param name - The name to assign to the circuit execution.
+	 * @param input - Input values to pass to the circuit execution.
+	 * @returns The circuit execution response returned by Catalyst.
+	 * @throws {CatalystCircuitError} when `id` or `name` is not valid.
+	 * @example
+	 * ```ts
+	 * const circuit = new Circuit(app);
+	 * const execution = await circuit.execute('12345', 'daily-sync', {
+	 *   accountId: 'abc123'
+	 * });
+	 * ```
 	 */
 	async execute(id: string, name: string, input?: { [x: string]: string }): Promise<unknown> {
 		await wrapValidatorsWithPromise(() => {
@@ -58,13 +86,20 @@ export class Circuit implements Component {
 	}
 
 	/**
-	 * Fetches the status of a specific circuit execution.
-	 * @param {string} id - The circuit ID.
-	 * @param {string | number} exeId - The execution ID.
-	 * @returns {unknown} The execution status response.
-	 * @throws {CatalystCircuitError} If the circuit ID or execution ID is invalid.
+	 * Retrieves the current status of a Catalyst Circuit execution.
+	 * Use this to check progress or completion details for a specific execution.
+	 *
+	 * @param id - The unique identifier of the circuit.
+	 * @param exeId - The unique identifier of the circuit execution.
+	 * @returns The execution status response returned by Catalyst.
+	 * @throws {CatalystCircuitError} when `id` or `exeId` is not valid.
+	 * @example
+	 * ```ts
+	 * const circuit = new Circuit(app);
+	 * const status = await circuit.status('12345', 'execution-67890');
+	 * ```
 	 */
-	async status(id: string, exeId: string | number) {
+	async status(id: string, exeId: string | number): Promise<unknown> {
 		await wrapValidatorsWithPromise(() => {
 			isValidInputString(id, 'circuit_id', true);
 			isValidInputString(exeId, 'execution_id', true);
@@ -82,13 +117,20 @@ export class Circuit implements Component {
 	}
 
 	/**
-	 * Aborts a running circuit execution.
-	 * @param {string} id - The circuit ID.
-	 * @param {string} exeId - The execution ID.
-	 * @returns {unknown} The response confirming the execution abort.
-	 * @throws {CatalystCircuitError} If the circuit ID or execution ID is invalid.
+	 * Aborts a running Catalyst Circuit execution.
+	 * Use this to stop an execution by its circuit and execution identifiers.
+	 *
+	 * @param id - The unique identifier of the circuit.
+	 * @param exeId - The unique identifier of the circuit execution to abort.
+	 * @returns The abort response returned by Catalyst.
+	 * @throws {CatalystCircuitError} when `id` or `exeId` is not valid.
+	 * @example
+	 * ```ts
+	 * const circuit = new Circuit(app);
+	 * const aborted = await circuit.abort('12345', 'execution-67890');
+	 * ```
 	 */
-	async abort(id: string, exeId: string) {
+	async abort(id: string, exeId: string): Promise<unknown> {
 		await wrapValidatorsWithPromise(() => {
 			isValidInputString(id, 'circuit_id', true);
 			isValidInputString(exeId, 'execution_id', true);

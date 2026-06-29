@@ -1,4 +1,4 @@
-# @zcatalyst/auth
+# @zcatalyst/user-management
 
 ## [0.0.2](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.2) - 2025-07-21
 

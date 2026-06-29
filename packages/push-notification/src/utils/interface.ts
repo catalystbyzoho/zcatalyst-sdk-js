@@ -1,5 +1,3 @@
-'use strict';
-
 export interface ICatalystPushDetails {
 	message: string;
 	additional_info?: { [x: string]: unknown };
@@ -18,9 +16,4 @@ interface NotificationResponseContent {
 	sazuid?: string;
 	clientaccesstoken?: string;
 	uid: string;
-}
-
-interface NotificationResponse {
-	status?: number;
-	content: NotificationResponseContent;
 }

@@ -15,6 +15,18 @@ import {
 } from './utils/interfaces';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
+/**
+ * Runs the shared Zia sentiment analysis request.
+ * @param requester - The transport handler used to send the request.
+ * @param listOfDocuments - The text documents to analyze.
+ * @param keywords - Optional keywords for entity-level sentiment analysis.
+ * @returns A promise that resolves to ICatalystZiaSentimentAnalysis.
+ * @throws {CatalystZiaError} when input validation fails.
+ * @example
+ * ```ts
+ * const result = await _getSentimentAnalysis(requester, ['Catalyst is great']);
+ * ```
+ */
 export async function _getSentimentAnalysis(
 	requester: Handler,
 	listOfDocuments: Array<string>,
@@ -43,6 +55,17 @@ export async function _getSentimentAnalysis(
 	return resp.data.data as ICatalystZiaSentimentAnalysis;
 }
 
+/**
+ * Runs the shared Zia keyword extraction request.
+ * @param requester - The transport handler used to send the request.
+ * @param listOfDocuments - The text documents to analyze.
+ * @returns A promise that resolves to ICatalsytZiaKeywordExtraction.
+ * @throws {CatalystZiaError} when input validation fails.
+ * @example
+ * ```ts
+ * const result = await _getKeywordExtraction(requester, ['Catalyst provides tools']);
+ * ```
+ */
 export async function _getKeywordExtraction(
 	requester: Handler,
 	listOfDocuments: Array<string>
@@ -64,6 +87,17 @@ export async function _getKeywordExtraction(
 	return resp.data.data as ICatalsytZiaKeywordExtraction;
 }
 
+/**
+ * Runs the shared Zia named-entity recognition request.
+ * @param requester - The transport handler used to send the request.
+ * @param listOfDocuments - The text documents to analyze.
+ * @returns A promise that resolves to ICatalystZiaNERPrediction.
+ * @throws {CatalystZiaError} when input validation fails.
+ * @example
+ * ```ts
+ * const result = await _getNERPrediction(requester, ['Zoho Catalyst']);
+ * ```
+ */
 export async function _getNERPrediction(
 	requester: Handler,
 	listOfDocuments: Array<string>
@@ -85,6 +119,18 @@ export async function _getNERPrediction(
 	return resp.data.data as ICatalystZiaNERPrediction;
 }
 
+/**
+ * Runs the shared combined text analytics request.
+ * @param requester - The transport handler used to send the request.
+ * @param listOfDocuments - The text documents to analyze.
+ * @param keywords - Optional keywords for entity-level sentiment analysis.
+ * @returns A promise that resolves to ICatalystZiaTextAnalytics.
+ * @throws {CatalystZiaError} when input validation fails.
+ * @example
+ * ```ts
+ * const result = await _getTextAnalytics(requester, ['Zoho Catalyst is great']);
+ * ```
+ */
 export async function _getTextAnalytics(
 	requester: Handler,
 	listOfDocuments: Array<string>,

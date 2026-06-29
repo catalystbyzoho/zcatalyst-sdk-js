@@ -1,17 +1,13 @@
 import { IRequestConfig } from '@zcatalyst/transport';
 
-import { ZCAuth } from '../../auth/src';
 import { PushNotification } from '../src';
 import { MobileNotification } from '../src/mobile-notification';
 import { ICatalystPushDetails } from '../src/utils/interface';
 
-jest.mock('../../auth/src');
-
-const mockedApp = ZCAuth as jest.Mock;
+const { responses } = require('../../../tests/api-responses.js');
 
 describe('mobile-notification instance', () => {
-	const app = new mockedApp().init();
-	const notification: PushNotification = new PushNotification(app);
+	const notification: PushNotification = new PushNotification();
 	it('mobile notification instance', async () => {
 		expect(notification.mobile('123')).toBeInstanceOf(MobileNotification);
 		expect(() => {
@@ -25,8 +21,7 @@ describe('mobile-notification instance', () => {
 });
 
 describe('mobile-notification', () => {
-	const app = new mockedApp().init();
-	const notification: PushNotification = new PushNotification(app);
+	const notification: PushNotification = new PushNotification();
 	const notifyIosObject = {
 		message: 'this is a test ios notification'
 	};
@@ -35,45 +30,15 @@ describe('mobile-notification', () => {
 	};
 	const recipient = 'recipient';
 	it('send mobile notification', async () => {
-		const resp = {
-			['/push-notification/12345/project-user/notify']: {
-				POST: (req: IRequestConfig) => {
-					return {
-						statusCode: 200,
-						data: {
-							data: {
-								recipient: recipient,
-								push_details: req.qs?.isAndroid
-									? notifyAndroidObject
-									: notifyIosObject
-							}
-						}
-					};
-				}
-			},
-			['/project-user/notify']: {
-				POST: {
-					statusCode: 200,
-					data: {
-						data: true
-					}
-				}
-			}
-		};
-		app.setRequestResponseMap(resp);
 		const mobile: MobileNotification = notification.mobile('12345');
 		await expect(mobile.sendIOSNotification(notifyIosObject, recipient)).resolves.toStrictEqual(
-			{
-				recipient,
-				push_details: notifyIosObject
-			}
+			responses['/push-notification/12345/project-user/notify'].POST.data.data
 		);
 		await expect(
 			mobile.sendAndroidNotification(notifyAndroidObject, recipient)
-		).resolves.toStrictEqual({
-			recipient,
-			push_details: notifyAndroidObject
-		});
+		).resolves.toStrictEqual(
+			responses['/push-notification/12345/project-user/notify?isAndroid=true'].POST.data.data
+		);
 		await expect(mobile.sendIOSNotification(notifyIosObject, '')).rejects.toThrowError();
 		await expect(mobile.sendAndroidNotification(notifyIosObject, '')).rejects.toThrowError();
 		await expect(

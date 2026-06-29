@@ -1,6 +1,13 @@
-'use strict';
+import { ICatalystJSON, ICatalystProject, ICatalystSysUser } from '@zcatalyst/utils';
 
-import { ICatalystProject, ICatalystSysUser } from '@zcatalyst/utils';
+export interface ICatalystSearch extends ICatalystJSON {
+	search: string;
+	search_table_columns: { [tableName: string]: Array<string> };
+	select_table_columns?: { [tableName: string]: Array<string> };
+	order_by?: { [x: string]: unknown };
+	start?: number;
+	end?: number;
+}
 
 export interface ICatalystColumn {
 	table_id: string;

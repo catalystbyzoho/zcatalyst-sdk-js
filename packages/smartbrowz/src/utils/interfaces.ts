@@ -35,16 +35,7 @@ export interface ICatalystSmartbrowzPdf extends ICatalystSmartbrowzOptions {
 		landscape?: boolean;
 		page_ranges?: string;
 		format?:
-			| 'A1'
-			| 'A2'
-			| 'A3'
-			| 'A4'
-			| 'A5'
-			| 'A6'
-			| 'Letter'
-			| 'Legal'
-			| 'Tabloid'
-			| 'Ledger';
+			'A1' | 'A2' | 'A3' | 'A4' | 'A5' | 'A6' | 'Letter' | 'Legal' | 'Tabloid' | 'Ledger';
 		width?: string;
 		height?: string;
 		margin?: {

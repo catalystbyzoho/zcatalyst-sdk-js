@@ -1,13 +1,5 @@
-'use strict';
-
-import { CatalystApp } from '@zcatalyst/auth';
-import {
-	CatalystService,
-	CONSTANTS,
-	getServicePath,
-	isNonEmptyString,
-	LOGGER
-} from '@zcatalyst/utils';
+import { addDefaultAppHeaders, CatalystApp } from '@zcatalyst/auth-admin';
+import { CatalystService, CONSTANTS, getServicePath, LOGGER } from '@zcatalyst/utils';
 import http, { ClientRequest, IncomingHttpHeaders, IncomingMessage } from 'http';
 import https from 'https';
 import { ReadableStream } from 'node:stream/web';
@@ -16,7 +8,8 @@ import { Readable, Stream } from 'stream';
 import { URL } from 'url';
 import { inspect } from 'util';
 
-import { version } from '../package.json';
+import pkg from '../package.json';
+const { version } = pkg;
 import { RequestType, ResponseType } from './utils/enums';
 import { CatalystAPIError } from './utils/errors';
 import FORM from './utils/form-data';
@@ -25,19 +18,14 @@ import { Component, IRequestConfig } from './utils/interfaces';
 import RequestAgent from './utils/request-agent';
 
 const {
-	PROJECT_KEY_NAME,
 	IS_LOCAL,
-	ENVIRONMENT_KEY_NAME,
-	ENVIRONMENT,
 	USER_KEY_NAME,
 	CREDENTIAL_USER,
 	CATALYST_ORIGIN,
-	X_ZOHO_CATALYST_ORG_ID,
 	USER_AGENT,
 	APM_INSIGHT,
 	ACCEPT_HEADER,
 	REQ_RETRY_THRESHOLD,
-	PROJECT_HEADER,
 	IS_APM
 } = CONSTANTS;
 
@@ -56,12 +44,28 @@ export class DefaultHttpResponse {
 	headers: IncomingHttpHeaders;
 	config: IRequestConfig;
 	resp: IAPIResponse;
+	/**
+	 * Creates a DefaultHttpResponse instance.
+	 * @param resp - The resp value.
+	 */
 	constructor(resp: IAPIResponse) {
 		this.statusCode = resp.statusCode as number;
 		this.headers = resp.headers;
 		this.config = resp.config;
 		this.resp = resp;
 	}
+	/**
+	 * Returns the parsed response payload.
+	 *
+	 * @returns The data result.
+	 * @throws {CatalystAPIError} when the operation cannot be completed.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * // Use DefaultHttpResponse.data while preparing or sending an SDK request.
+	 * ```
+	 */
 	get data() {
 		switch (this.config.expecting) {
 			case ResponseType.STRING:
@@ -104,6 +108,19 @@ export class DefaultHttpResponse {
 	}
 }
 
+/**
+ * Handles reject with context.
+ *
+ * @param reject - The reject value.
+ * @param statusCode - The statusCode value.
+ * @param data - The data value.
+ *
+ * @example
+ * ```ts
+ * import { Handler } from '@zcatalyst/transport';
+ * // Use rejectWithContext while preparing or sending an SDK request.
+ * ```
+ */
 function rejectWithContext(
 	reject: (err?: unknown) => void,
 	statusCode: number,
@@ -118,7 +135,7 @@ function rejectWithContext(
 			message: catalystError.data.message
 		});
 		return;
-	} catch (err) {
+	} catch {
 		// unknown error
 		reject({
 			statusCode,
@@ -127,6 +144,18 @@ function rejectWithContext(
 	}
 }
 
+/**
+ * Handles stream to buffer.
+ *
+ * @param stream - The stream value.
+ * @returns The streamToBuffer result.
+ *
+ * @example
+ * ```ts
+ * import { Handler } from '@zcatalyst/transport';
+ * // Use streamToBuffer while preparing or sending an SDK request.
+ * ```
+ */
 async function streamToBuffer(stream: IncomingMessage): Promise<Buffer> {
 	const chunks: Array<Buffer> = [];
 	return new Promise((resolve, reject) => {
@@ -139,6 +168,18 @@ async function streamToBuffer(stream: IncomingMessage): Promise<Buffer> {
 	});
 }
 
+/**
+ * Handles construct form data.
+ *
+ * @param data - The data value.
+ * @returns The constructFormData result.
+ *
+ * @example
+ * ```ts
+ * import { Handler } from '@zcatalyst/transport';
+ * // Use constructFormData while preparing or sending an SDK request.
+ * ```
+ */
 function constructFormData(data: Record<string, unknown>): FORM {
 	const formData = new FORM();
 	const keyData = Object.keys(data);
@@ -148,11 +189,25 @@ function constructFormData(data: Record<string, unknown>): FORM {
 	return formData;
 }
 
+/**
+ * Handles finalize request.
+ *
+ * @param resolve - The resolve value.
+ * @param reject - The reject value.
+ * @param response - The response value.
+ * @returns The finalizeRequest result.
+ *
+ * @example
+ * ```ts
+ * import { Handler } from '@zcatalyst/transport';
+ * // Use _finalizeRequest while preparing or sending an SDK request.
+ * ```
+ */
 async function _finalizeRequest(
 	resolve: (value: IAPIResponse) => void,
 	reject: (reason?: unknown) => void,
 	response: IAPIResponse
-) {
+): Promise<void> {
 	if (response.statusCode === undefined) {
 		reject(
 			new CatalystAPIError(
@@ -192,6 +247,19 @@ async function _finalizeRequest(
 	}
 }
 
+/**
+ * Handles append query data.
+ *
+ * @param url - The url value.
+ * @param data - The data value.
+ * @returns The appendQueryData result.
+ *
+ * @example
+ * ```ts
+ * import { Handler } from '@zcatalyst/transport';
+ * // Use _appendQueryData while preparing or sending an SDK request.
+ * ```
+ */
 function _appendQueryData(url: string, data: IRequestConfig['qs']) {
 	if (data && Object.keys(data).length > 0) {
 		url += url.includes('?') ? '&' : '?';
@@ -200,6 +268,22 @@ function _appendQueryData(url: string, data: IRequestConfig['qs']) {
 	return url;
 }
 
+/**
+ * Handles request.
+ *
+ * @param transport - The transport value.
+ * @param options - The options value.
+ * @param config - The config value.
+ * @param data - The data value.
+ * @param retryCount - The retryCount value.
+ * @returns The request result.
+ *
+ * @example
+ * ```ts
+ * import { Handler } from '@zcatalyst/transport';
+ * // Use _request while preparing or sending an SDK request.
+ * ```
+ */
 async function _request(
 	transport: typeof https | typeof http,
 	options: https.RequestOptions,
@@ -312,6 +396,12 @@ async function _request(
 		if (data instanceof ReadableStream) {
 			data = webStreamToNodeStream(data);
 		}
+		// Handle string or Buffer data for RAW type
+		if (typeof data === 'string' || Buffer.isBuffer(data)) {
+			req.write(data);
+			req.end();
+			return;
+		}
 		(data as FORM).on('error', (er) => {
 			reject(er);
 			req.end();
@@ -320,6 +410,18 @@ async function _request(
 	});
 }
 
+/**
+ * Handles web stream to node stream.
+ *
+ * @param webStream - The webStream value.
+ * @returns The webStreamToNodeStream result.
+ *
+ * @example
+ * ```ts
+ * import { Handler } from '@zcatalyst/transport';
+ * // Use webStreamToNodeStream while preparing or sending an SDK request.
+ * ```
+ */
 function webStreamToNodeStream(webStream: ReadableStream) {
 	const reader = webStream.getReader();
 	return new Readable({
@@ -334,11 +436,34 @@ function webStreamToNodeStream(webStream: ReadableStream) {
 	});
 }
 
-async function sendRequest(config: IRequestConfig) {
+/**
+ * Handles send request.
+ *
+ * @param config - The config value.
+ * @param componentName - The componentName value.
+ * @param componentVersion - The componentVersion value.
+ * @returns The sendRequest result.
+ * @throws {CatalystAPIError} when the operation cannot be completed.
+ *
+ * @example
+ * ```ts
+ * import { Handler } from '@zcatalyst/transport';
+ * // Use sendRequest while preparing or sending an SDK request.
+ * ```
+ */
+async function sendRequest(
+	config: IRequestConfig,
+	componentName?: string,
+	componentVersion?: string
+): Promise<IAPIResponse> {
 	let data: string | Stream | FORM | undefined;
+	let userAgent = USER_AGENT.PREFIX + version;
+	if (componentName) {
+		userAgent += ` ${componentName}/${componentVersion || 'unknown'}`;
+	}
 	let headers = Object.assign(
 		{
-			[USER_AGENT.KEY]: USER_AGENT.PREFIX + version
+			[USER_AGENT.KEY]: userAgent
 		},
 		config.headers
 	);
@@ -395,41 +520,46 @@ async function sendRequest(config: IRequestConfig) {
 
 export class HttpClient {
 	app?: CatalystApp;
-	private user: string;
-	/**
-	 * @param {CatalystApp} app The app used to fetch access tokens to sign API requests.
-	 * @constructor
-	 */
+	/** * @param app - The app used to fetch access tokens to sign API requests. */
 	constructor(app?: CatalystApp) {
 		this.app = app;
-		this.user = CREDENTIAL_USER.admin;
 	}
 
-	async send(req: IRequestConfig, apmTrackerName?: string) {
+	/**
+	 * Sends a Catalyst HTTP request and returns the wrapped response.
+	 *
+	 * @param req - The req value.
+	 * @param apmTrackerName - The apmTrackerName value.
+	 * @param componentVersion - The componentVersion value.
+	 * @returns The send result.
+	 * @throws {CatalystAPIError} when the operation cannot be completed.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * // Use HttpClient.send while preparing or sending an SDK request.
+	 * ```
+	 */
+	async send(
+		req: IRequestConfig,
+		apmTrackerName?: string,
+		componentVersion?: string
+	): Promise<DefaultHttpResponse> {
 		req.headers = Object.assign({}, req.headers);
 		req.qs = Object.assign({}, req.qs);
 		req.retry = req.retry || true;
 		if (this.app !== undefined && req.service !== CatalystService.EXTERNAL) {
-			this.user = this.app.credential.getCurrentUser();
+			const user = this.app.credential.getCurrentUser();
+
 			// added header only for catalyst calls and client portal calls (exclude external domain calls(ex: stratus))
-			req.headers[PROJECT_KEY_NAME] = this.app.config.projectKey as string;
-			req.headers[ENVIRONMENT_KEY_NAME] = this.app.config.environment as string;
-			req.headers[ENVIRONMENT] = this.app.config.environment as string; // handle indide the quick ml
-
-			if (isNonEmptyString(process.env.X_ZOHO_CATALYST_ORG_ID)) {
-				req.headers[X_ZOHO_CATALYST_ORG_ID] = process.env.X_ZOHO_CATALYST_ORG_ID as string;
-			}
-
-			if (isNonEmptyString(this.app.config.projectSecretKey)) {
-				req.headers[PROJECT_HEADER.projectSecretKey] = this.app.config
-					.projectSecretKey as string;
-			}
+			req.headers = addDefaultAppHeaders(req.headers, this.app.config);
 
 			// assign user headers
 			req.headers[USER_KEY_NAME] = this.app.credential.getCurrentUserType();
+
 			// spcl handling for CLI
 			if (IS_LOCAL === 'true') {
-				switch (this.user) {
+				switch (user) {
 					case CREDENTIAL_USER.admin:
 						req.origin =
 							'https://' +
@@ -457,7 +587,7 @@ export class HttpClient {
 					resp = await apminsight.startTracker(
 						APM_INSIGHT.tracker_name,
 						apmTrackerName,
-						() => sendRequest(req)
+						() => sendRequest(req, apmTrackerName, componentVersion)
 					);
 				} catch (err) {
 					throw new CatalystAPIError(
@@ -468,7 +598,7 @@ export class HttpClient {
 					);
 				}
 			} else {
-				resp = await sendRequest(req);
+				resp = await sendRequest(req, apmTrackerName, componentVersion);
 			}
 			return new DefaultHttpResponse(resp);
 		} catch (err) {
@@ -487,23 +617,37 @@ export class HttpClient {
 
 export class AuthorizedHttpClient extends HttpClient {
 	readonly componentName?: string;
+	readonly componentVersion?: string;
 	/**
-	 * @param {unknown} app The app used to fetch access tokens to sign API requests.
-	 * @constructor
+	 * @param app - The app used to fetch access tokens to sign API requests.
+	 * @param component - Optional component metadata used to attach version headers.
 	 */
 	constructor(app?: CatalystApp, component?: Component) {
 		super(app);
 		if (component) {
 			this.componentName = component.getComponentName();
+			this.componentVersion = component.getComponentVersion?.();
 		}
 	}
 
+	/**
+	 * Sends a Catalyst HTTP request and returns the wrapped response.
+	 *
+	 * @param request - The request value.
+	 * @returns The send result.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * // Use AuthorizedHttpClient.send while preparing or sending an SDK request.
+	 * ```
+	 */
 	async send(request: IRequestConfig): Promise<DefaultHttpResponse> {
 		const requestCopy = Object.assign({ user: CREDENTIAL_USER.user }, request);
 		requestCopy.headers = Object.assign({}, request.headers);
 		if (request.auth !== false) {
 			await this.app?.authenticateRequest(requestCopy as unknown as Record<string, unknown>);
 		}
-		return await super.send(requestCopy, this.componentName);
+		return await super.send(requestCopy, this.componentName, this.componentVersion);
 	}
 }

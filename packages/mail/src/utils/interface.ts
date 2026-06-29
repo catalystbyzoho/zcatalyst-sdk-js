@@ -1,5 +1,3 @@
-'use strict';
-
 export interface ICatalystMail {
 	from_email: string;
 	to_email: string | Array<string>;

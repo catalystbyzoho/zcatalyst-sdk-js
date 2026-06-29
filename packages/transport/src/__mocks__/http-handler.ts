@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import http, { IncomingMessage } from 'http';
 import { Readable } from 'stream';
 import { inspect } from 'util';
@@ -69,7 +68,7 @@ function rejectWithContext(reject: (reason?: any) => void, statusCode: number, d
 				catalystError.data.message
 		);
 		return;
-	} catch (err) {
+	} catch {
 		// unknown error
 		reject(
 			'Request failed with status ' + statusCode + ' and response data : ' + inspect(data)
@@ -124,6 +123,36 @@ async function streamToBuffer(stream: http.IncomingMessage): Promise<Buffer> {
 		stream.on('end', () => resolve(Buffer.concat(chunks)));
 	});
 }
+
+function getPathFromReq(req: IRequestConfig): string {
+	if (req.path) return req.path;
+	if (req.url) {
+		try {
+			const u = new URL(req.url);
+			return u.pathname;
+		} catch {
+			return req.url;
+		}
+	}
+	return '/';
+}
+
+function getMethod(req: IRequestConfig): string {
+	return (req.method || 'GET').toUpperCase();
+}
+
+function getParams(req: IRequestConfig): string {
+	const params = req.qs;
+	if (params && Object.keys(params).length > 0) {
+		const queryParts: Array<string> = [];
+		for (const key of Object.keys(params).sort()) {
+			queryParts.push(`${key}=${params[key]}`);
+		}
+		return queryParts.join('&');
+	}
+	return '';
+}
+
 export class AuthorizedHttpClient {
 	[x: string]: any;
 	app: any;
@@ -137,48 +166,41 @@ export class AuthorizedHttpClient {
 			config: request,
 			headers: {}
 		};
-		if (this.app.resd) {
-			const resd:
-				| { statusCode: number; data: Readable }
-				| ((request: IRequestConfig) => { statusCode: number; data: Readable })
-				| undefined =
-				request.path != null && request.method != null
-					? this.app.resd[request.path] == undefined
-						? {}
-						: this.app.resd[request.path][request.method]
-					: undefined;
-			if (typeof resd === 'function') {
-				const x = resd(request);
-				let stream;
-				if (x.data instanceof Readable) {
-					stream = x.data;
-				} else {
-					stream = new Readable();
-					stream.push(JSON.stringify(x.data));
-					stream.push(null);
-				}
-				resp = {
-					statusCode: x.statusCode,
-					config: request,
-					headers: {},
-					stream: stream as IncomingMessage
-				};
-			} else if (resd) {
-				let resData;
-				if (resd.data instanceof Readable) {
-					resData = resd.data;
-				} else {
-					resData = new Readable();
-					resData.push(JSON.stringify(resd.data));
-					resData.push(null);
-				}
-				resp = {
-					statusCode: resd.statusCode || 200,
-					config: request,
-					headers: {},
-					stream: resData as IncomingMessage
-				};
+
+		// Load centralized responses
+		// Relative path: from this file to root /tests/api-responses.js
+		// packages/transport/src/__mocks__/http-handler.ts -> ../../../tests/api-responses.js
+
+		const { responses } = require('../../../../tests/api-responses');
+
+		const path = getPathFromReq(request);
+		const method = getMethod(request);
+		const queryParams = getParams(request);
+		// eslint-disable-next-line no-console
+		console.log('MockedHttpClient send called for ', method, path, queryParams);
+		const resd =
+			responses && responses[path] && responses[path][method]
+				? responses[path][method] && queryParams
+					? responses[path + '?' + queryParams][method]
+						? responses[path + '?' + queryParams][method]
+						: responses[path][method]
+					: responses[path][method]
+				: null;
+		if (resd) {
+			let resData;
+			if (resd.data instanceof Readable) {
+				resData = resd.data;
+			} else {
+				resData = new Readable();
+				resData.push(JSON.stringify(resd.data));
+				resData.push(null);
 			}
+			resp = {
+				statusCode: resd.statusCode || 200,
+				config: request,
+				headers: {},
+				stream: resData as IncomingMessage
+			};
 		}
 
 		const res = await new Promise<MockedIAPIResponse>(async (resolve, reject) => {
@@ -213,23 +235,27 @@ export class HttpClient {
 			config: request,
 			headers: {}
 		};
-		if (this.app.resd) {
+
+		const { responses } = require('../../../../tests/api-responses.js');
+
+		const urlPath = getPathFromReq(request);
+		const method = getMethod(request);
+		const queryParams = getParams(request);
+		const resEntry =
+			responses && responses[urlPath] && responses[urlPath][method]
+				? responses[urlPath][method] && queryParams
+					? responses[urlPath + '?' + queryParams][method]
+						? responses[urlPath + '?' + queryParams][method]
+						: responses[urlPath][method]
+					: responses[urlPath][method]
+				: null;
+
+		if (resEntry) {
 			resp = {
-				statusCode: 200,
+				statusCode: resEntry.statusCode || 200,
 				config: request,
 				headers: {},
-				data:
-					request.url != null && request.method != null
-						? this.app.resd[request.url] == undefined
-							? {}
-							: (() => {
-									const res = this.app.resd[request.url][request.method];
-									if (typeof res === 'function') {
-										return res(request);
-									}
-									return res;
-								})()
-						: null
+				data: resEntry.data
 			};
 		}
 		return resp;

@@ -1,20 +1,17 @@
-'use strict';
+import { CatalystApp } from '@zcatalyst/auth-admin';
+import { Component } from '@zcatalyst/utils';
 
-import { CatalystApp, ZCAuth } from '../../../auth/src';
-import FormData from '../utils/form-data';
-import { Component, IRequestConfig } from '../utils/interfaces';
+import { ZCAuth } from '../../../auth-admin/src/__mocks__';
+import { IRequestConfig } from '../utils/interfaces';
 import { AuthorizedHttpClient, DefaultHttpResponse } from './http-handler';
 
-jest.mock('../../../auth/src');
-
 export class Handler {
-	component?: Component;
 	app?: CatalystApp;
 	/**
-	 * @param {unknown} app The app used to fetch access tokens to sign API requests.
-	 * @constructor
+	 * @param app - The app used to fetch access tokens to sign API requests.
+	 * @param component - Optional component metadata.
 	 */
-	constructor(app?: unknown, component?: Component) {
+	constructor(app?: unknown, _component?: Component) {
 		if (!app) {
 			app = new ZCAuth().getDefaultCredentials() as unknown as CatalystApp;
 		}
@@ -25,7 +22,6 @@ export class Handler {
 		// 	);
 		// }
 		this.app = app as CatalystApp;
-		this.component = component;
 	}
 
 	async send(options: IRequestConfig): Promise<DefaultHttpResponse> {
@@ -34,6 +30,5 @@ export class Handler {
 	}
 }
 
-export { RequestType, ResponseType } from '../utils/enums';
-export { CatalystAPIError } from '../utils/errors';
-export { FormData, IRequestConfig };
+export * from '../utils/enums';
+export * from '../utils/interfaces';

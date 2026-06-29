@@ -6,6 +6,9 @@ import { IStratusCorsRes } from './utils/interface';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 
+/**
+ * Retrieves CORS configuration for a Stratus bucket.
+ */
 export class Cors {
 	bucketName: string;
 	requester: Handler;
@@ -14,6 +17,14 @@ export class Cors {
 		this.requester = bucketInstance.getAuthorizationClient();
 	}
 
+	/**
+	 * Retrieves the CORS configuration for the bucket.
+	 * @returns A promise that resolves to Array<IStratusCorsRes>.
+	 * @example
+	 * ```ts
+	 * const cors = await corsClient.getCors();
+	 * ```
+	 */
 	async getCors(): Promise<Array<IStratusCorsRes>> {
 		const request: IRequestConfig = {
 			method: REQ_METHOD.get,

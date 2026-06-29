@@ -1,10 +1,19 @@
 # @zcatalyst/quickml
 
-ZOHO CATALYST SDK for JavaScript QuickML for Node.js and Browser.
+JavaScript SDK for Catalyst QuickML - Prediction
 
-<p></p>
+## Overview
 
-## Installing
+The `@zcatalyst/quickml` package provides JavaScript/TypeScript methods to call deployed [Catalyst QuickML](https://docs.catalyst.zoho.com/en/quickml/) prediction endpoints. Runs in Node.js (server-side) environments only.
+
+### Prerequisites
+
+- A [Catalyst project](https://docs.catalyst.zoho.com/en/getting-started/catalyst-projects) set up
+- Training dataset in CSV format
+- Model trained in [QuickML Console](https://docs.catalyst.zoho.com/en/quickml/)
+- Model endpoint key for predictions
+
+## Installation
 
 To install this package, simply type add or install @zcatalyst/quickml
 using your favorite package manager:
@@ -17,7 +26,7 @@ using your favorite package manager:
 
 ### Import
 
-The Catalyst SDK is modulized by Components.
+The Catalyst SDK is modularized by Components.
 To send a request, you only need to import the `QuickML`:
 
 ```js
@@ -47,7 +56,7 @@ const data = await quickml.predict('endpoint_key', {
 });
 ```
 
-#### Async/await
+### Async/await
 
 We recommend using [await](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await)
 operator to wait for the promise returned by send operation as follows:
@@ -55,7 +64,8 @@ operator to wait for the promise returned by send operation as follows:
 ```js
 // async/await.
 try {
-	const data = await predict('endpoint_key', {
+	const quickml = new QuickML();
+	const data = await quickml.predict('endpoint_key', {
 		// Enter column name and value as per your dataset
 		column_name1: 'value1',
 		column_name2: 'value2'
@@ -68,75 +78,7 @@ try {
 }
 ```
 
-Async-await is clean, concise, intuitive, easy to debug and has better error handling
-as compared to using Promise chains or callbacks.
-
-#### Promises
-
-You can also use [Promise chaining](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises#chaining)
-to execute send operation.
-
-```js
-quickml
-	.predict('endpoint_key', {
-		// Enter column name and value as per your dataset
-		column_name1: 'value1',
-		column_name2: 'value2'
-	})
-	.then(
-		(data) => {
-			// process data.
-		},
-		(error) => {
-			// error handling.
-		}
-	);
-```
-
-Promises can also be called using `.catch()` and `.finally()` as follows:
-
-```js
-quickml
-	.predict('endpoint_key', {
-		// Enter column name and value as per your dataset
-		column_name1: 'value1',
-		column_name2: 'value2'
-	})
-	.then((data) => {
-		// process data.
-	})
-	.catch((error) => {
-		// error handling.
-	})
-	.finally(() => {
-		// finally.
-	});
-```
-
-#### Callbacks
-
-We do not recommend using callbacks because of [callback hell](http://callbackhell.com/),
-but they are supported by the send operation.
-
-```js
-// callbacks.
-quickml.predict(
-	'endpoint_key',
-	{
-		// Enter column name and value as per your dataset
-		column_name1: 'value1',
-		column_name2: 'value2'
-	},
-	(err, data) => {
-		// process err and data.
-	}
-);
-```
-
-### Troubleshooting
-
-When the service returns an exception, the error will include the exception information,
-as well as response metadata (e.g. request id).
+### Error Handling
 
 ```js
 try {
@@ -153,23 +95,14 @@ try {
 }
 ```
 
-## Contributing
+## Resources
 
-Contributions to this library are always welcome and highly encouraged.
+- [Catalyst QuickML Documentation](https://docs.catalyst.zoho.com/en/quickml/)
+
+## Contributing
 
 See [CONTRIBUTING](../../CONTRIBUTING.md) for more information on how to get started.
 
 ## License
 
 This SDK is distributed under the Apache License 2.0. See [LICENSE](../../LICENCE) file for more information.
-
-## QuickML operations
-
-<details>
-<summary>
-predict
-</summary>
-
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/retrieve-folder-details/)[API References]() -->
-
-</details>

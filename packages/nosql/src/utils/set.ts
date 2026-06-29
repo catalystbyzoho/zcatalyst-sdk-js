@@ -4,17 +4,22 @@ import { CatalystNoSQLError } from '../utils/error';
 import { NoSQLByte } from './byte';
 import { TNoSQLByte } from './types';
 
-/**
- * String set (SS) implementation for NoSQL
- */
+/** * String set (SS) implementation for NoSQL */
 export class NoSQLStringSet extends Set<string> {
+	/** Creates a NoSQL string set from optional string values. */
 	constructor(values?: Array<string>) {
 		super(values);
 	}
 	/**
 	 * Add a string value to the set
-	 * @param str value to be added
+	 * @param str - value to be added
 	 * @returns NoSQLStringSet
+	 * @throws {Error} when the value is not a string.
+	 *
+	 * @example
+	 * ```ts
+	 * const labels = new NoSQLStringSet().add('vip');
+	 * ```
 	 */
 	add(str: string): this {
 		if (typeof str !== 'string') {
@@ -33,18 +38,23 @@ export class NoSQLStringSet extends Set<string> {
 	}
 }
 
-/**
- * Number set (SN) implementation for NoSQL
- */
+/** * Number set (SN) implementation for NoSQL */
 export class NoSQLNumberSet extends Set<number | bigint> {
+	/** Creates a NoSQL number set from optional number or bigint values. */
 	constructor(values?: Array<number | bigint>) {
 		super(values);
 	}
 
 	/**
 	 * Add a number or bigint value to the set
-	 * @param num value to be added
+	 * @param num - value to be added
 	 * @returns NoSQLStringSet
+	 * @throws {CatalystNoSQLError} when the value is not a number or bigint.
+	 *
+	 * @example
+	 * ```ts
+	 * const scores = new NoSQLNumberSet().add(42);
+	 * ```
 	 */
 	add(num: number | bigint): this {
 		if (typeof num === 'number') {
@@ -68,29 +78,56 @@ export class NoSQLNumberSet extends Set<number | bigint> {
 	}
 }
 
-/**
- * Byte set (SB) implementation for NoSQL
- */
+/** * Byte set (SB) implementation for NoSQL */
 export class NoSQLByteSet extends Set<NoSQLByte> {
+	/** Creates a NoSQL byte set from optional binary, base64, or NoSQLByte values. */
 	constructor(values?: Array<TNoSQLByte | string | NoSQLByte>) {
 		super(values?.map((val) => (val instanceof NoSQLByte ? val : new NoSQLByte(val))));
 	}
 
 	/**
 	 * Adds a buffer to the end of the set
-	 * @param buffer input buffer
+	 * @param buffer - input buffer
+	 * @returns NoSQLByteSet
+	 *
+	 * @example
+	 * ```ts
+	 * const files = new NoSQLByteSet().add(Buffer.from('file'));
+	 * ```
 	 */
 	add(buffer: TNoSQLByte): this;
 	/**
 	 * Adds a NoSQLByte to the end of the set
-	 * @param buffer input NoSQLByte
+	 * @param buffer - input NoSQLByte
+	 * @returns NoSQLByteSet
+	 *
+	 * @example
+	 * ```ts
+	 * const files = new NoSQLByteSet().add(Buffer.from('file'));
+	 * ```
 	 */
 	add(buffer: NoSQLByte): this;
 	/**
 	 * Adds a buffer to the end of the set
-	 * @param buffer base64 encoded string of the buffer
+	 * @param buffer - base64 encoded string of the buffer
+	 * @returns NoSQLByteSet
+	 *
+	 * @example
+	 * ```ts
+	 * const files = new NoSQLByteSet().add(Buffer.from('file'));
+	 * ```
 	 */
 	add(buffer: string): this;
+	/**
+	 * Adds a supported binary, NoSQLByte, or base64 string value to the set.
+	 * @param buffer - byte value to add to the set
+	 * @returns NoSQLByteSet
+	 *
+	 * @example
+	 * ```ts
+	 * const files = new NoSQLByteSet().add(Buffer.from('file'));
+	 * ```
+	 */
 	add(buffer: TNoSQLByte | NoSQLByte | string): this {
 		super.add(buffer instanceof NoSQLByte ? buffer : new NoSQLByte(buffer));
 		return this;
