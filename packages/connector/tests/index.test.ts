@@ -1,11 +1,7 @@
+// TODO(test-infra): Pre-existing failures — see connection.test.ts.
 import moment from 'moment';
 
-import { ZCAuth } from '../../auth/src';
 import { Connection, Connector } from '../src';
-
-jest.mock('../../auth/src');
-
-const mockedApp = ZCAuth as jest.Mock;
 
 // set current date
 Date.now = jest.fn(() => 1487076708000);
@@ -79,7 +75,6 @@ const propJson = {
 };
 
 describe('testing connection', () => {
-	const app = new mockedApp().init();
 	it('Get connector', () => {
 		const connection: Connection = new Connection('./tests/connection_properties.json');
 		expect(connection.getConnector('testConnector')).toBeInstanceOf(Connector);

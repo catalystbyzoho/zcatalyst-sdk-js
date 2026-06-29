@@ -5,8 +5,31 @@
   "module": "./dist-es/index.js",
   "types": "./dist-types/index.d.ts",
   "license": "Apache-2.0",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "node": {
+        "types": "./dist-types/index.d.ts",
+        "import": "./dist-es/index.js",
+        "require": "./dist-cjs/index.js",
+        "default": "./dist-cjs/index.js"
+      },
+      "browser": {
+        "types": "./dist-types/index.browser.d.ts",
+        "import": "./dist-es/index.browser.js",
+        "require": "./dist-cjs/index.browser.js",
+        "default": "./dist-cjs/index.browser.js"
+      },
+      "default": {
+        "types": "./dist-types/index.d.ts",
+        "import": "./dist-es/index.js",
+        "require": "./dist-cjs/index.js",
+        "default": "./dist-cjs/index.js"
+      }
+    }
+  },
   "scripts": {
-    "build": "concurrently 'pnpm:build:cjs' 'pnpm:build:es' 'pnpm:build:types && pnpm build:types:downlevel'",
+    "build": "pnpm clean && concurrently 'pnpm:build:cjs' 'pnpm:build:es' 'pnpm:build:types && pnpm build:types:downlevel'",
     "build:cjs": "pnpm tsc -p tsconfig.cjs.json",
     "build:es": "pnpm tsc -p tsconfig.es.json",
     "build:types": "pnpm tsc -p tsconfig.types.json",
@@ -19,7 +42,6 @@
   },
   "dependencies": {
     "@zcatalyst/transport": "workspace:^",
-    "@zcatalyst/auth": "workspace:^",
     "@zcatalyst/utils": "workspace:^",
     "@zcatalyst/auth-client": "workspace:^"
   },
@@ -27,7 +49,11 @@
     "./dist-cjs/index.js": "./dist-cjs/index.browser.js",
     "./dist-es/index.js": "./dist-es/index.browser.js",
     "./dist-types/index.d.ts": "./dist-types/index.browser.d.ts",
-    "stream": false
+    "stream": false,
+    "crypto": false,
+    "fs": false,
+    "path": false,
+    "process": false
   },
   "engines": {
     "node": ">=20"

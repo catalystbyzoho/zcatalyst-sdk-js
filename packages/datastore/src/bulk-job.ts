@@ -1,5 +1,3 @@
-'use strict';
-
 import { Handler, IRequestConfig, RequestType, ResponseType } from '@zcatalyst/transport';
 import {
 	CatalystService,
@@ -41,9 +39,9 @@ abstract class BulkJob implements Component {
 	/**
 	 * Retrieves the status of a bulk job by its job ID.
 	 *
-	 * @param {string} jobId - The unique identifier of the bulk job.
-	 * @returns {ICatalystBulkJob} The job status.
-	 * @throws {CatalystDataStoreError} If the jobId is not a valid string.
+	 * @param jobId - The unique identifier of the bulk job.
+	 * @returns The job status.
+	 * @throws If the jobId is not a valid string.
 	 *
 	 * @example
 	 * const jobStatus = await bulkInstance.getStatus(12345);
@@ -67,9 +65,9 @@ abstract class BulkJob implements Component {
 	/**
 	 * Retrieves the result of a bulk job as a readable stream.
 	 *
-	 * @param {string} jobId - The unique identifier of the bulk job.
-	 * @returns {Readable} A readable stream of the job result.
-	 * @throws {CatalystDataStoreError} If the jobId is not a valid string.
+	 * @param jobId - The unique identifier of the bulk job.
+	 * @returns A readable stream of the job result.
+	 * @throws If the jobId is not a valid string.
 	 *
 	 * @example
 	 * const resultStream = await bulkInstance.getResult(12345);
@@ -92,7 +90,9 @@ abstract class BulkJob implements Component {
 	}
 }
 
+/** Creates and inspects bulk read jobs for a Catalyst Datastore table. */
 export class BulkRead extends BulkJob {
+	/** Creates a bulk read helper for the provided table. */
 	constructor(tableInstance: Table) {
 		super(tableInstance, 'read');
 	}
@@ -100,10 +100,10 @@ export class BulkRead extends BulkJob {
 	/**
 	 * Creates a bulk read job for the specified table.
 	 *
-	 * @param {ICatalystBulkReadQuery} [query] - Optional query object used for filtering and selecting data.
-	 * @param {ICatalystBulkCallback} [callback] - Optional callback configuration for job completion.
-	 * @returns {ICatalystBulkJob} The created bulk job details.
-	 * @throws {CatalystDataStoreError} If the request fails.
+	 * @param query - Optional query object used for filtering and selecting data.
+	 * @param callback - Optional callback configuration for job completion.
+	 * @returns The created bulk job details.
+	 * @throws If the request fails.
 	 *
 	 * @example
 	 * const query: ICatalystBulkReadQuery = {
@@ -143,7 +143,9 @@ export class BulkRead extends BulkJob {
 	}
 }
 
+/** Creates and inspects bulk write jobs for a Catalyst Datastore table. */
 export class BulkWrite extends BulkJob {
+	/** Creates a bulk write helper for the provided table. */
 	constructor(tableInstance: Table) {
 		super(tableInstance, 'write');
 	}
@@ -151,13 +153,13 @@ export class BulkWrite extends BulkJob {
 	/**
 	 * Creates a bulk write job for the specified table.
 	 *
-	 * @param {object | string} fileDetails - The file information for bulk write.
+	 * @param fileDetails - The file information for bulk write.
 	 *    - If a string, it represents a file ID.
 	 *    - If an object, it must contain `bucket_name` and `object_key`, with an optional `versionId`.
-	 * @param {ICatalystBulkWriteInput} [options] - Optional configurations for the bulk write operation.
-	 * @param {ICatalystBulkCallback} [callback] - Optional callback configuration for job completion.
-	 * @returns {ICatalystBulkJob} The created bulk job details.
-	 * @throws {CatalystDataStoreError} If the request fails.
+	 * @param options - Optional configurations for the bulk write operation.
+	 * @param callback - Optional callback configuration for job completion.
+	 * @returns The created bulk job details.
+	 * @throws If the request fails.
 	 *
 	 * @example
 	 * const fileDetails = {

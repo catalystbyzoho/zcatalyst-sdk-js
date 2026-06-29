@@ -18,7 +18,6 @@ import { Readable } from 'stream';
 
 import { Cors } from './cors';
 import { StratusObject } from './object';
-import { convertToReadableStream } from './utils/convertion';
 import { CatalystStratusError } from './utils/error';
 import {
 	IStratusBucket,
@@ -40,12 +39,14 @@ import { JWTAuthHandler } from './utils/jwt-auth-handler';
 import { Util } from './utils/signature-auth-handler';
 import { StratusObjectRequest } from './utils/types';
 
-const { REQ_METHOD, CREDENTIAL_USER, STRATUS_SUFFIX } = CONSTANTS;
+const { REQ_METHOD, CREDENTIAL_USER, STRATUS_SUFFIX, IS_LOCAL } = CONSTANTS;
 
+/**
+ * Represents a Stratus bucket for user-scope object operations.
+ */
 export class Bucket {
 	_requester: Handler;
-	bucketDetails: IStratusBucket;
-	auth = true;
+	_bucketDetails: IStratusBucket;
 	#util: Util;
 	#jwtAuth: JWTAuthHandler;
 	constructor(requester: Handler, bucket: IStratusBucket | string) {
@@ -58,53 +59,68 @@ export class Bucket {
 					: (window.__catalyst?.environment as string)?.toLowerCase() +
 						'' +
 						window.__catalyst?.stratus_suffix;
-			this.bucketDetails = {
+			this._bucketDetails = {
 				bucket_name: bucket,
 				bucket_url: `https://${bucket}-${suffix}`
 			};
 		} else {
-			this.bucketDetails = bucket;
+			this._bucketDetails = bucket;
 		}
 		this.#util = new Util(this);
 	}
 
+	/**
+	 * Returns the transport handler used to authorize bucket requests.
+	 * @returns Handler.
+	 * @example
+	 * ```ts
+	 * const handler = bucket.getAuthorizationClient();
+	 * ```
+	 */
 	public getAuthorizationClient(): Handler {
 		return this._requester;
 	}
 
 	/**
-	 * Get the name of the bucket.
-	 * @returns { string } The name of the bucket as a string.
+	 * Returns the Stratus bucket name.
+	 * @returns string.
+	 * @example
+	 * ```ts
+	 * const name = bucket.getName();
+	 * ```
 	 */
 	getName(): string {
-		return this.bucketDetails.bucket_name;
+		return this._bucketDetails.bucket_name;
 	}
 
 	/**
-	 * Downloads an object from the bucket.
-	 * @param key - The unique identifier or path of the object within the bucket to be downloaded.
-	 * @param getObjectOptions - Optional options for customizing the download:
-	 *   - `range` (string): Specifies a byte range for partial downloads (e.g., "0-200").
-	 *   - `versionId` (string): Identifies a specific version of the object, if versioning is enabled.
-	 * @access admin, user
+	 * Downloads an object from the bucket as a readable stream.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param options - Optional settings for the request.
+	 *   - range - Optional range setting.
+	 *   - versionId - Optional versionId setting.
+	 *   - format - Optional format setting.
+	 *   - mode - Optional mode setting.
+	 *   - emotion - Optional emotion setting.
+	 *   - age - Optional age setting.
+	 *   - gender - Optional gender setting.
+	 * @returns A promise that resolves to Readable.
+	 * @throws {CatalystStratusError} when input validation fails.
 	 * @example
-	 * ```js
-	 * const key = 'out/sam/temp.txt';
-	 * const options = {
-	 *   versionId: 'bfjd673e2hgh2', // Specify the version ID if needed
-	 *   range: '0-200' // Download only the first 200 bytes of the file
-	 * };
-	 * // Invoke the object download operation
-	 * const getObjectRes = await bucket.getObject(key, options);
+	 * ```ts
+	 * const stream = await bucket.getObject('folder/file.txt');
 	 * ```
-	 * @returns { Readable } A readable stream of the object (`Readable`).
 	 */
 	async getObject(key: string, options?: IStratusGetObjectOptions): Promise<Readable> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(key, 'key', true);
 		}, CatalystStratusError);
 		const param = options?.versionId ? { versionId: options?.versionId } : {};
-		const { headers, params, url } = await this.#addAuthProperties(param, {}, options?.access);
+		const { headers, params, url, auth } = await this.#addAuthProperties(
+			param,
+			{},
+			options?.access
+		);
 		const request: IRequestConfig = {
 			method: REQ_METHOD.get,
 			url: url + `/${encodeURI(key)}`,
@@ -112,7 +128,7 @@ export class Bucket {
 			type: RequestType.JSON,
 			expecting: ResponseType.RAW,
 			service: CatalystService.EXTERNAL,
-			auth: false,
+			auth,
 			headers: {
 				...headers,
 				...(options?.range ? { Range: `bytes=${options?.range}` } : {})
@@ -125,24 +141,17 @@ export class Bucket {
 	}
 
 	/**
-	 * Deletes a single object from the bucket.
-	 * @param key - The name of the object to delete.
-	 * @param versionId - The version ID of the object to delete (optional).
-	 * @param ttl - The time to live (TTL) in seconds.
-	 * 				The object will not be deleted immediately but after the specified time (optional).
-	 * @access admin, user
+	 * Deletes an object from the bucket.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param options - Options for the deleteObject operation.
+	 *   - versionId - The optional object version identifier.
+	 *   - ttl - Optional time-to-live in seconds before deletion.
+	 * @returns A promise that resolves to void.
+	 * @throws {CatalystStratusError} when input validation fails.
 	 * @example
-	 * ```js
-	 * const key = 'out/sam/temp.txt';
-	 * const options = {
-	 *   versionId: 'bfjd673e2hgh2', // Optional: Specific version ID of the object.
-	 *   ttl: 300 // Optional: Time to live in seconds.
-	 * };
-	 * // Invoke object deletion operation
-	 * const deleteObjectRes = await bucket.deleteObject(key, options);
-	 * console.log(deleteObjectRes);
+	 * ```ts
+	 * await bucket.deleteObject('folder/file.txt');
 	 * ```
-	 * @returns { Record<string, string> } Containing a message about the deletion operation.
 	 */
 	async deleteObject(
 		key: string,
@@ -153,100 +162,89 @@ export class Bucket {
 			versionId?: string;
 			ttl?: number;
 		} = {}
-	): Promise<Record<string, string>> {
+	): Promise<void> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(key, 'key', true);
 		}, CatalystStratusError);
-		const url = this.bucketDetails.bucket_url;
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(key, 'key', true);
 		}, CatalystStratusError);
-		const token = await this.#jwtAuth.getJWTAccessToken();
-		const headers = { Authorization: 'Zoho-oauthtoken ' + token };
 		const param = {
 			...(ttl ? { ttl: ttl } : {}),
-			...(versionId ? { versionId } : { deleteAllVersions: 'true' }),
-			zaid: this.#jwtAuth.zaid
+			...(versionId ? { versionId } : { deleteAllVersions: 'true' })
 		};
+		const { headers, params, url, auth } = await this.#addAuthProperties(param);
 		const request: IRequestConfig = {
 			method: REQ_METHOD.delete,
 			url: url + `/${encodeURI(key)}`,
-			qs: param,
+			qs: params,
 			headers,
 			type: RequestType.JSON,
 			expecting: ResponseType.RAW,
-			service: CatalystService.STRATUS,
-			auth: false,
+			service: CatalystService.EXTERNAL,
+			auth,
 			track: true,
 			user: CREDENTIAL_USER.user
 		};
-		const resp = await this._requester.send(request);
-		return { message: resp.resp.data as unknown as string };
+		await this._requester.send(request);
+		return;
 	}
 
 	/**
-	 * Uploads an object to the bucket.
-	 * @param key - The name of the object key to upload.
-	 * @param body- The content of the object, which can be a string or StratusObjectRequest.
-	 * @param uploadOptions - Optional settings for uploading the object, such as:
-	 *   - `overwrite` (string): Whether to overwrite an existing object when versioning is not enabled.
-	 *   - `ttl` (string): The duration for which the object will remain live.
-	 *   - `metaData` (Record<string, string>): Custom metadata to associate with the object.
-	 *   - `abortSignal` (AbortSignal): Aborts the upload operation if needed.
-	 *   - `contentType` (string): The MIME type of the object.
-	 *   - `contentLength` (string): The raw length of the object being uploaded in bytes.
-	 *   - `cacheControl` (string): Defines browser caching policies for the object.
-	 *   - `storageClass` ('STANDARD' | 'ARCHIVE'): Specifies the storage class for the object. Defaults to 'STANDARD'.
-	 * @access admin, user
+	 * Uploads an object body to the bucket.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param body - The object content or multipart part content.
+	 * @param uploadOptions - Optional object upload settings.
+	 *   - overwrite - Optional overwrite setting.
+	 *   - ttl - Optional ttl setting.
+	 *   - metaData - Optional metaData setting.
+	 *   - extractUpload - Optional extractUpload setting.
+	 *   - abortSignal - Optional abortSignal setting.
+	 *   - contentType - Optional contentType setting.
+	 *   - contentLength - Optional contentLength setting.
+	 *   - cacheControl - Optional cacheControl setting.
+	 *   - storageClass - Optional storageClass setting.
+	 * @returns A promise that resolves to void.
 	 * @example
-	 * ```js
-	 * const key = 'out1/sam1/temp1.txt';
-	 * const body = fs.createReadStream('/user/alwind/sam/sample.txt');
-	 * const options = {
-	 *   overwrite: true,
-	 *   ttl: '2000', // Expiry time in seconds.
-	 * };
-	 * // Upload the object
-	 * const putObjectRes = await bucket.putObject(key, body, options);
-	 * console.log(putObjectRes);
+	 * ```ts
+	 * await bucket.putObject('folder/file.txt', body);
 	 * ```
-	 * @returns { boolean }
 	 */
 	async putObject(
 		key: string,
 		body: string | StratusObjectRequest,
 		uploadOptions?: Omit<IStratusPutObjectOptions, 'extractUpload'>
-	): Promise<boolean>;
+	): Promise<void>;
 	/**
-	 * Uploads an object to the bucket.
-	 * @param key - The name of the object key to upload.
-	 * @param body- The content of the object, which can be a string or StratusObjectRequest.
-	 * @param uploadOptions - Optional settings for uploading the object, such as:
-	 *   - `overwrite` (string): Whether to overwrite an existing object when versioning is not enabled.
-	 *   - `ttl` (string): The duration for which the object will remain live.
-	 *   - `metaData` (Record<string, string>): Custom metadata to associate with the object.
-	 *   - `extractUpload` ('true' | 'false'): Extracts a zip object and uploads its contents as individual objects.
-	 *   - `abortSignal` (AbortSignal): Aborts the upload operation if needed.
-	 *   - `contentType` (string): The MIME type of the object.
-	 *   - `contentLength` (string): The raw length of the object being uploaded in bytes.
-	 *   - `cacheControl` (string): Defines browser caching policies for the object.
-	 *   - `storageClass` ('STANDARD' | 'ARCHIVE'): Specifies the storage class for the object. Defaults to 'STANDARD'.
-	 * @returns { {task_id: string} }
+	 * Uploads an object body to the bucket.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param body - The object content or multipart part content.
+	 * @param uploadOptions - Optional object upload settings.
+	 *   - overwrite - Optional overwrite setting.
+	 *   - ttl - Optional ttl setting.
+	 *   - metaData - Optional metaData setting.
+	 *   - extractUpload - Optional extractUpload setting.
+	 *   - abortSignal - Optional abortSignal setting.
+	 *   - contentType - Optional contentType setting.
+	 *   - contentLength - Optional contentLength setting.
+	 *   - cacheControl - Optional cacheControl setting.
+	 *   - storageClass - Optional storageClass setting.
+	 * @returns A promise that resolves to void.
+	 * @throws {CatalystStratusError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * await bucket.putObject('folder/file.txt', body);
+	 * ```
 	 */
 	async putObject(
 		key: string,
 		body: string | StratusObjectRequest,
 		uploadOptions?: IStratusPutObjectOptions
-	): Promise<boolean> {
+	): Promise<void> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(key, 'key', true);
 			isNonNullValue(body, 'object_body', true);
 		}, CatalystStratusError);
-		const metaData = uploadOptions?.metaData
-			? Object.entries(uploadOptions?.metaData)
-					.map(([key, value]) => `${key}=${value};`)
-					.join('')
-			: '';
 		const header: Record<string, string> = {};
 		const param: Record<string, string> = {};
 		header['compress'] = 'false';
@@ -256,81 +254,100 @@ export class Bucket {
 		uploadOptions?.contentLength && (header['content-length'] = uploadOptions?.contentLength);
 		uploadOptions?.cacheControl && (header['cache-control'] = uploadOptions?.cacheControl);
 		uploadOptions?.storageClass && (header['storage-class'] = uploadOptions?.storageClass);
-		metaData && (header['x-user-meta'] = metaData);
+		if (uploadOptions?.metaData) {
+			header['x-user-meta'] = Object.entries(uploadOptions.metaData)
+				.map(([key, value]) => `${key}=${value}`)
+				.join('; ');
+		}
 		uploadOptions?.extractUpload && (param['extractAndUpload'] = uploadOptions?.extractUpload);
-		const { headers, params, url } = await this.#addAuthProperties(param, header);
+		const { headers, params, url, auth } = await this.#addAuthProperties(param, header);
 		const request: IRequestConfig = {
 			method: REQ_METHOD.put,
 			url: url + `/${encodeURI(key)}`,
-			data: convertToReadableStream(body),
+			data: body,
 			qs: params,
-			type: typeof body === 'string' ? RequestType.JSON : RequestType.RAW,
+			type: RequestType.RAW,
 			expecting: param.extractAndUpload ? ResponseType.JSON : ResponseType.RAW,
 			headers,
 			service: CatalystService.EXTERNAL,
-			auth: false,
+			auth,
 			track: true,
 			abortSignal: uploadOptions?.abortSignal,
 			user: CREDENTIAL_USER.user
 		};
-		const resp = await this._requester.send(request);
-		if (resp.statusCode === 202) {
-			return resp.data;
-		}
-		return resp.statusCode === 200;
+		await this._requester.send(request);
 	}
 
 	/**
-	 * Checks whether a specific object exists in the bucket and whether the given user has permission to access it.
-	 * @param key - The name that uniquely identifies the object within the bucket.
-	 * @param versionId - The version ID of the object (for versioned buckets, optional).
-	 * @param throwErr - Whether to throw an error if the object does not exist or is inaccessible.
-	 * 					 Defaults to `false`.
-	 * @access admin, user
+	 * Checks whether an object exists and is accessible.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param options - Options for the headObject operation.
+	 *   - versionId - The optional object version identifier.
+	 *   - throwErr - Whether to rethrow not-found or access errors.
+	 * @returns A promise that resolves to boolean.
+	 * @throws {CatalystStratusError} when input validation fails.
+	 * @throws {Error} when the underlying request or stream operation fails.
 	 * @example
-	 * ```js
-	 * const key = 'out1/sam1/temp1.txt';
-	 * // Check the availability of the object.
-	 * const headObjectRes = await bucket.headObject(key, { versionId: 'dskjhgdfue627', throwErr: false });
-	 * console.log(headObjectRes);
+	 * ```ts
+	 * const exists = await bucket.headObject('folder/file.txt');
 	 * ```
-	 * @returns {boolean} `true` if the object exists and is accessible, `false` otherwise.
 	 */
-	async headObject(key: string, { versionId }: { versionId?: string } = {}): Promise<boolean> {
+	async headObject(
+		key: string,
+		{
+			versionId,
+			throwErr
+		}: {
+			versionId?: string;
+			throwErr?: boolean;
+		} = {}
+	): Promise<boolean> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(key, 'key', true);
 		}, CatalystStratusError);
-		const param = {
-			versionId
-		};
-		const { headers, params, url } = await this.#addAuthProperties(param);
+		const param = versionId ? { versionId } : {};
+		const { headers, params, url, auth } = await this.#addAuthProperties(param);
 		const request: IRequestConfig = {
 			method: REQ_METHOD.head,
 			url: url + `/${encodeURI(key)}`,
 			qs: params,
 			headers,
 			type: RequestType.JSON,
-			expecting: ResponseType.JSON,
+			expecting: ResponseType.RAW,
 			service: CatalystService.EXTERNAL,
-			external: true,
+			auth,
 			user: CREDENTIAL_USER.user
 		};
-		const resp = await this._requester.send(request);
-		return resp.statusCode === 200;
+		try {
+			const resp = await this._requester.send(request);
+			return resp.statusCode === 200;
+		} catch (err) {
+			if (!throwErr) {
+				const status = (err as CatalystAPIError)?.statusCode;
+				if (status === 404 || status === 403 || status === 400) {
+					return false;
+				}
+			}
+			throw err;
+		}
 	}
 
 	/**
-	 * Initiates a multipart upload for an object in the bucket.
-	 * @param key - The name of the object to upload.
-	 * @access admin, user
-	 * @returns {IStratusInitiateUpload} Details of the initiated upload.
+	 * Starts a multipart upload for an object.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @returns A promise that resolves to IStratusInitiateUpload.
+	 * @throws {CatalystStratusError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const upload = await bucket.initiateMultipartUpload('large.bin');
+	 * ```
 	 */
 	async initiateMultipartUpload(key: string): Promise<IStratusInitiateUpload> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(key, 'key', true);
 		}, CatalystStratusError);
 		const contentType = getContentType(key) as string;
-		const { headers, params, url } = await this.#addAuthProperties();
+		const { headers, params, url, auth } = await this.#addAuthProperties();
 		const request: IRequestConfig = {
 			method: REQ_METHOD.put,
 			url: url + `/${encodeURI(key)}?multipart`,
@@ -342,7 +359,7 @@ export class Bucket {
 				compress: 'false',
 				'Content-Type': contentType ? contentType : 'application/octet-stream'
 			},
-			auth: false,
+			auth,
 			service: CatalystService.EXTERNAL,
 			user: CREDENTIAL_USER.user
 		};
@@ -351,14 +368,17 @@ export class Bucket {
 	}
 
 	/**
-	 * Uploads an individual part of a file as part of a multipart upload.
-	 * @param key - The name of the object.
-	 * @param uploadId - The ID of the specific upload.
-	 * @param body - The content to be uploaded (can be a `Stream` or `Buffer`).
-	 * @param partNumber - The part number (must be between 1 and 1000) indicating the order of the part.
-	 * @param overwrite - Whether to overwrite the part if it already exists (defaults to 'false').
-	 * @access admin, user
-	 * @returns {boolean} `true` if the part is successfully uploaded, `false` otherwise.
+	 * Uploads one part of an active multipart upload.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param uploadId - The multipart upload identifier.
+	 * @param body - The object content or multipart part content.
+	 * @param partNumber - The multipart part number.
+	 * @param overwrite - Whether to overwrite an existing part.
+	 * @returns A promise that resolves to void.
+	 * @example
+	 * ```ts
+	 * await bucket.uploadPart(key, uploadId, partBody, 1);
+	 * ```
 	 */
 	async uploadPart(
 		key: string,
@@ -366,12 +386,15 @@ export class Bucket {
 		body: StratusObjectRequest,
 		partNumber: number,
 		overwrite = 'false'
-	): Promise<boolean> {
-		const { headers, params, url } = await this.#addAuthProperties({ uploadId, partNumber });
+	): Promise<void> {
+		const { headers, params, url, auth } = await this.#addAuthProperties({
+			uploadId,
+			partNumber
+		});
 		const request: IRequestConfig = {
 			method: REQ_METHOD.put,
 			url: url + `/${encodeURI(key as string)}`,
-			data: convertToReadableStream(body),
+			data: body,
 			qs: params,
 			type: RequestType.RAW,
 			headers: {
@@ -381,22 +404,24 @@ export class Bucket {
 			},
 			expecting: ResponseType.RAW,
 			service: CatalystService.EXTERNAL,
-			auth: false,
+			auth,
 			user: CREDENTIAL_USER.user
 		};
-		const resp = await this._requester.send(request);
-		return resp.statusCode === 200;
+		await this._requester.send(request);
 	}
 
 	/**
-	 * Completes the multipart upload after all parts have been uploaded.
-	 * @param key - The name of the object.
-	 * @param uploadId - The ID of the specific upload.
-	 * @access admin, user
-	 * @returns {boolean} `true` if the upload is completed successfully, `false` otherwise.
+	 * Completes an active multipart upload.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param uploadId - The multipart upload identifier.
+	 * @returns A promise that resolves to void.
+	 * @example
+	 * ```ts
+	 * await bucket.completeMultipartUpload(key, uploadId);
+	 * ```
 	 */
-	async completeMultipartUpload(key: string, uploadId: string): Promise<boolean> {
-		const { headers, params, url } = await this.#addAuthProperties({ uploadId });
+	async completeMultipartUpload(key: string, uploadId: string): Promise<void> {
+		const { headers, params, url, auth } = await this.#addAuthProperties({ uploadId });
 		const request: IRequestConfig = {
 			method: REQ_METHOD.put,
 			url: url + `/${encodeURI(key as string)}?completeMultipart`,
@@ -405,26 +430,28 @@ export class Bucket {
 			type: RequestType.JSON,
 			expecting: ResponseType.RAW,
 			service: CatalystService.EXTERNAL,
-			auth: false,
+			auth,
 			track: true,
 			user: CREDENTIAL_USER.user
 		};
-		const resp = await this._requester.send(request);
-		return resp.statusCode === 202;
+		await this._requester.send(request);
 	}
 
 	/**
-	 * Retrieves a summary of the uploaded parts for a multipart upload.
-	 * @param key - The name of the object.
-	 * @param uploadId - The ID of the specific upload.
-	 * @access admin, user
-	 * @returns {IStratusMultipartSummaryRes} A summary of the uploaded parts.
+	 * Retrieves the uploaded-part summary for a multipart upload.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param uploadId - The multipart upload identifier.
+	 * @returns A promise that resolves to IStratusMultipartSummaryRes.
+	 * @example
+	 * ```ts
+	 * const summary = await bucket.getMultipartUploadSummary(key, uploadId);
+	 * ```
 	 */
 	async getMultipartUploadSummary(
 		key: string,
 		uploadId: string
 	): Promise<IStratusMultipartSummaryRes> {
-		const { headers, params, url } = await this.#addAuthProperties({ uploadId });
+		const { headers, params, url, auth } = await this.#addAuthProperties({ uploadId });
 		const request: IRequestConfig = {
 			method: REQ_METHOD.get,
 			url: url + `/${encodeURI(key as string)}?multipartSummary`,
@@ -433,7 +460,7 @@ export class Bucket {
 			type: RequestType.JSON,
 			expecting: ResponseType.JSON,
 			service: CatalystService.EXTERNAL,
-			auth: false,
+			auth,
 			track: true,
 			user: CREDENTIAL_USER.user
 		};
@@ -446,37 +473,55 @@ export class Bucket {
 		headers: Record<string, string> = {},
 		access = 'authenticated'
 	) {
-		const url = this.bucketDetails.bucket_url;
+		const url = this._bucketDetails.bucket_url;
 		if (access === 'public') {
 			return { params, headers, url };
 		}
+		let auth = true;
 		if (this.#util.isAdmin()) {
 			params = {
 				...params,
 				...((await this.#util.getBucketSignature()) as Record<string, string>)
 			};
-			return { headers, params, url: `${url}/_signed` };
+			return { headers, params, url: `${url}/_signed`, auth: false };
+		} else if (typeof window !== 'undefined' || IS_LOCAL === 'true') {
+			const accessToken = await this.#jwtAuth.getJWTAccessToken();
+
+			if (!accessToken) {
+				throw new Error('Failed to retrieve access token for authentication.');
+			}
+			headers.Authorization = `Zoho-oauthtoken ${accessToken}`;
+			auth = false;
+		} else {
+			await this.#jwtAuth.initializeConfig();
 		}
 
-		headers.Authorization = `Zoho-oauthtoken ${await this.#jwtAuth.getJWTAccessToken()}`;
 		params.zaid = this.#jwtAuth.zaid;
 		params.orgType = 70;
 
-		return { params, headers, url };
+		return { params, headers, url, auth };
 	}
 
+	/**
+	 * function toString() { [native code] }
+	 */
 	toString(): string {
-		return JSON.stringify(this.bucketDetails);
+		return JSON.stringify(this._bucketDetails);
 	}
 
+	/**
+	 * toJSON operation.
+	 */
 	toJSON(): IStratusBucket {
-		return this.bucketDetails as IStratusBucket;
+		return this._bucketDetails as IStratusBucket;
 	}
 }
 
+/**
+ * Represents a Stratus bucket with admin-scope management operations.
+ */
 export class BucketAdmin extends Bucket {
 	_requester: Handler;
-	auth = true;
 	#util: Util;
 	#cors: Cors;
 	constructor(requester: Handler, bucket: IStratusBucket | string) {
@@ -486,28 +531,50 @@ export class BucketAdmin extends Bucket {
 		this.#cors = new Cors(this);
 	}
 
+	/**
+	 * Returns the transport handler used to authorize bucket requests.
+	 * @returns Handler.
+	 * @example
+	 * ```ts
+	 * const handler = bucket.getAuthorizationClient();
+	 * ```
+	 */
 	getAuthorizationClient(): Handler {
 		return this._requester;
 	}
 
 	/**
-	 * Get the name of the bucket.
-	 * @returns { string } The name of the bucket as a string.
+	 * Returns the Stratus bucket name.
+	 * @returns string.
+	 * @example
+	 * ```ts
+	 * const name = bucket.getName();
+	 * ```
 	 */
 	getName(): string {
-		return this.bucketDetails.bucket_name;
+		return this._bucketDetails.bucket_name;
 	}
 
 	/**
-	 * Retrieve a paginated list of objects and their details in the bucket.
-	 * @param options - Configuration options for pagination, such as folder listing,
-	 * 				maximum objects, and prefix filters.
-	 * @access admin
-	 * @returns { IStratusObjects } An object containing details of the listed objects.
+	 * Retrieves one page of objects from the bucket.
+	 * @param options - Optional settings for the request.
+	 *   - range - Optional range setting.
+	 *   - versionId - Optional versionId setting.
+	 *   - format - Optional format setting.
+	 *   - mode - Optional mode setting.
+	 *   - emotion - Optional emotion setting.
+	 *   - age - Optional age setting.
+	 *   - gender - Optional gender setting.
+	 * @returns A promise that resolves to IStratusObjects.
+	 * @throws {CatalystStratusError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const page = await bucket.listPagedObjects({ maxKeys: 100 });
+	 * ```
 	 */
 	async listPagedObjects(options: IStratusPagedObjectOptions = {}): Promise<IStratusObjects> {
 		const param: Record<string, string> = {
-			bucket_name: this.bucketDetails.bucket_name,
+			bucket_name: this._bucketDetails.bucket_name,
 			folder_listing: options.folderListing || 'false'
 		};
 
@@ -557,11 +624,20 @@ export class BucketAdmin extends Bucket {
 	}
 
 	/**
-	 * Retrieve objects and their details in the bucket as an iterable.
-	 * @param prefix - (Optional) A prefix to filter the objects returned.
-	 * @param maxKeys - (Optional) The maximum number of objects to return per request.
-	 * @access admin
-	 * @returns { AsyncGenerator<StratusObject, void> } An asynchronous generator yielding `StratusObject` instances.
+	 * Iterates through all objects in the bucket across pages.
+	 * @param options - Optional settings for the request.
+	 *   - range - Optional range setting.
+	 *   - versionId - Optional versionId setting.
+	 *   - format - Optional format setting.
+	 *   - mode - Optional mode setting.
+	 *   - emotion - Optional emotion setting.
+	 *   - age - Optional age setting.
+	 *   - gender - Optional gender setting.
+	 * @returns AsyncGenerator<StratusObject, void>.
+	 * @example
+	 * ```ts
+	 * for await (const object of bucket.listIterableObjects()) { console.log(object.toJSON()); }
+	 * ```
 	 */
 	async *listIterableObjects(
 		options: IStratusPagedObjectOptions = {}
@@ -576,15 +652,27 @@ export class BucketAdmin extends Bucket {
 	}
 
 	/**
-	 * Fetch detailed information about the bucket.
-	 * @access admin
-	 * @returns { IStratusBucket } Containing metadata and configuration details of the bucket.
+	 * Retrieves bucket or object details.
+	 * @returns A promise that resolves to IStratusBucket.
+	 * @example
+	 * ```ts
+	 * const details = await bucket.getDetails();
+	 * ```
 	 */
 	async getDetails(): Promise<IStratusBucket> {
+		// Return cached details when the bucket was hydrated from a list/get response.
+		// `bucket_meta` is present in both `/bucket` (list) and `/bucket?bucket_name=`
+		// responses, so it is a reliable cache marker.
+		if (
+			this._bucketDetails.bucket_meta !== undefined ||
+			this._bucketDetails.objects_count !== undefined
+		) {
+			return this._bucketDetails as IStratusBucket;
+		}
 		const request: IRequestConfig = {
 			method: REQ_METHOD.get,
 			path: '/bucket',
-			qs: { bucket_name: this.bucketDetails.bucket_name },
+			qs: { bucket_name: this._bucketDetails.bucket_name },
 			type: RequestType.JSON,
 			expecting: ResponseType.JSON,
 			service: CatalystService.BAAS,
@@ -596,13 +684,16 @@ export class BucketAdmin extends Bucket {
 	}
 
 	/**
-	 * Delete all the objects in the bucket.
-	 * @access admin
-	 * @returns { message: string } Details of the truncate operation.
+	 * Deletes every object in the bucket.
+	 * @returns A promise that resolves to { message: string }.
+	 * @example
+	 * ```ts
+	 * const result = await bucket.truncate();
+	 * ```
 	 */
 	async truncate(): Promise<{ message: string }> {
 		const param = {
-			bucket_name: this.bucketDetails.bucket_name
+			bucket_name: this._bucketDetails.bucket_name
 		};
 		const request: IRequestConfig = {
 			method: REQ_METHOD.delete,
@@ -619,19 +710,15 @@ export class BucketAdmin extends Bucket {
 	}
 
 	/**
-	 * Copies an object within the bucket to a specified destination.
-	 * @param key - The name of the source object to copy.
-	 * @param destKey - The name of the destination object.
-	 * @access admin
+	 * Copies an object to another key in the same bucket.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param destKey - The destination object key.
+	 * @returns A promise that resolves to IStratusObjectCopyRes.
+	 * @throws {CatalystStratusError} when input validation fails.
 	 * @example
-	 * ```js
-	 * const sourceKey = 'sam/out/temp.txt';
-	 * const destKey = 'out/sam/temp.txt';
-	 * // invoke copy object operation.
-	 * const copyObjectRes = await bucket.copyObject(sourceKey, destKey);
-	 * console.log(copyObjectRes);
+	 * ```ts
+	 * const result = await bucket.copyObject('src.txt', 'dest.txt');
 	 * ```
-	 * @returns { IStratusObjectCopyRes } The result of the copy operation.
 	 */
 	async copyObject(key: string, destKey: string): Promise<IStratusObjectCopyRes> {
 		await wrapValidatorsWithPromise(() => {
@@ -639,7 +726,7 @@ export class BucketAdmin extends Bucket {
 			isNonEmptyString(destKey, 'destKey', true);
 		}, CatalystStratusError);
 		const _param = {
-			bucket_name: this.bucketDetails.bucket_name,
+			bucket_name: this._bucketDetails.bucket_name,
 			object_key: key,
 			destination: destKey
 		};
@@ -658,18 +745,15 @@ export class BucketAdmin extends Bucket {
 	}
 
 	/**
-	 * Renames an existing object in the bucket.
-	 * @param key - The current name of the object to rename.
-	 * @param destKey - The new name for the object key.
-	 * @access admin
+	 * Renames an object in the bucket.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param destKey - The destination object key.
+	 * @returns A promise that resolves to IStratusObjectRenameRes.
+	 * @throws {CatalystStratusError} when input validation fails.
 	 * @example
-	 * ```js
-	 * const sourceKey = 'sam/out/temp.txt';
-	 * const destKey = 'out/sam/temp.txt';
-	 * const renameObjectRes = await bucket.renameObject(sourceKey, destKey);
-	 * console.log(renameObjectRes);
+	 * ```ts
+	 * const result = await bucket.renameObject('old.txt', 'new.txt');
 	 * ```
-	 * @returns { IStratusObjectRenameRes } The result of the rename operation.
 	 */
 	async renameObject(key: string, destKey: string): Promise<IStratusObjectRenameRes> {
 		await wrapValidatorsWithPromise(() => {
@@ -677,7 +761,7 @@ export class BucketAdmin extends Bucket {
 			isNonEmptyString(destKey, 'destKey', true);
 		}, CatalystStratusError);
 		const param = {
-			bucket_name: this.bucketDetails.bucket_name,
+			bucket_name: this._bucketDetails.bucket_name,
 			current_key: key,
 			rename_to: destKey
 		};
@@ -696,22 +780,19 @@ export class BucketAdmin extends Bucket {
 	}
 
 	/**
-	 * Generates a pre-signed URL for the specified object, allowing temporary access.
-	 * @param key - The name of the object for which the URL is generated.
-	 * @param urlAction - The HTTP method for the operation (`PUT` or `GET`).
-	 * @param signedUrlOptions - Optional settings for the URL, such as expiration time or activation period.
-	 * @access admin
+	 * Generates a temporary pre-signed URL for an object.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param urlAction - The HTTP action for the pre-signed URL.
+	 * @param signedUrlOptions - Optional pre-signed URL settings.
+	 *   - expiryIn - Optional expiryIn setting.
+	 *   - activeFrom - Optional activeFrom setting.
+	 *   - versionId - Optional versionId setting.
+	 * @returns A promise that resolves to { signature: string }.
+	 * @throws {CatalystStratusError} when input validation fails.
 	 * @example
-	 * ```js
-	 * const key = 'sam/out/temp.txt';
-	 * const options = {
-	 *   expiryIn: '3000', // Expiration time in seconds
-	 *   activeFrom: '23736279382' // Activation start time (timestamp)
-	 * };
-	 * const preSignedUrlRes = await bucket.generatePreSignedUrl(key, 'GET', options);
-	 * console.log(preSignedUrlRes);
+	 * ```ts
+	 * const result = await bucket.generatePreSignedUrl('file.txt', 'GET', { expiryIn: '300' });
 	 * ```
-	 * @returns { signature: string } An object containing the pre-signed URL.
 	 */
 	async generatePreSignedUrl(
 		key: string,
@@ -723,7 +804,7 @@ export class BucketAdmin extends Bucket {
 			isNonEmptyString(urlAction, 'url_action', true);
 		}, CatalystStratusError);
 		const param: Record<string, string> = {
-			bucket_name: this.bucketDetails.bucket_name,
+			bucket_name: this._bucketDetails.bucket_name,
 			object_key: key
 		};
 		signedUrlOptions?.expiryIn && (param['expiry_in_seconds'] = signedUrlOptions.expiryIn);
@@ -744,23 +825,20 @@ export class BucketAdmin extends Bucket {
 	}
 
 	/**
-	 * Deletes a specified path and all its objects in the bucket.
-	 * @param path - The path to be deleted, relative to the bucket.
-	 * @access admin
+	 * Deletes all objects under a path prefix.
+	 * @param path - The path prefix to delete or purge.
+	 * @returns A promise that resolves to IStratusObjectDetails.
+	 * @throws {CatalystStratusError} when input validation fails.
 	 * @example
-	 * ```js
-	 * const path = 'sam/';
-	 * // Invoke delete path operation
-	 * const pathDeleteRes = await bucket.deletePath(path);
-	 * console.log(pathDeleteRes);
+	 * ```ts
+	 * const result = await bucket.deletePath('folder/');
 	 * ```
-	 * @returns { IStratusObjectDetails } Details of the deleted objects.
 	 */
 	async deletePath(path: string): Promise<IStratusObjectDetails> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(path, 'object_path', true);
 		}, CatalystStratusError);
-		const param = { bucket_name: this.bucketDetails.bucket_name, prefix: path };
+		const param = { bucket_name: this._bucketDetails.bucket_name, prefix: path };
 		const request: IRequestConfig = {
 			method: REQ_METHOD.delete,
 			path: '/bucket/object/prefix',
@@ -776,21 +854,17 @@ export class BucketAdmin extends Bucket {
 	}
 
 	/**
-	 * Clears cached items in the bucket.
-	 * @param path  - An optional array of paths to clear cache for. If not provided, the entire cache is cleared.
-	 * @access admin
+	 * Purges cached content for selected paths or the entire bucket.
+	 * @param path - The path prefix to delete or purge.
+	 * @returns A promise that resolves to IStratusObjectDetails.
 	 * @example
-	 * ```js
-	 * const path = ['sam', 'out/sam/temp.txt'];
-	 * // Invoke purge cache operation
-	 * const purgeCacheRes = await bucket.purgeCache(path);
-	 * console.log(purgeCacheRes);
+	 * ```ts
+	 * const result = await bucket.purgeCache(['folder/file.txt']);
 	 * ```
-	 * @returns { IStratusObjectDetails } Details of the cleared cache items.
 	 */
 	async purgeCache(path?: Array<string>): Promise<IStratusObjectDetails> {
 		const param = {
-			bucket_name: this.bucketDetails.bucket_name
+			bucket_name: this._bucketDetails.bucket_name
 		};
 		const request: IRequestConfig = {
 			method: REQ_METHOD.put,
@@ -807,26 +881,19 @@ export class BucketAdmin extends Bucket {
 	}
 
 	/**
-	 * Deletes a single object from the bucket.
-	 * @param key - The name of the object to delete.
-	 * @param versionId - The version ID of the object to delete (optional).
-	 * @param ttl - The time to live (TTL) in seconds.
-	 * 				The object will not be deleted immediately but after the specified time (optional).
-	 * @access admin, user
+	 * Deletes an object from the bucket.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param options - Options for the deleteObject operation.
+	 *   - versionId - The optional object version identifier.
+	 *   - ttl - Optional time-to-live in seconds before deletion.
+	 * @returns A promise that resolves to void.
+	 * @throws {CatalystStratusError} when input validation fails.
 	 * @example
-	 * ```js
-	 * const key = 'out/sam/temp.txt';
-	 * const options = {
-	 *   versionId: 'bfjd673e2hgh2', // Optional: Specific version ID of the object.
-	 *   ttl: 300 // Optional: Time to live in seconds.
-	 * };
-	 * // Invoke object deletion operation
-	 * const deleteObjectRes = await bucket.deleteObject(key, options);
-	 * console.log(deleteObjectRes);
+	 * ```ts
+	 * await bucket.deleteObject('folder/file.txt');
 	 * ```
-	 * @returns { Record<string, string> } Containing a message about the deletion operation.
 	 */
-	async deleteObject(
+	override async deleteObject(
 		key: string,
 		{
 			versionId,
@@ -835,40 +902,33 @@ export class BucketAdmin extends Bucket {
 			versionId?: string;
 			ttl?: number;
 		} = {}
-	): Promise<Record<string, string>> {
+	): Promise<void> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(key, 'key', true);
 		}, CatalystStratusError);
 		if (!this.#util.isAdmin()) {
-			super.deleteObject(key, { versionId, ttl });
+			return super.deleteObject(key, { versionId, ttl });
 		}
 		const objects = [
 			{
 				key,
-				versionId
+				...(versionId ? { version_id: versionId } : {})
 			}
 		];
-		return await this.deleteObjects(objects, ttl);
+		await this.deleteObjects(objects, ttl);
+		return;
 	}
 
 	/**
 	 * Deletes multiple objects from the bucket.
-	 * @param objects - An array of objects to be deleted.
-	 * @param ttl - The time to live (TTL) in seconds.
-	 * 				The objects will not be deleted immediately but after the specified time (optional).
-	 * @access admin
+	 * @param objects - The objects to delete.
+	 * @param ttl - Optional time-to-live in seconds before deletion.
+	 * @returns A promise that resolves to Record<string, string>.
+	 * @throws {CatalystStratusError} when input validation fails.
 	 * @example
-	 * ```js
-	 * const objects = [
-	 *   { key: 'out1/sam1/temp1.txt', versionId: 'jsdbe6738y3bje' },
-	 *   { key: 'out2/sam2/temp2.txt', versionId: '34mnkejh89f9' }
-	 * ];
-	 * const ttl = 1000; // Time to live in seconds.
-	 * // Invoke objects deletion operation
-	 * const deleteObjectsRes = await bucket.deleteObjects(objects, ttl);
-	 * console.log(deleteObjectsRes);
+	 * ```ts
+	 * const result = await bucket.deleteObjects([{ key: 'file.txt' }]);
 	 * ```
-	 * @returns { Record<string, string> } Containing the deletion status, typically `{ message: 'Objects deleted successfully' }`.
 	 */
 	async deleteObjects(
 		objects: Array<{ key: string; versionId?: string }>,
@@ -886,7 +946,7 @@ export class BucketAdmin extends Bucket {
 			ttl_in_seconds: ttl
 		};
 		const param = {
-			bucket_name: this.bucketDetails.bucket_name
+			bucket_name: this._bucketDetails.bucket_name
 		};
 		const request: IRequestConfig = {
 			method: REQ_METHOD.put,
@@ -920,7 +980,7 @@ export class BucketAdmin extends Bucket {
 	// 	},
 	// 	continuationToken?: string
 	// ): Promise<{ data: IncomingMessage; continuationToken?: string }> {
-	// 	const url = this.bucketDetails.bucket_url;
+	// 	const url = this._bucketDetails.bucket_url;
 	// 	let inputData;
 	// 	if (objects instanceof Array) {
 	// 		const objList: Array<{ key: string }> = objects.map((key) => ({ key }));
@@ -949,19 +1009,15 @@ export class BucketAdmin extends Bucket {
 	// }
 
 	/**
-	 * Extracts a given zip object and uploads all the files inside it as individual objects to the same bucket.
-	 * @param key - The name of the zip object to unzip.
-	 * @param destPath - The destination path where the unzipped files will be stored.
-	 * @access admin
+	 * Extracts a zip object into objects in the bucket.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param destPath - The destination path for extracted files.
+	 * @returns A promise that resolves to IStratusUnzipRes.
+	 * @throws {CatalystStratusError} when input validation fails.
 	 * @example
-	 * ```js
-	 * const key = 'out/sam/temp.zip';
-	 * const destPath = 'sam/out/';
-	 * // Invoke zip extraction operation
-	 * const unzipObjectRes = await bucket.unzipObject(key, destPath);
-	 * console.log(unzipObjectRes);
+	 * ```ts
+	 * const result = await bucket.unzipObject('archive.zip', 'extract/');
 	 * ```
-	 * @returns { IStratusUnzipRes } Containing details about the extracted objects.
 	 */
 	async unzipObject(key: string, destPath: string): Promise<IStratusUnzipRes> {
 		await wrapValidatorsWithPromise(() => {
@@ -969,7 +1025,7 @@ export class BucketAdmin extends Bucket {
 			isNonEmptyString(destPath, 'dest_path', true);
 		}, CatalystStratusError);
 		const intrlparam = {
-			bucket_name: this.bucketDetails.bucket_name,
+			bucket_name: this._bucketDetails.bucket_name,
 			object_key: key,
 			destination: destPath
 		};
@@ -988,19 +1044,15 @@ export class BucketAdmin extends Bucket {
 	}
 
 	/**
-	 * Retrieves the status of an unzip operation.
-	 * @param key - The name of the zip object that was being extracted.
-	 * @param taskId - The ID of the unzip task to check the status for.
-	 * @access admin
+	 * Retrieves the status of a zip extraction task.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param taskId - The zip extraction task identifier.
+	 * @returns A promise that resolves to IStratusUnzipStatus.
+	 * @throws {CatalystStratusError} when input validation fails.
 	 * @example
-	 * ```js
-	 * const key = 'out/sam/temp.zip';
-	 * const taskId = '4384292001930123';
-	 * // Get the status of zip extraction
-	 * const getUnzipStatusRes = await bucket.getUnzipStatus(key, taskId);
-	 * console.log(getUnzipStatusRes);
+	 * ```ts
+	 * const status = await bucket.getUnzipStatus('archive.zip', 'task-id');
 	 * ```
-	 * @returns { IStratusUnzipStatus } Containing the status of the unzip operation.
 	 */
 	async getUnzipStatus(key: string, taskId: string): Promise<IStratusUnzipStatus> {
 		await wrapValidatorsWithPromise(() => {
@@ -1008,7 +1060,7 @@ export class BucketAdmin extends Bucket {
 			isNonEmptyString(taskId, 'task_id', true);
 		}, CatalystStratusError);
 		const _param = {
-			bucket_name: this.bucketDetails.bucket_name,
+			bucket_name: this._bucketDetails.bucket_name,
 			object_key: key,
 			task_id: taskId
 		};
@@ -1027,9 +1079,12 @@ export class BucketAdmin extends Bucket {
 	}
 
 	/**
-	 * Retrieves the CORS details of the bucket.
-	 * @access admin
-	 * @returns {Array<IStratusCorsRes>} The CORS configuration details for the bucket.
+	 * Retrieves the CORS configuration for the bucket.
+	 * @returns A promise that resolves to Array<IStratusCorsRes>.
+	 * @example
+	 * ```ts
+	 * const cors = await corsClient.getCors();
+	 * ```
 	 */
 	async getCors(): Promise<Array<IStratusCorsRes>> {
 		const corsDetails = this.#cors.getCors();
@@ -1037,20 +1092,18 @@ export class BucketAdmin extends Bucket {
 	}
 
 	/**
-	 * Checks whether a specific object exists in the bucket and whether the given user has permission to access it.
-	 * @param key - The name that uniquely identifies the object within the bucket.
-	 * @param versionId - The version ID of the object (for versioned buckets, optional).
-	 * @param throwErr - Whether to throw an error if the object does not exist or is inaccessible.
-	 * 					 Defaults to `false`.
-	 * @access admin, user
+	 * Checks whether an object exists and is accessible.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param options - Options for the headObject operation.
+	 *   - versionId - The optional object version identifier.
+	 *   - throwErr - Whether to rethrow not-found or access errors.
+	 * @returns A promise that resolves to boolean.
+	 * @throws {CatalystStratusError} when input validation fails.
+	 * @throws {Error} when the underlying request or stream operation fails.
 	 * @example
-	 * ```js
-	 * const key = 'out1/sam1/temp1.txt';
-	 * // Check the availability of the object.
-	 * const headObjectRes = await bucket.headObject(key, { versionId: 'dskjhgdfue627', throwErr: false });
-	 * console.log(headObjectRes);
+	 * ```ts
+	 * const exists = await bucket.headObject('folder/file.txt');
 	 * ```
-	 * @returns {boolean} `true` if the object exists and is accessible, `false` otherwise.
 	 */
 	override async headObject(
 		key: string,
@@ -1070,7 +1123,7 @@ export class BucketAdmin extends Bucket {
 				return super.headObject(key, { versionId });
 			}
 			const params: Record<string, string> = {
-				bucket_name: this.bucketDetails.bucket_name,
+				bucket_name: this._bucketDetails.bucket_name,
 				object_key: key
 			};
 			versionId && (params['version_id'] = versionId);
@@ -1098,11 +1151,14 @@ export class BucketAdmin extends Bucket {
 	}
 
 	/**
-	 * Get an object instance.
-	 * @param key - The name of the object.
-	 * @access admin, user
-	 * @returns {StratusObject} An instance of the object.
-	 * @throws {CatalystStratusError} If the `key` is invalid.
+	 * Creates a Stratus object instance for a key.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @returns StratusObject.
+	 * @throws {CatalystStratusError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const object = bucket.object('folder/file.txt');
+	 * ```
 	 */
 	object(key: string): StratusObject {
 		if (!isNonEmptyString(key)) {
@@ -1115,12 +1171,18 @@ export class BucketAdmin extends Bucket {
 		return new StratusObject(this, key);
 	}
 
+	/**
+	 * function toString() { [native code] }
+	 */
 	toString(): string {
-		return JSON.stringify(this.bucketDetails);
+		return JSON.stringify(this._bucketDetails);
 	}
 
+	/**
+	 * toJSON operation.
+	 */
 	toJSON(): IStratusBucket {
-		return this.bucketDetails as IStratusBucket;
+		return this._bucketDetails as IStratusBucket;
 	}
 
 	#serializeResponse(resp: Record<string, unknown>): Record<string, unknown> {

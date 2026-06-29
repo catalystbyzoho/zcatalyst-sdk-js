@@ -1,8 +1,8 @@
-'use strict';
 // import fs from 'fs';
 
 export interface Component {
 	getComponentName(): string;
+	getComponentVersion?(): string;
 }
 
 export interface ParsableComponent<T> extends Component {

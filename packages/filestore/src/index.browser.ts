@@ -1,1 +1,0 @@
-export { Filestore } from './filestore';

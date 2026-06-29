@@ -1,19 +1,23 @@
 import { CatalystNoSQLError } from '../utils/error';
 import { TNoSQLByte } from './types';
 
-/**
- * Byte(B) implementation of a NoSQL
- */
+/** * Byte(B) implementation of a NoSQL */
 export class NoSQLByte {
 	#bytes: TNoSQLByte | string;
+	/** Creates a NoSQL byte wrapper from a base64 string or supported binary value. */
 	constructor(bytes: TNoSQLByte | string) {
 		this.#bytes = bytes;
 	}
 
 	/**
 	 * Check if an object is a NoSQL compatible buffer
-	 * @param data object to check
+	 * @param data - object to check
 	 * @returns true if the object is a compatible buffer
+	 *
+	 * @example
+	 * ```ts
+	 * const isBinary = NoSQLByte.isBuffer(Buffer.from('hello'));
+	 * ```
 	 */
 	static isBuffer(data: unknown): boolean {
 		const binaryTypes = [
@@ -44,6 +48,11 @@ export class NoSQLByte {
 	/**
 	 * Get a raw representation of the byte value
 	 * @returns byte value
+	 *
+	 * @example
+	 * ```ts
+	 * const raw = new NoSQLByte(Buffer.from('hello')).raw();
+	 * ```
 	 */
 	raw(): TNoSQLByte | string {
 		return this.#bytes;
@@ -52,6 +61,12 @@ export class NoSQLByte {
 	/**
 	 * Converts the NoSQLByte to native Buffer
 	 * @returns Buffer representation of the NoSQLByte
+	 * @throws {CatalystNoSQLError} when the byte value is not a supported binary type.
+	 *
+	 * @example
+	 * ```ts
+	 * const buffer = new NoSQLByte('aGVsbG8=').toBuffer();
+	 * ```
 	 */
 	toBuffer(): Buffer {
 		if (typeof this.#bytes === 'string') {
@@ -82,6 +97,11 @@ export class NoSQLByte {
 	/**
 	 * Converts the NoSQLByte to Int8Array
 	 * @returns Int8Array representation of the NoSQLByte
+	 *
+	 * @example
+	 * ```ts
+	 * const bytes = new NoSQLByte('aGVsbG8=').toInt8Array();
+	 * ```
 	 */
 	toInt8Array(): Int8Array {
 		return this.#bytes instanceof Int8Array ? this.#bytes : Int8Array.from(this.toBuffer());
@@ -90,6 +110,11 @@ export class NoSQLByte {
 	/**
 	 * Converts the NoSQLByte to Uint8Array
 	 * @returns Uint8Array representation of the NoSQLByte
+	 *
+	 * @example
+	 * ```ts
+	 * const bytes = new NoSQLByte('aGVsbG8=').toUint8Array();
+	 * ```
 	 */
 	toUint8Array(): Uint8Array {
 		return this.#bytes instanceof Uint8Array ? this.#bytes : Uint8Array.from(this.toBuffer());
@@ -98,6 +123,11 @@ export class NoSQLByte {
 	/**
 	 * Converts the NoSQLByte to Uint8ClampedArray
 	 * @returns Uint8ClampedArray representation of the NoSQLByte
+	 *
+	 * @example
+	 * ```ts
+	 * const bytes = new NoSQLByte('aGVsbG8=').toUint8ClampedArray();
+	 * ```
 	 */
 	toUint8ClampedArray(): Uint8ClampedArray {
 		return this.#bytes instanceof Uint8ClampedArray
@@ -108,6 +138,11 @@ export class NoSQLByte {
 	/**
 	 * Converts the NoSQLByte to Int16Array
 	 * @returns Int16Array representation of the NoSQLByte
+	 *
+	 * @example
+	 * ```ts
+	 * const bytes = new NoSQLByte(Buffer.from('hello')).toInt16Array();
+	 * ```
 	 */
 	toInt16Array(): Int16Array {
 		return this.#bytes instanceof Int16Array ? this.#bytes : Int16Array.from(this.toBuffer());
@@ -116,6 +151,11 @@ export class NoSQLByte {
 	/**
 	 * Converts the NoSQLByte to Uint16Array
 	 * @returns Uint16Array representation of the NoSQLByte
+	 *
+	 * @example
+	 * ```ts
+	 * const bytes = new NoSQLByte(Buffer.from('hello')).toUint16Array();
+	 * ```
 	 */
 	toUint16Array(): Uint16Array {
 		return this.#bytes instanceof Uint16Array ? this.#bytes : Uint16Array.from(this.toBuffer());
@@ -124,6 +164,11 @@ export class NoSQLByte {
 	/**
 	 * Converts the NoSQLByte to Int32Array
 	 * @returns Int32Array representation of the NoSQLByte
+	 *
+	 * @example
+	 * ```ts
+	 * const bytes = new NoSQLByte(Buffer.from('hello')).toInt32Array();
+	 * ```
 	 */
 	toInt32Array(): Int32Array {
 		return this.#bytes instanceof Int32Array ? this.#bytes : Int32Array.from(this.toBuffer());
@@ -132,6 +177,11 @@ export class NoSQLByte {
 	/**
 	 * Converts the NoSQLByte to Uint32Array
 	 * @returns Uint32Array representation of the NoSQLByte
+	 *
+	 * @example
+	 * ```ts
+	 * const bytes = new NoSQLByte(Buffer.from('hello')).toUint32Array();
+	 * ```
 	 */
 	toUint32Array(): Uint32Array {
 		return this.#bytes instanceof Uint32Array ? this.#bytes : Uint32Array.from(this.toBuffer());
@@ -140,6 +190,11 @@ export class NoSQLByte {
 	/**
 	 * Converts the NoSQLByte to Float32Array
 	 * @returns Float32Array representation of the NoSQLByte
+	 *
+	 * @example
+	 * ```ts
+	 * const bytes = new NoSQLByte(Buffer.from('hello')).toFloat32Array();
+	 * ```
 	 */
 	toFloat32Array(): Float32Array {
 		return this.#bytes instanceof Float32Array
@@ -150,6 +205,11 @@ export class NoSQLByte {
 	/**
 	 * Converts the NoSQLByte to Float64Array
 	 * @returns Float64Array representation of the NoSQLByte
+	 *
+	 * @example
+	 * ```ts
+	 * const bytes = new NoSQLByte(Buffer.from('hello')).toFloat64Array();
+	 * ```
 	 */
 	toFloat64Array(): Float64Array {
 		return this.#bytes instanceof Float64Array

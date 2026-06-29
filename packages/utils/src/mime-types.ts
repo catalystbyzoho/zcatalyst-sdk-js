@@ -35,6 +35,18 @@ const mimeTypes: Record<string, string> = {
 	'.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
 };
 
+/**
+ * Returns the MIME content type for a file name.
+ *
+ * @param fileName - The file name whose extension is inspected.
+ * @returns The matching MIME type or application/octet-stream.
+ *
+ * @example
+ * ```ts
+ * import { getContentType } from '@zcatalyst/utils';
+ * const result = getContentType('file.json');
+ * ```
+ */
 export function getContentType(fileName: string): string {
 	const ext = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
 	return mimeTypes[ext] || 'application/octet-stream';

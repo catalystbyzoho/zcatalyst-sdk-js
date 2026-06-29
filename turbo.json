@@ -1,5 +1,14 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    "tsconfig.base.json",
+    "tsconfig.cjs.json",
+    "tsconfig.es.json",
+    "tsconfig.types.json",
+    "tsconfig.browser.json",
+    ".prettierrc.js",
+    "eslint.config.mjs"
+  ],
   "tasks": {
     "build": {
       "dependsOn": [
@@ -7,28 +16,44 @@
       ],
       "inputs": [
         "src/**/*",
-        "package.json"
+        "package.json",
+        "tsconfig*.json"
       ],
       "outputs": [
         "dist-*/**"
       ]
     },
-    "docs":{
+    "docs": {
       "dependsOn": [
         "^docs"
       ],
       "inputs": [
         "src/**/*",
-        "package.json"
+        "package.json",
+        "typedoc.json"
       ]
     },
     "test": {
       "dependsOn": [
-        "build"
+        "^build"
+      ],
+      "inputs": [
+        "src/**/*",
+        "tests/**/*",
+        "jest.config.*",
+        "package.json",
+        "tsconfig*.json"
       ],
       "outputs": []
     },
     "lint": {
+      "inputs": [
+        "src/**/*",
+        "tests/**/*",
+        "eslint.config.*",
+        ".prettierrc*",
+        "package.json"
+      ],
       "outputs": []
     },
     "clean": {

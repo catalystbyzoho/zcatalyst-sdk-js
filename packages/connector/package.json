@@ -4,9 +4,17 @@
   "main": "./dist-cjs/index.js",
   "module": "./dist-es/index.js",
   "types": "./dist-types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist-es/index.js",
+      "require": "./dist-cjs/index.js",
+      "types": "./dist-types/index.d.ts"
+    }
+  },
   "license": "Apache-2.0",
+  "sideEffects": false,
   "scripts": {
-    "build": "concurrently 'pnpm:build:cjs' 'pnpm:build:es' 'pnpm:build:types && pnpm build:types:downlevel'",
+    "build": "pnpm clean && concurrently 'pnpm:build:cjs' 'pnpm:build:es' 'pnpm:build:types && pnpm build:types:downlevel'",
     "build:cjs": "pnpm tsc -p tsconfig.cjs.json",
     "build:es": "pnpm tsc -p tsconfig.es.json",
     "build:types": "pnpm tsc -p tsconfig.types.json",
@@ -21,11 +29,6 @@
     "@zcatalyst/transport": "workspace:^",
     "@zcatalyst/utils": "workspace:^",
     "@zcatalyst/cache": "workspace:^"
-  },
-  "browser": {
-    "./dist-cjs/index.js": "./dist-cjs/index.browser.js",
-    "./dist-es/index.js": "./dist-es/index.browser.js",
-    "./dist-types/index.d.ts": "./dist-types/index.browser.d.ts"
   },
   "engines": {
     "node": ">=20"

@@ -1,14 +1,21 @@
-'use strict';
+/**
+ * Catalyst QuickML — invoke deployed machine-learning endpoints.
+ *
+ * @packageDocumentation
+ */
 
 import { Handler, IRequestConfig, RequestType } from '@zcatalyst/transport';
 import {
 	CatalystService,
+	Component,
 	CONSTANTS,
 	isNonEmptyObject,
 	isNonEmptyString,
 	wrapValidatorsWithPromise
 } from '@zcatalyst/utils';
 
+import pkg from '../package.json';
+const { version } = pkg;
 import { CatalystQuickMLError } from './utils/error';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
@@ -18,22 +25,38 @@ export interface ICatalystQuickMLResponse {
 	result: Array<string>;
 }
 
-export class QuickML {
+/**
+ * Runs predictions against deployed QuickML endpoints.
+ */
+export class QuickML implements Component {
 	requester: Handler;
 	constructor(app?: unknown) {
-		this.requester = new Handler(app);
+		this.requester = new Handler(app, this);
 	}
 
 	/**
-	 * Sends input data to a QuickML model for prediction.
-	 * @param endPointKey - The key associated with the deployed QuickML endpoint.
-	 * @param inputData - The input data as a key-value pair to be used for prediction.
-	 * @returns {ICatalystQuickMLResponse} The response containing the model's prediction.
-	 * @throws {CatalystQuickMLError} If validation fails for `endPointKey` or `inputData`.
+	 * getComponentName operation.
+	 */
+	getComponentName(): string {
+		return 'quickml';
+	}
+
+	/**
+	 * getComponentVersion operation.
+	 */
+	getComponentVersion(): string {
+		return version;
+	}
+
+	/**
+	 * Sends input data to a QuickML endpoint and returns the prediction response.
+	 * @param endPointKey - The deployed QuickML endpoint key.
+	 * @param inputData - The input fields to send for prediction.
+	 * @returns A promise that resolves to ICatalystQuickMLResponse.
+	 * @throws {CatalystQuickMLError} when input validation fails.
 	 * @example
 	 * ```ts
-	 * const response = await quickMlIns.predict("your-endpoint-key", { "column_name1": "value1", "column_name2": "value2" });
-	 * console.log(response);
+	 * const result = await quickML.predict('endpoint-key', { feature: 'value' });
 	 * ```
 	 */
 	async predict(

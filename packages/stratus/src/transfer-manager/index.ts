@@ -14,6 +14,9 @@ import { IStratusMultipartSummaryRes } from '../utils/interface';
 import { StratusObjectRequest } from '../utils/types';
 import { MultipartUpload } from './multipart-upload';
 
+/**
+ * Provides helpers for multipart Stratus uploads and downloads.
+ */
 export class TransferManager {
 	public _requester: Handler;
 	public bucket: Bucket;
@@ -28,10 +31,11 @@ export class TransferManager {
 		partNumber: number,
 		partSize: number
 	): Promise<boolean> {
-		const res = await initiateRes.uploadPart(stream, partNumber);
-		if (res) {
+		try {
+			await initiateRes.uploadPart(stream, partNumber);
 			LOGGER.info(`Part ${partNumber} Uploaded`);
-		} else {
+			return true;
+		} catch {
 			throw new CatalystStratusError(
 				'UPLOAD_ERROR',
 				`Error while uploading the part ${(partNumber - 1) * partSize} to ${
@@ -39,15 +43,18 @@ export class TransferManager {
 				} in bytes`
 			);
 		}
-		return res;
 	}
 
 	/**
-	 * Creates a new multipart upload instance for uploading an object in parts.
-	 * @param key - The name of the object to be uploaded.
-	 * @param uploadId - (Optional) Upload ID for the multipart upload session.
-	 * 					 If not provided, a new upload is initiated.
-	 * @returns {MultipartUpload} An instance of the MultipartUpload.
+	 * Creates or resumes a multipart upload helper for an object.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param uploadId - The multipart upload identifier.
+	 * @returns A promise that resolves to MultipartUpload.
+	 * @throws {CatalystStratusError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const upload = await transferManager.createMultipartInstance('large.bin');
+	 * ```
 	 */
 	async createMultipartInstance(key: string, uploadId?: string): Promise<MultipartUpload> {
 		await wrapValidatorsWithPromise(() => {
@@ -60,13 +67,18 @@ export class TransferManager {
 	}
 
 	/**
-	 * Uploads an object in multiple parts.
-	 * This method divides the object into smaller parts and uploads them concurrently.
-	 * @param key - The name of the object to be uploaded.
-	 * @param body - The object body as a readable stream.
-	 * @param partSize - The size (in MB) of each part.
-	 * @param concurrency - The maximum number of parts to upload concurrently. Default is 5.
-	 * @returns {IStratusMultipartSummaryRes} The result of the multipart upload, including the status and summary.
+	 * Uploads an object as multiple parts with configurable concurrency.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param data - The input data for the model.
+	 * @param partSize - The part size in MB.
+	 * @param concurrency - The maximum number of parts uploaded concurrently.
+	 * @returns A promise that resolves to IStratusMultipartSummaryRes.
+	 * @throws {CatalystStratusError} when input validation fails.
+	 * @throws {Error} when the underlying request or stream operation fails.
+	 * @example
+	 * ```ts
+	 * const summary = await transferManager.putObjectAsParts('large.bin', stream, 10);
+	 * ```
 	 */
 	async putObjectAsParts(
 		key: string,
@@ -80,10 +92,10 @@ export class TransferManager {
 			isValidNumber(partSize, true);
 		}, CatalystStratusError);
 
-		if (partSize < 5) {
+		if (partSize < 1) {
 			throw new CatalystStratusError(
 				'INVALID_PART_SIZE',
-				'Part size should be greater than 5 MB',
+				'Part size should be greater than 1 MB',
 				partSize
 			);
 		}
@@ -114,11 +126,13 @@ export class TransferManager {
 				}
 			}
 
-			await Promise.all(parts);
-			const completeRes = await initiateRes.completeUpload();
-
-			if (!completeRes) {
-				throw new Error(`Error completing multipart upload for ${key}`);
+			try {
+				await Promise.all(parts);
+				await initiateRes.completeUpload();
+			} catch (err) {
+				throw new Error(
+					`Error completing multipart upload for ${key} error: ${err instanceof Error ? err.message : err}`
+				);
 			}
 
 			return initiateRes.getUploadSummary();
@@ -140,13 +154,12 @@ export class TransferManager {
 				data.on('end', async () => {
 					try {
 						await Promise.all(parts);
-						const completeRes = await initiateRes.completeUpload();
-						if (!completeRes) {
-							throw new Error(`Error completing multipart upload for ${key}`);
-						}
+						await initiateRes.completeUpload();
 						resolve(await initiateRes.getUploadSummary());
 					} catch (err) {
-						reject(err);
+						reject(
+							`Error completing multipart upload for ${key} error: ${err instanceof Error ? err.message : err}`
+						);
 					}
 				});
 
@@ -170,19 +183,36 @@ export class TransferManager {
 				}
 			}
 
-			await Promise.all(parts);
-			const completeRes = await initiateRes.completeUpload();
-
-			if (!completeRes) {
-				throw new Error(`Error completing multipart upload for ${key}`);
+			try {
+				await Promise.all(parts);
+				await initiateRes.completeUpload();
+			} catch (err) {
+				throw new Error(
+					`Error completing multipart upload for ${key} error: ${err instanceof Error ? err.message : err}`
+				);
 			}
 		}
 		return initiateRes.getUploadSummary();
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	isReadStream(value: any): value is Readable {
-		return value && typeof value.read === 'function' && typeof value.on === 'function';
+	/**
+	 * Checks whether a value behaves like a Node.js readable stream.
+	 * @param value - The value to inspect.
+	 * @returns value is Readable.
+	 * @example
+	 * ```ts
+	 * const readable = transferManager.isReadStream(stream);
+	 * ```
+	 */
+	isReadStream(value: unknown): value is Readable {
+		return (
+			typeof value === 'object' &&
+			value !== null &&
+			'read' in value &&
+			typeof (value as { read: unknown }).read === 'function' &&
+			'on' in value &&
+			typeof (value as { on: unknown }).on === 'function'
+		);
 	}
 
 	/**
@@ -192,7 +222,7 @@ export class TransferManager {
 	 * @param start - The starting byte range of the object part to be retrieved.
 	 * @param end - The ending byte range of the object part.
 	 * @param retries - The number of retry attempts in case of failure. Default is 3.
-	 * @returns {IncomingMessage} A readable stream representing the part of the object.
+	 * @returns A readable stream representing the part of the object.
 	 */
 	async #getObjectPart(key: string, start: number, end: number, retries = 3): Promise<Readable> {
 		await wrapValidatorsWithPromise(() => {
@@ -215,11 +245,16 @@ export class TransferManager {
 	}
 
 	/**
-	 * Retrieves the object as an iterable of multiple parts.
-	 *  This method allows iterating over large objects without loading the entire object into memory.
-	 * @param key - The name of the object to retrieve.
-	 * @param partSize - The size (in MB) of each part.
-	 * @returns {AsyncGenerator<Buffer, void>} An asynchronous generator that yields each part of the object as a Buffer.
+	 * Downloads an object as an async iterable of buffers.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param partSize - The part size in MB.
+	 * @param versionId - The optional object version identifier.
+	 * @returns AsyncGenerator<Buffer, void>.
+	 * @throws {CatalystStratusError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * for await (const chunk of transferManager.getIterableObject('large.bin', 10)) { console.log(chunk.length); }
+	 * ```
 	 */
 	async *getIterableObject(
 		key: string,
@@ -267,11 +302,16 @@ export class TransferManager {
 	}
 
 	/**
-	 * Generates downloaders for each part of the object.
-	 *  This method returns functions that can be called to download specific parts of an object.
-	 * @param key - The name of the object.
-	 * @param partSize - The size (in MB) of each part.
-	 * @returns { Array<() => Promise<Readable>> } An array of functions that return a readable stream for each part of the object.
+	 * Creates downloader functions for each byte-range part of an object.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param partSize - The part size in MB.
+	 * @param versionId - The optional object version identifier.
+	 * @returns A promise that resolves to Array<() => Promise<Readable>>.
+	 * @throws {CatalystStratusError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const downloaders = await transferManager.generatePartDownloaders('large.bin', 10);
+	 * ```
 	 */
 	async generatePartDownloaders(
 		key: string,

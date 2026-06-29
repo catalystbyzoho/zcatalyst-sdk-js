@@ -15,15 +15,33 @@ import { ICatalystCronDetails, ICatalystJobDetails, TCatalystJobs } from './util
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 
+/**
+ * Client for creating, updating and controlling Catalyst cron schedules.
+ *
+ * @example
+ * ```ts
+ * const scheduling = new JobScheduling(app);
+ * const crons = await scheduling.CRON.getAllCron();
+ * ```
+ */
 export default class Cron {
 	requester: Handler;
+
+	/** Creates a Cron helper that uses the provided SDK transport handler. */
 	constructor(requester: Handler) {
 		this.requester = requester;
 	}
 
 	/**
-	 * Get all cron details
-	 * @returns
+	 * Retrieves all Catalyst cron schedules available to the project.
+	 * The response contains static and dynamic cron details visible to the current admin credential.
+	 *
+	 * @returns An array of cron details returned by Catalyst.
+	 * @example
+	 * ```ts
+	 * const scheduling = new JobScheduling(app);
+	 * const crons = await scheduling.CRON.getAllCron();
+	 * ```
 	 */
 	public async getAllCron(): Promise<Array<ICatalystCronDetails>> {
 		const request: IRequestConfig = {
@@ -39,9 +57,17 @@ export default class Cron {
 	}
 
 	/**
-	 * Get cron details
-	 * @param cronId
-	 * @returns
+	 * Retrieves the details of a specific Catalyst cron schedule.
+	 * Use this to inspect the schedule configuration and associated job metadata.
+	 *
+	 * @param cronId - The unique identifier or name of the cron schedule.
+	 * @returns The cron details returned by Catalyst.
+	 * @throws {CatalystJobSchedulingError} when `cronId` is not a valid non-empty string.
+	 * @example
+	 * ```ts
+	 * const scheduling = new JobScheduling(app);
+	 * const cron = await scheduling.CRON.getCron('daily-report');
+	 * ```
 	 */
 	public async getCron(cronId: string): Promise<ICatalystCronDetails> {
 		await wrapValidatorsWithPromise(() => {
@@ -60,9 +86,20 @@ export default class Cron {
 	}
 
 	/**
-	 * Create a new Dynamic cron
-	 * @param cronDetails Details of the cron based on the type of cron
-	 * @returns
+	 * Creates a dynamic Catalyst cron schedule.
+	 * The cron details define the schedule and the job that will run on that schedule.
+	 *
+	 * @param cronDetails - Details that define the cron schedule and associated job metadata.
+	 * @returns The created cron details returned by Catalyst.
+	 * @throws {CatalystJobSchedulingError} when `cronDetails` is null.
+	 * @example
+	 * ```ts
+	 * const scheduling = new JobScheduling(app);
+	 * const cron = await scheduling.CRON.createCron({
+	 *   cron_name: 'daily-report',
+	 *   description: 'Run the daily report job'
+	 * });
+	 * ```
 	 */
 	public async createCron(cronDetails: ICatalystCronDetails): Promise<ICatalystCronDetails> {
 		await wrapValidatorsWithPromise(() => {
@@ -87,10 +124,20 @@ export default class Cron {
 	}
 
 	/**
-	 * Update a dynamic repetitive crons.
-	 * @param cronId ID or name of the cron to be updated
-	 * @param cronDetails Details to be updated based on the type of cron
-	 * @returns
+	 * Updates an existing dynamic Catalyst cron schedule.
+	 * Use this to change the schedule configuration or associated job metadata.
+	 *
+	 * @param cronId - The unique identifier or name of the cron schedule to update.
+	 * @param cronDetails - Details to apply to the cron schedule.
+	 * @returns The updated cron details returned by Catalyst.
+	 * @throws {CatalystJobSchedulingError} when `cronId` is invalid or `cronDetails` is empty.
+	 * @example
+	 * ```ts
+	 * const scheduling = new JobScheduling(app);
+	 * const cron = await scheduling.CRON.updateCron('daily-report', {
+	 *   description: 'Run the updated daily report job'
+	 * });
+	 * ```
 	 */
 	public async updateCron(
 		cronId: string,
@@ -117,9 +164,17 @@ export default class Cron {
 	}
 
 	/**
-	 * Disable a running cron
-	 * @param cronId ID or name of the cron to be disabled
-	 * @returns
+	 * Pauses a running Catalyst cron schedule.
+	 * The cron remains configured but will not submit jobs while paused.
+	 *
+	 * @param cronId - The unique identifier or name of the cron schedule to pause.
+	 * @returns The paused cron details returned by Catalyst.
+	 * @throws {CatalystJobSchedulingError} when `cronId` is not a valid non-empty string.
+	 * @example
+	 * ```ts
+	 * const scheduling = new JobScheduling(app);
+	 * const cron = await scheduling.CRON.pauseCron('daily-report');
+	 * ```
 	 */
 	public async pauseCron(cronId: string): Promise<ICatalystCronDetails> {
 		await wrapValidatorsWithPromise(() => {
@@ -142,9 +197,17 @@ export default class Cron {
 	}
 
 	/**
-	 * Enable a disabled cron
-	 * @param cronId ID or name of the cron to be enabled
-	 * @returns
+	 * Resumes a paused Catalyst cron schedule.
+	 * The cron begins submitting jobs again according to its configured schedule.
+	 *
+	 * @param cronId - The unique identifier or name of the cron schedule to resume.
+	 * @returns The resumed cron details returned by Catalyst.
+	 * @throws {CatalystJobSchedulingError} when `cronId` is not a valid non-empty string.
+	 * @example
+	 * ```ts
+	 * const scheduling = new JobScheduling(app);
+	 * const cron = await scheduling.CRON.resumeCron('daily-report');
+	 * ```
 	 */
 	public async resumeCron(cronId: string): Promise<ICatalystCronDetails> {
 		await wrapValidatorsWithPromise(() => {
@@ -167,9 +230,17 @@ export default class Cron {
 	}
 
 	/**
-	 * Execute the cron immediately.
-	 * @param cronId ID or name of the cron to run
-	 * @returns
+	 * Runs a Catalyst cron schedule immediately by submitting its job.
+	 * Use this to trigger the cron's associated job outside of its normal schedule.
+	 *
+	 * @param cronId - The unique identifier or name of the cron schedule to run.
+	 * @returns The submitted job details returned by Catalyst.
+	 * @throws {CatalystJobSchedulingError} when `cronId` is not a valid non-empty string.
+	 * @example
+	 * ```ts
+	 * const scheduling = new JobScheduling(app);
+	 * const job = await scheduling.CRON.runCron('daily-report');
+	 * ```
 	 */
 	public async runCron<T extends TCatalystJobs>(cronId: string): Promise<ICatalystJobDetails<T>> {
 		await wrapValidatorsWithPromise(() => {
@@ -188,9 +259,17 @@ export default class Cron {
 	}
 
 	/**
-	 * Delete a dynamic cron
-	 * @param cronId ID or name of the corn to be deleted
-	 * @returns
+	 * Deletes a dynamic Catalyst cron schedule.
+	 * Use this to remove a cron that is no longer needed.
+	 *
+	 * @param cronId - The unique identifier or name of the cron schedule to delete.
+	 * @returns The deleted cron details returned by Catalyst.
+	 * @throws {CatalystJobSchedulingError} when `cronId` is not a valid non-empty string.
+	 * @example
+	 * ```ts
+	 * const scheduling = new JobScheduling(app);
+	 * const deletedCron = await scheduling.CRON.deleteCron('daily-report');
+	 * ```
 	 */
 	public async deleteCron(cronId: string): Promise<ICatalystCronDetails> {
 		await wrapValidatorsWithPromise(() => {

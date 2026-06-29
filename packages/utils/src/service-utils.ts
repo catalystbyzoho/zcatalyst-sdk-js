@@ -3,6 +3,18 @@ import { CatalystService } from './enums';
 
 const { PRODUCT_NAME, API_VERSION } = CONSTANTS;
 
+/**
+ * Returns the Catalyst API path for a service.
+ *
+ * @param service - The Catalyst service.
+ * @returns The API path prefix for the service.
+ *
+ * @example
+ * ```ts
+ * import { getServicePath } from '@zcatalyst/utils';
+ * const result = getServicePath();
+ * ```
+ */
 export function getServicePath(service?: CatalystService): string {
 	let path = '';
 	switch (service ?? CatalystService.BAAS) {

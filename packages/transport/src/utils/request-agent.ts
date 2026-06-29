@@ -1,5 +1,3 @@
-'use strict';
-
 import { CONSTANTS } from '@zcatalyst/utils';
 import { Agent as httpAgent } from 'http';
 import { Agent as httpsAgent } from 'https';
@@ -15,6 +13,12 @@ const agentMap: Record<string, Record<string, httpAgent | httpsAgent>> = {};
 
 export default class RequestAgent {
 	agent: httpAgent | httpsAgent;
+	/**
+	 * Creates a RequestAgent instance.
+	 * @param isHttps - The isHttps value.
+	 * @param host - The host value.
+	 * @param replaceAgent - The replaceAgent value.
+	 */
 	constructor(isHttps: boolean, host: string, replaceAgent: boolean) {
 		const protocol = isHttps ? CONSTANTS.PROTOCOL.HTTPS : CONSTANTS.PROTOCOL.HTTP;
 		if (agentMap[protocol] === undefined) {

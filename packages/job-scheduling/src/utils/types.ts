@@ -56,11 +56,10 @@ export interface ICatalystCronBasic<T extends TCatalystJobs> extends ICatalystJS
 	job_meta: T;
 }
 
-/**
- * Cron that's execute only once
- */
-export interface ICatalystOneTimeCron<T extends TCatalystJobs = TCatalystJobs>
-	extends ICatalystCronBasic<T> {
+/** * Cron that's execute only once */
+export interface ICatalystOneTimeCron<
+	T extends TCatalystJobs = TCatalystJobs
+> extends ICatalystCronBasic<T> {
 	/** Cron type for OneTime cron */
 	cron_type: 'OneTime';
 	/** Details of the OneTime cron */
@@ -72,18 +71,17 @@ export interface ICatalystOneTimeCron<T extends TCatalystJobs = TCatalystJobs>
 	};
 }
 
-/**
- * A Cron that's execute for every time interval identified by the below params
- */
-export interface ICatalystEveryCron<T extends TCatalystJobs = TCatalystJobs>
-	extends ICatalystCronBasic<T> {
+/** * A Cron that's execute for every time interval identified by the below params */
+export interface ICatalystEveryCron<
+	T extends TCatalystJobs = TCatalystJobs
+> extends ICatalystCronBasic<T> {
 	/** Cron type for Every cron */
 	cron_type: 'Periodic';
 	/** Details of the every cron */
 	cron_detail: {
 		/** Periodicity in hours */
 		hour: number;
-		/** Periodicity in minutes  */
+		/** Periodicity in minutes */
 		minute: number;
 		/** Periodicity in seconds */
 		second: number;
@@ -96,11 +94,10 @@ export interface ICatalystEveryCron<T extends TCatalystJobs = TCatalystJobs>
 	end_time?: string;
 }
 
-/**
- * Cron that's executed daily at a particular time.
- */
-export interface ICatalystDailyCron<T extends TCatalystJobs = TCatalystJobs>
-	extends ICatalystCronBasic<T> {
+/** * Cron that's executed daily at a particular time. */
+export interface ICatalystDailyCron<
+	T extends TCatalystJobs = TCatalystJobs
+> extends ICatalystCronBasic<T> {
 	/** Cron type of Daily cron */
 	cron_type: 'Calendar';
 	/** Details of every cron */
@@ -120,11 +117,10 @@ export interface ICatalystDailyCron<T extends TCatalystJobs = TCatalystJobs>
 	end_time?: string;
 }
 
-/**
- * Cron that's executed monthly
- */
-export interface ICatalystMonthlyCron<T extends TCatalystJobs = TCatalystJobs>
-	extends ICatalystCronBasic<T> {
+/** * Cron that's executed monthly */
+export interface ICatalystMonthlyCron<
+	T extends TCatalystJobs = TCatalystJobs
+> extends ICatalystCronBasic<T> {
 	/** Cron type for monthly cron */
 	cron_type: 'Calendar';
 	/** Details of monthly cron */
@@ -150,11 +146,10 @@ export interface ICatalystMonthlyCron<T extends TCatalystJobs = TCatalystJobs>
 	end_time?: string;
 }
 
-/**
- * Cron that's executed yearly
- */
-export interface ICatalystYearlyCron<T extends TCatalystJobs = TCatalystJobs>
-	extends ICatalystCronBasic<T> {
+/** * Cron that's executed yearly */
+export interface ICatalystYearlyCron<
+	T extends TCatalystJobs = TCatalystJobs
+> extends ICatalystCronBasic<T> {
 	/** Cron type for yearly cron */
 	cron_type: 'Calendar';
 	/** Details of yearly cron */
@@ -182,11 +177,10 @@ export interface ICatalystYearlyCron<T extends TCatalystJobs = TCatalystJobs>
 	end_time?: string;
 }
 
-/**
- * Cron that's created based on the Linux based cron expressions.
- */
-export interface ICatalystCronExpression<T extends TCatalystJobs = TCatalystJobs>
-	extends ICatalystCronBasic<T> {
+/** * Cron that's created based on the Linux based cron expressions. */
+export interface ICatalystCronExpression<
+	T extends TCatalystJobs = TCatalystJobs
+> extends ICatalystCronBasic<T> {
 	/** Cron type for cron that uses Cron expression */
 	cron_type: 'CronExpression';
 	/** UNIX cron expression */
@@ -203,9 +197,7 @@ export interface ICatalystCronExpression<T extends TCatalystJobs = TCatalystJobs
 // JOBS
 export type TCatalystCapacityAttributes = Record<CAPACITY_ATTRIBUTE_TYPE, string | number>;
 
-/**
- * Details of the jobpool
- */
+/** * Details of the jobpool */
 export interface ICatalystJobpoolDetails extends ICatalystGResponse {
 	/** Jobpool Id */
 	id: string;
@@ -217,9 +209,7 @@ export interface ICatalystJobpoolDetails extends ICatalystGResponse {
 	capacity: TCatalystCapacityAttributes;
 }
 
-/**
- * Meta details of the job
- */
+/** * Meta details of the job */
 export interface ICatalystJobMetaConfig {
 	/** Number of time the job can be retied incase of failure */
 	number_of_retries: number;
@@ -227,9 +217,7 @@ export interface ICatalystJobMetaConfig {
 	retry_interval: number;
 }
 
-/**
- * Details of the job's target
- */
+/** * Details of the job's target */
 export interface ICatalystJobTargetDetails {
 	/** Id of the job target */
 	id: string;
@@ -239,9 +227,7 @@ export interface ICatalystJobTargetDetails {
 	details: Record<string, unknown>;
 }
 
-/**
- * Details of the job's source
- */
+/** * Details of the job's source */
 export interface ICatalystJobSourceDetails {
 	/** Id of the job's source */
 	id: string;
@@ -264,9 +250,7 @@ export interface ICatalystJobBasic extends ICatalystJSON {
 	source_type?: JOB_SOURCE_TYPE;
 }
 
-/**
- * Job that's associated with a job function as a target and executed in a function jobpool
- */
+/** * Job that's associated with a job function as a target and executed in a function jobpool */
 export interface ICatalystFunctionJob extends ICatalystJobBasic {
 	/** Target type for function jobs */
 	target_type: TARGET_TYPE.FUNCTION;
@@ -278,9 +262,7 @@ export interface ICatalystFunctionJob extends ICatalystJobBasic {
 	params?: Record<string, string>;
 }
 
-/**
- * Job that's associated with a http url as the target and executed in a webhook jobpool
- */
+/** * Job that's associated with a http url as the target and executed in a webhook jobpool */
 export interface ICatalystWebhookJob extends ICatalystJobBasic {
 	/** Target type for webhook jobs */
 	target_type: TARGET_TYPE.WEBHOOK;
@@ -295,9 +277,7 @@ export interface ICatalystWebhookJob extends ICatalystJobBasic {
 	request_body?: string;
 }
 
-/**
- * Job that's associated with an AppSail as a target and executed in a AppSail jobpool
- */
+/** * Job that's associated with an AppSail as a target and executed in a AppSail jobpool */
 export interface ICatalystAppSailJob extends ICatalystJobBasic {
 	/** Target type for AppSail jobs */
 	target_type: TARGET_TYPE.APP_SAIL;
@@ -317,9 +297,7 @@ export interface ICatalystAppSailJob extends ICatalystJobBasic {
 	request_body?: string;
 }
 
-/**
- * Job that's associated with a circuit as a target and executed in a Circuit jobpool
- */
+/** * Job that's associated with a circuit as a target and executed in a Circuit jobpool */
 export interface ICatalystCircuitJob extends ICatalystJobBasic {
 	/** Target type for Circuit jobs */
 	target_type: TARGET_TYPE.CIRCUIT;
@@ -331,18 +309,11 @@ export interface ICatalystCircuitJob extends ICatalystJobBasic {
 	test_cases: Record<string, unknown>;
 }
 
-/**
- * Collection of possible job types
- */
+/** * Collection of possible job types */
 export type TCatalystJobs =
-	| ICatalystFunctionJob
-	| ICatalystWebhookJob
-	| ICatalystAppSailJob
-	| ICatalystCircuitJob;
+	ICatalystFunctionJob | ICatalystWebhookJob | ICatalystAppSailJob | ICatalystCircuitJob;
 
-/**
- * Meta details of the job from server
- */
+/** * Meta details of the job from server */
 export type TCatalystJobMetaDetails<T = TCatalystJobs> = {
 	/** Id of the job meta */
 	id: string;
@@ -361,11 +332,11 @@ export type TCatalystJobMetaDetails<T = TCatalystJobs> = {
 } & T &
 	ICatalystJSON;
 
-/**
- * Details of the job from server
- */
-export interface ICatalystJobDetails<T extends TCatalystJobs>
-	extends Pick<ICatalystGResponse, 'created_time'> {
+/** * Details of the job from server */
+export interface ICatalystJobDetails<T extends TCatalystJobs> extends Pick<
+	ICatalystGResponse,
+	'created_time'
+> {
 	/** Id of the job */
 	job_id: string;
 	/** Execution status of the job */

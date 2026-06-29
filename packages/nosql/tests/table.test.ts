@@ -1,18 +1,12 @@
-import { ZCAuth } from '../../auth/src';
 import { NoSQL, NoSQLEnum, NoSQLItem, NoSQLMarshall } from '../src';
 import NoSQLResponse from '../src/utils/response';
 import { fetchItems, item, queryTable } from './types/table-responses';
 import { tableId, tableName } from './types/test-constants';
 
-jest.mock('../../auth/src');
-
-const mockedApp = ZCAuth as jest.Mock;
-
 describe('nosql table', () => {
-	const app = new mockedApp().init();
-	const nosql: NoSQL = new NoSQL(app);
+	const nosql: NoSQL = new NoSQL();
 	it('test insert items', async () => {
-		app.setRequestResponseMap(item);
+		// app.setRequestResponseMap(item);
 		// insert item with table Id
 		await expect(
 			nosql.table(tableId).insertItems({
@@ -36,7 +30,7 @@ describe('nosql table', () => {
 	});
 
 	it('test update items', async () => {
-		app.setRequestResponseMap(item);
+		// app.setRequestResponseMap(item);
 		const _updateItem = {
 			keys: NoSQLItem.from({
 				main_part: 'a',
@@ -67,7 +61,7 @@ describe('nosql table', () => {
 	});
 
 	it('test delete items', async () => {
-		app.setRequestResponseMap(item);
+		// app.setRequestResponseMap(item);
 		const _deleteItem = {
 			keys: NoSQLItem.from({
 				main_part: 'a',
@@ -92,7 +86,7 @@ describe('nosql table', () => {
 	});
 
 	it('test fetch item', async () => {
-		app.setRequestResponseMap(fetchItems);
+		// app.setRequestResponseMap(fetchItems);
 		const _fetchItem = {
 			keys: NoSQLItem.from({
 				main_part: 'a',
@@ -117,7 +111,7 @@ describe('nosql table', () => {
 	});
 
 	it('test query table', async () => {
-		app.setRequestResponseMap(queryTable);
+		// app.setRequestResponseMap(queryTable);
 		const _queryTable = {
 			key_condition: {
 				attribute: 'main_part',

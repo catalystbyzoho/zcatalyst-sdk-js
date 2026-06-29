@@ -1,5 +1,3 @@
-'use strict';
-
 import { IncomingMessage } from 'http';
 import { basename } from 'path';
 import { PassThrough, Readable, Stream } from 'stream';
@@ -8,12 +6,7 @@ import { inspect } from 'util';
 import CloneableStream from './clonable-stream';
 
 export type formDataType =
-	| string
-	| Buffer
-	| Readable
-	| IncomingMessage
-	| PassThrough
-	| Record<string, string>;
+	string | Buffer | Readable | IncomingMessage | PassThrough | Record<string, string>;
 
 export default class FormData extends Stream {
 	writable: boolean;
@@ -25,6 +18,10 @@ export default class FormData extends Stream {
 	pendingNext: boolean;
 	boundary: string | undefined;
 
+	/**
+	 * Creates a FormData instance.
+	 * @param streams - The streams value.
+	 */
 	constructor(streams?: Array<formDataType>) {
 		super();
 		this.writable = false;
@@ -38,6 +35,18 @@ export default class FormData extends Stream {
 	static LINE_BREAK = '\r\n';
 	static CONTENT_TYPE = 'application/octet-stream';
 
+	/**
+	 * Performs is stream for the transport package.
+	 *
+	 * @param value - The value to validate.
+	 * @returns The is stream result.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	isStream(value: unknown): boolean {
 		return (
 			value !== undefined &&
@@ -48,6 +57,19 @@ export default class FormData extends Stream {
 		);
 	}
 
+	/**
+	 * Performs multi part header for the transport package.
+	 *
+	 * @param field - The field value.
+	 * @param value - The value to validate.
+	 * @returns The multi part header result.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	_multiPartHeader(field: string, value: formDataType): string {
 		const contentDisposition = this._getContentDisposition(value);
 		const contentType = this._getContentType(value);
@@ -72,18 +94,39 @@ export default class FormData extends Stream {
 		return '--' + this.getBoundary() + FormData.LINE_BREAK + contents + FormData.LINE_BREAK;
 	}
 
-	//eslint-disable-next-line @typescript-eslint/no-explicit-any
-	_getContentDisposition(value: any): string | undefined {
+	/**
+	 * Performs get content disposition for the transport package.
+	 *
+	 * @param value - The value to validate.
+	 * @returns The get content disposition result.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
+	_getContentDisposition(value: unknown): string | undefined {
 		let filename: string = '';
 		let contentDisposition: string = '';
-		if (value['name'] || value['path']) {
+		if (typeof value === 'object' && value !== null && ('name' in value || 'path' in value)) {
+			const val = value as { name?: string; path?: string };
 			// custom filename take precedence
 			// formidable and the browser add a name property
 			// fs- and request- streams have path property
-			filename = basename((value['name'] as string) || (value['path'] as string));
-		} else if (value['readable'] && value.hasOwnProperty('httpVersion')) {
+			filename = basename(val.name || val.path || '');
+		} else if (
+			typeof value === 'object' &&
+			value !== null &&
+			'readable' in value &&
+			'httpVersion' in value &&
+			'client' in value
+		) {
 			// or try http response
-			filename = basename(value['client']._httpMessage.path || '');
+			const httpValue = value as {
+				client: { _httpMessage: { path?: string } };
+			};
+			filename = basename(httpValue.client._httpMessage.path || '');
 		}
 		if (filename) {
 			contentDisposition = 'filename="' + filename + '"';
@@ -91,6 +134,18 @@ export default class FormData extends Stream {
 		return contentDisposition;
 	}
 
+	/**
+	 * Performs get content type for the transport package.
+	 *
+	 * @param value - The value to validate.
+	 * @returns The get content type result.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	_getContentType(value: formDataType): string {
 		let contentType: string = '';
 		// if it's http-reponse
@@ -104,10 +159,32 @@ export default class FormData extends Stream {
 		return contentType;
 	}
 
+	/**
+	 * Performs last boundary for the transport package.
+	 *
+	 * @returns The last boundary result.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	_lastBoundary(): string {
 		return '--' + this.getBoundary() + '--' + FormData.LINE_BREAK;
 	}
 
+	/**
+	 * Performs generate boundary for the transport package.
+	 *
+	 * @returns The generate boundary result.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	_generateBoundary(): string {
 		// This generates a 50 character boundary similar to those used by Firefox.
 		// They are optimized for boyer-moore parsing.
@@ -119,17 +196,50 @@ export default class FormData extends Stream {
 		return boundary;
 	}
 
+	/**
+	 * Performs error for the transport package.
+	 *
+	 * @param err - The err value.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	_error(err: Error): void {
 		this._reset();
 		this.emit('error', err);
 	}
 
+	/**
+	 * Performs handle stream errors for the transport package.
+	 *
+	 * @param stream - The stream value.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	_handleStreamErrors(stream: Stream): void {
 		stream.on('error', (err) => {
 			this._error(err);
 		});
 	}
 
+	/**
+	 * Performs pipe next for the transport package.
+	 *
+	 * @param stream - The stream value.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	_pipeNext(stream: formDataType): void {
 		this.currentStream = stream;
 		if (this.isStream(stream)) {
@@ -145,6 +255,16 @@ export default class FormData extends Stream {
 		this._getNext();
 	}
 
+	/**
+	 * Performs get next for the transport package.
+	 *
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	_getNext(): void {
 		this.currentStream = undefined;
 
@@ -170,12 +290,33 @@ export default class FormData extends Stream {
 		}
 	}
 
+	/**
+	 * Performs reset for the transport package.
+	 *
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	_reset(): void {
 		this.writable = false;
 		this.streams = [];
 		this.currentStream = undefined;
 	}
 
+	/**
+	 * Performs create clone for the transport package.
+	 *
+	 * @returns The create clone result.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	createClone(): FormData {
 		const newStreams: Array<formDataType> = [];
 		this.streams.forEach((stream) => {
@@ -187,6 +328,19 @@ export default class FormData extends Stream {
 		return new FormData(newStreams);
 	}
 
+	/**
+	 * Performs append for the transport package.
+	 *
+	 * @param field - The field value.
+	 * @param value - The value to validate.
+	 * @returns The append result.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	append(field: string, value: unknown): this {
 		if (Array.isArray(value)) {
 			// should convert array to string as expected by web server
@@ -207,6 +361,18 @@ export default class FormData extends Stream {
 		return this;
 	}
 
+	/**
+	 * Performs get headers for the transport package.
+	 *
+	 * @param userHeaders - The user headers value.
+	 * @returns The get headers result.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	getHeaders(userHeaders: { [x: string]: string }): { [x: string]: string } {
 		const formHeaders: { [x: string]: string } = {};
 		for (const header in userHeaders) {
@@ -218,6 +384,17 @@ export default class FormData extends Stream {
 		return formHeaders;
 	}
 
+	/**
+	 * Performs get boundary for the transport package.
+	 *
+	 * @returns The get boundary result.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	getBoundary(): string {
 		if (this.boundary === undefined) {
 			return this._generateBoundary();
@@ -225,12 +402,37 @@ export default class FormData extends Stream {
 		return this.boundary;
 	}
 
+	/**
+	 * Performs pipe for the transport package.
+	 *
+	 * @param dest - The dest value.
+	 * @param options - The initialization or request options.
+	 * @returns The pipe result.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	pipe<T extends NodeJS.WritableStream>(dest: T, options?: { end?: boolean }): T {
 		Stream.prototype.pipe.call(this, dest, options);
 		this.resume();
 		return dest;
 	}
 
+	/**
+	 * Performs write for the transport package.
+	 *
+	 * @param data - The data value.
+	 * @returns The write result.
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	write(data: Uint8Array | string): boolean {
 		const lastPart = this.streams.length === 0;
 		this.emit('data', data);
@@ -240,6 +442,16 @@ export default class FormData extends Stream {
 		return true;
 	}
 
+	/**
+	 * Performs pause for the transport package.
+	 *
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	pause(): void {
 		if (
 			this.currentStream !== undefined &&
@@ -250,6 +462,16 @@ export default class FormData extends Stream {
 		this.emit('pause');
 	}
 
+	/**
+	 * Performs resume for the transport package.
+	 *
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	resume(): void {
 		if (!this.released) {
 			this.released = true;
@@ -263,16 +485,37 @@ export default class FormData extends Stream {
 		this.emit('resume');
 	}
 
+	/**
+	 * Performs end for the transport package.
+	 *
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	end(): void {
 		this._reset();
 		this.emit('end');
 	}
 
+	/**
+	 * Performs destroy for the transport package.
+	 *
+	 *
+	 * @example
+	 * ```ts
+	 * import { Handler } from '@zcatalyst/transport';
+	 * const result = undefined;
+	 * ```
+	 */
 	destroy(): void {
 		this._reset();
 		this.emit('close');
 	}
 
+	/** function toString() { [native code] } */
 	toString(): string {
 		return '[object FormData]';
 	}

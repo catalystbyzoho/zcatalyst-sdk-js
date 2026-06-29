@@ -5,12 +5,27 @@ import { IDataverseLead, IDataverseTechStack } from './utils/interfaces';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 
+/**
+ * Provides SmartBrowz Dataverse enrichment APIs.
+ */
 export class Dataverse {
 	#requester: Handler;
 	constructor({ requester }: { requester: Handler }) {
 		this.#requester = requester;
 	}
 
+	/**
+	 * Retrieves enriched organization details from lead information.
+	 * @param options - Options for the getEnrichedLead operation.
+	 *   - websiteUrl - The organization website URL.
+	 *   - leadName - The organization or lead name.
+	 *   - email - The lead email address.
+	 * @returns A promise that resolves to Array<Partial<IDataverseLead>>.
+	 * @example
+	 * ```ts
+	 * const leads = await smartbrowz.getEnrichedLead({ websiteUrl: 'https://example.com' });
+	 * ```
+	 */
 	async getEnrichedLead({
 		websiteUrl,
 		leadName,
@@ -44,6 +59,15 @@ export class Dataverse {
 		return resp.data.data as Array<IDataverseLead>;
 	}
 
+	/**
+	 * Finds the technologies used by an organization website.
+	 * @param websiteUrl - The organization website URL.
+	 * @returns A promise that resolves to Array<Partial<IDataverseTechStack>>.
+	 * @example
+	 * ```ts
+	 * const stack = await smartbrowz.findTechStack('https://example.com');
+	 * ```
+	 */
 	async findTechStack(websiteUrl: string): Promise<Array<Partial<IDataverseTechStack>>> {
 		const request: IRequestConfig = {
 			method: REQ_METHOD.post,
@@ -59,6 +83,17 @@ export class Dataverse {
 		return resp.data.data as Array<IDataverseTechStack>;
 	}
 
+	/**
+	 * Finds organizations similar to the provided company details.
+	 * @param options - Options for the getSimilarCompanies operation.
+	 *   - websiteUrl - The organization website URL.
+	 *   - leadName - The organization or lead name.
+	 * @returns A promise that resolves to Array<string>.
+	 * @example
+	 * ```ts
+	 * const companies = await smartbrowz.getSimilarCompanies({ leadName: 'Example Inc' });
+	 * ```
+	 */
 	async getSimilarCompanies({
 		websiteUrl,
 		leadName

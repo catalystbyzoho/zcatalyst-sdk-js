@@ -1,5 +1,3 @@
-'use strict';
-
 import { Handler, IRequestConfig, RequestType } from '@zcatalyst/transport';
 import {
 	CatalystService,
@@ -19,6 +17,9 @@ type ICatalystCacheRes = ICatalystCache &
 
 const { REQ_METHOD, COMPONENT, CREDENTIAL_USER } = CONSTANTS;
 
+/**
+ * Represents a Catalyst Cache segment and its key-value operations.
+ */
 export class Segment implements ParsableComponent<ICatalystSegment> {
 	readonly requester: Handler;
 	id: string | null;
@@ -33,20 +34,23 @@ export class Segment implements ParsableComponent<ICatalystSegment> {
 	}
 
 	/**
-	 * Returns the component name.
-	 * @returns {string} The name of the cache component.
+	 * getComponentName operation.
 	 */
 	getComponentName(): string {
 		return COMPONENT.cache;
 	}
 
 	/**
-	 * Stores a value in the cache.
-	 * @param {string} key - The cache key.
-	 * @param {string} value - The value to be stored.
-	 * @param {number} [expiry] - Expiry time in hours (optional).
-	 * @returns {ICatalystCacheRes} The response containing cache details.
-	 * @throws {CatalystCacheError} If the cache key is invalid.
+	 * Stores a value for a cache key in the segment.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param value - The value to inspect.
+	 * @param expiry - The optional expiry duration in hours.
+	 * @returns A promise that resolves to ICatalystCacheRes.
+	 * @throws {CatalystCacheError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const entry = await segment.put('theme', 'dark', 2);
+	 * ```
 	 */
 	async put(key: string, value: string, expiry?: number): Promise<ICatalystCacheRes> {
 		await wrapValidatorsWithPromise(() => {
@@ -72,12 +76,16 @@ export class Segment implements ParsableComponent<ICatalystSegment> {
 	}
 
 	/**
-	 * Updates an existing cache entry.
-	 * @param {string} key - The cache key.
-	 * @param {string} value - The new value to store.
-	 * @param {number} [expiry] - Expiry time in hours (optional).
-	 * @returns {ICatalystCacheRes} The response containing updated cache details.
-	 * @throws {CatalystCacheError} If the cache key or value is invalid.
+	 * Updates the value for an existing cache key in the segment.
+	 * @param key - The object key, cache key, or source key for the operation.
+	 * @param value - The value to inspect.
+	 * @param expiry - The optional expiry duration in hours.
+	 * @returns A promise that resolves to ICatalystCacheRes.
+	 * @throws {CatalystCacheError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const entry = await segment.update('theme', 'light', 2);
+	 * ```
 	 */
 	async update(key: string, value: string, expiry?: number): Promise<ICatalystCacheRes> {
 		await wrapValidatorsWithPromise(() => {
@@ -103,10 +111,13 @@ export class Segment implements ParsableComponent<ICatalystSegment> {
 	}
 
 	/**
-	 * Retrieves the value of a specific cache key.
-	 * @param {string} cacheKey - The cache key.
-	 * @returns {string} The stored cache value.
-	 * @throws {CatalystCacheError} If the cache key is invalid or not found.
+	 * Retrieves only the cached string value for a cache key.
+	 * @param cacheKey - The cache key to read or delete.
+	 * @returns A promise that resolves to string.
+	 * @example
+	 * ```ts
+	 * const value = await segment.getValue('theme');
+	 * ```
 	 */
 	async getValue(cacheKey: string): Promise<string> {
 		const cacheObj = await this.get(cacheKey);
@@ -114,10 +125,14 @@ export class Segment implements ParsableComponent<ICatalystSegment> {
 	}
 
 	/**
-	 * Fetches the cache entry details for a given key.
-	 * @param {string} cacheKey - The cache key.
-	 * @returns {ICatalystCacheRes} The cache entry details.
-	 * @throws {CatalystCacheError} If the cache key is invalid or not found.
+	 * Retrieves the cache entry details for a key.
+	 * @param cacheKey - The cache key to read or delete.
+	 * @returns A promise that resolves to ICatalystCacheRes.
+	 * @throws {CatalystCacheError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const entry = await segment.get('theme');
+	 * ```
 	 */
 	async get(cacheKey: string): Promise<ICatalystCacheRes> {
 		await wrapValidatorsWithPromise(() => {
@@ -138,10 +153,14 @@ export class Segment implements ParsableComponent<ICatalystSegment> {
 	}
 
 	/**
-	 * Deletes a cache entry.
-	 * @param {string} cacheKey - The cache key to delete.
-	 * @returns {boolean} Returns `true` if deletion is successful.
-	 * @throws {CatalystCacheError} If the cache key is invalid.
+	 * Deletes a cache entry from the segment.
+	 * @param cacheKey - The cache key to read or delete.
+	 * @returns A promise that resolves to boolean.
+	 * @throws {CatalystCacheError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * await segment.delete('theme');
+	 * ```
 	 */
 	async delete(cacheKey: string): Promise<boolean> {
 		await wrapValidatorsWithPromise(() => {
@@ -162,16 +181,14 @@ export class Segment implements ParsableComponent<ICatalystSegment> {
 	}
 
 	/**
-	 * Converts the segment object to a JSON string.
-	 * @returns {string} The JSON representation of the segment.
+	 * function toString() { [native code] }
 	 */
 	toString(): string {
 		return JSON.stringify(this.toJSON());
 	}
 
 	/**
-	 * Converts the segment object to a JSON representation.
-	 * @returns {ICatalystSegment} The segment details in JSON format.
+	 * toJSON operation.
 	 */
 	toJSON(): ICatalystSegment {
 		return {

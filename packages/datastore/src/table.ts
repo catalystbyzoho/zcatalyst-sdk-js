@@ -1,5 +1,3 @@
-'use strict';
-
 import { Handler, IRequestConfig, RequestType } from '@zcatalyst/transport';
 import {
 	CatalystService,
@@ -30,10 +28,12 @@ type ObjectType<T> = T extends 'read' ? BulkRead : T extends 'write' ? BulkWrite
 
 const { CREDENTIAL_USER, REQ_METHOD, COMPONENT } = CONSTANTS;
 
+/** Represents a Catalyst Datastore table and exposes row and column operations. */
 export class Table implements ParsableComponent<ICatalystTable> {
 	_tableDetails: ICatalystTable;
 	identifier: string;
 	requester: Handler;
+	/** Creates a table instance bound to a datastore client and table identifier/details. */
 	constructor(datastoreInstance: Datastore, tableDetails: ICatalystTable) {
 		this._tableDetails = tableDetails;
 		this.identifier = (tableDetails.table_id || tableDetails.table_name) + '';
@@ -43,10 +43,10 @@ export class Table implements ParsableComponent<ICatalystTable> {
 	/**
 	 * Gets the component name for this module.
 	 *
-	 * @returns {string} The component name.
+	 * @returns The component name.
 	 *
 	 * @example
-	 * console.log(catalystApp.getComponentName()); // "datastore"
+	 * console.log(table.getComponentName()); // "datastore"
 	 */
 	getComponentName(): string {
 		return COMPONENT.datastore;
@@ -55,9 +55,9 @@ export class Table implements ParsableComponent<ICatalystTable> {
 	/**
 	 * Retrieves details of a specific column in the table.
 	 *
-	 * @param {string | number} id - The column ID.
-	 * @returns {Promise<ICatalystColumn>} Column details.
-	 * @throws {CatalystDataStoreError} If the provided ID is invalid.
+	 * @param id - The column ID.
+	 * @returns Column details.
+	 * @throws If the provided ID is invalid.
 	 *
 	 * @example
 	 * const columnDetails = await table.getColumnDetails(123);
@@ -81,7 +81,7 @@ export class Table implements ParsableComponent<ICatalystTable> {
 	/**
 	 * Retrieves all columns for the current table.
 	 *
-	 * @returns {Promise<Array<ICatalystColumn>>} A list of columns.
+	 * @returns A list of columns.
 	 *
 	 * @example
 	 * const columns = await table.getAllColumns();
@@ -102,9 +102,9 @@ export class Table implements ParsableComponent<ICatalystTable> {
 	/**
 	 * Inserts a single row into the table.
 	 *
-	 * @param {ICatalystRowInput} row - The row data to insert.
-	 * @returns {Promise<ICatalystRow>} The inserted row.
-	 * @throws {CatalystDataStoreError} If the row data is invalid.
+	 * @param row - The row data to insert.
+	 * @returns The inserted row.
+	 * @throws If the row data is invalid.
 	 *
 	 * @example
 	 * const row = await table.insertRow({ Name: "John Doe", Age: 30 });
@@ -121,9 +121,10 @@ export class Table implements ParsableComponent<ICatalystTable> {
 	/**
 	 * Inserts multiple rows into the table.
 	 *
-	 * @param {Array<ICatalystRowInput>} rowArr - The rows to insert.
-	 * @returns {Promise<Array<ICatalystRow>>} The inserted rows.
-	 * @throws {CatalystDataStoreError} If the input is invalid.
+	 * @param rowArr - The rows to insert.
+	 * @returns The inserted rows.
+	 * @returns A promise that resolves when the rows have been deleted.
+	 * @throws If the input is invalid.
 	 *
 	 * @example
 	 * const rows = await table.insertRows([{ Name: "Alice" }, { Name: "Bob" }]);
@@ -153,6 +154,11 @@ export class Table implements ParsableComponent<ICatalystTable> {
 	 * Use {@link getPagedRows} or {@link getIterableRows} instead.
 	 *
 	 * @returns List of all rows (max 200)
+	 *
+	 * @example
+	 * ```ts
+	 * const rows = await table.getAllRows();
+	 * ```
 	 */
 	async getAllRows(): Promise<Array<ICatalystRow>> {
 		const request: IRequestConfig = {
@@ -172,6 +178,11 @@ export class Table implements ParsableComponent<ICatalystTable> {
 	 * @param nextToken - Token to fetch the next set of rows
 	 * @param maxRows - Maximum number of rows to retrieve (optional). Defaults 200.
 	 * @returns Response containing rows and pagination token
+	 *
+	 * @example
+	 * ```ts
+	 * const page = await table.getPagedRows({ maxRows: 100, nextToken: previousPage.next_token });
+	 * ```
 	 */
 	async getPagedRows({
 		nextToken,
@@ -196,7 +207,14 @@ export class Table implements ParsableComponent<ICatalystTable> {
 	 * Fetch rows from the table as an async iterable generator.
 	 * This method continuously fetches rows using pagination until all rows are retrieved.
 	 *
-	 * @yields Rows from the table one by one
+	 * @returns An async generator that yields rows from the table one by one.
+	 *
+	 * @example
+	 * ```ts
+	 * for await (const row of table.getIterableRows()) {
+	 *   console.log(row.ROWID);
+	 * }
+	 * ```
 	 */
 	async *getIterableRows(): AsyncGenerator<ICatalystRow, void> {
 		let nextToken: string | undefined = undefined;
@@ -212,9 +230,10 @@ export class Table implements ParsableComponent<ICatalystTable> {
 	/**
 	 * Retrieves details of a specific row.
 	 *
-	 * @param {string | number} id - The row ID.
-	 * @returns {Promise<ICatalystRow>} The row data.
-	 * @throws {CatalystDataStoreError} If the row ID is invalid.
+	 * @param id - The row ID.
+	 * @returns The row data.
+	 * @returns A promise that resolves when the row has been deleted.
+	 * @throws If the row ID is invalid.
 	 *
 	 * @example
 	 * const row = await table.getRow(12345);
@@ -238,15 +257,14 @@ export class Table implements ParsableComponent<ICatalystTable> {
 	/**
 	 * Deletes a specific row from the table.
 	 *
-	 * @param {string | number} id - The row ID.
-	 * @returns {Promise<boolean>} Returns `true` if deleted successfully.
-	 * @throws {CatalystDataStoreError} If the row ID is invalid.
+	 * @param id - The row ID.
+	 * @returns A promise that resolves when the row has been deleted.
+	 * @throws If the row ID is invalid.
 	 *
 	 * @example
-	 * const success = await table.deleteRow(123);
-	 * console.log(success); // true
+	 * await table.deleteRow(123);
 	 */
-	async deleteRow(id: string | number): Promise<boolean> {
+	async deleteRow(id: string | number): Promise<void> {
 		await wrapValidatorsWithPromise(() => {
 			isValidInputString(id, 'row_id', true);
 		}, CatalystDataStoreError);
@@ -257,23 +275,20 @@ export class Table implements ParsableComponent<ICatalystTable> {
 			track: true,
 			user: CREDENTIAL_USER.user
 		};
-		const resp = await this.requester.send(request);
-		const json = resp.data;
-		return json.data ? true : false;
+		await this.requester.send(request);
 	}
 
 	/**
 	 * Deletes multiple rows from the table.
 	 *
-	 * @param {Array<string | number>} ids - List of row IDs to delete.
-	 * @returns {Promise<boolean>} Returns `true` if deleted successfully.
-	 * @throws {CatalystDataStoreError} If the input is invalid.
+	 * @param ids - List of row IDs to delete.
+	 * @returns A promise that resolves when the rows have been deleted.
+	 * @throws If the input is invalid.
 	 *
 	 * @example
-	 * const success = await table.deleteRows([123, 456, 789]);
-	 * console.log(success); // true
+	 * await table.deleteRows([123, 456, 789]);
 	 */
-	async deleteRows(ids: Array<string | number>): Promise<boolean> {
+	async deleteRows(ids: Array<string | number>): Promise<void> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyArray(ids, 'row_ids', true);
 		}, CatalystDataStoreError);
@@ -288,21 +303,19 @@ export class Table implements ParsableComponent<ICatalystTable> {
 			track: true,
 			user: CREDENTIAL_USER.user
 		};
-		const resp = await this.requester.send(request);
-		const json = resp.data;
-		return json.data ? true : false;
+		await this.requester.send(request);
 	}
 
 	/**
 	 * Updates multiple rows in the table.
 	 *
-	 * @param {Array<ICatalystRowInput & { ROWID: string | number }>} rows -
+	 * @param rows - -
 	 *        An array of row objects, each containing a `ROWID` to identify the row to be updated.
 	 *
-	 * @returns {Promise<Array<ICatalystRow>>}
+	 * @returns
 	 *          A promise that resolves to an array of updated row objects.
 	 *
-	 * @throws {CatalystDataStoreError}
+	 * @throws
 	 *         If the input is not a valid non-empty array.
 	 *
 	 * @example
@@ -334,9 +347,9 @@ export class Table implements ParsableComponent<ICatalystTable> {
 	/**
 	 * Updates a single row in the table.
 	 *
-	 * @param {ICatalystRowInput & { ROWID: string | number }} row - The row data to update.
-	 * @returns {Promise<ICatalystRow>} The updated row.
-	 * @throws {CatalystDataStoreError} If the row data is invalid.
+	 * @param row - The row data to update.
+	 * @returns The updated row.
+	 * @throws If the row data is invalid.
 	 *
 	 * @example
 	 * const updatedRow = await table.updateRow({ ROWID: 123, Name: "John Updated" });
@@ -351,44 +364,9 @@ export class Table implements ParsableComponent<ICatalystTable> {
 	}
 
 	/**
-	 * Creates a bulk operation job for reading or writing data in the table.
-	 *
-	 * @template T - A generic type that extends `BulkType` (`"read"` or `"write"`).
-	 *
-	 * @param {T} type - The type of bulk operation to perform (`"read"` or `"write"`).
-	 *
-	 * @returns {ObjectType<T>}
-	 *          An instance of either `BulkRead` or `BulkWrite` based on the provided type.
-	 *
-	 * @throws {CatalystDataStoreError}
-	 *         If the provided `type` is not `"read"` or `"write"`.
-	 *
-	 * @example
-	 * // Create a bulk read job
-	 * const bulkReadJob = tableInstance.bulkJob('read');
-	 *
-	 * // Create a bulk write job
-	 * const bulkWriteJob = tableInstance.bulkJob('write');
-	 */
-	bulkJob<T extends BulkType>(type: T): ObjectType<T> {
-		switch (type) {
-			case 'read':
-				return new BulkRead(this) as ObjectType<T>;
-			case 'write':
-				return new BulkWrite(this) as ObjectType<T>;
-			default:
-				throw new CatalystDataStoreError(
-					'invalid-argument',
-					'Value provided for type is expected to be read (or) write.',
-					type
-				);
-		}
-	}
-
-	/**
 	 * Converts the table details to a JSON string.
 	 *
-	 * @returns {string} The JSON representation of the table.
+	 * @returns The JSON representation of the table.
 	 *
 	 * @example
 	 * console.log(table.toString());
@@ -400,7 +378,7 @@ export class Table implements ParsableComponent<ICatalystTable> {
 	/**
 	 * Converts the table details to a JSON object.
 	 *
-	 * @returns {ICatalystTable} The table details as a JSON object.
+	 * @returns The table details as a JSON object.
 	 *
 	 * @example
 	 * console.log(table.toJSON());
@@ -410,7 +388,9 @@ export class Table implements ParsableComponent<ICatalystTable> {
 	}
 }
 
+/** Represents an admin-scoped Catalyst Datastore table with bulk job support. */
 export class TableAdmin extends Table {
+	/** Creates an admin table instance bound to a datastore client and table identifier/details. */
 	constructor(datastoreInstance: Datastore, tableDetails: ICatalystTable) {
 		super(datastoreInstance, tableDetails);
 	}
@@ -420,12 +400,12 @@ export class TableAdmin extends Table {
 	 *
 	 * @template T - A generic type that extends `BulkType` (`"read"` or `"write"`).
 	 *
-	 * @param {T} type - The type of bulk operation to perform (`"read"` or `"write"`).
+	 * @param type - The type of bulk operation to perform (`"read"` or `"write"`).
 	 *
-	 * @returns {ObjectType<T>}
+	 * @returns
 	 *          An instance of either `BulkRead` or `BulkWrite` based on the provided type.
 	 *
-	 * @throws {CatalystDataStoreError}
+	 * @throws
 	 *         If the provided `type` is not `"read"` or `"write"`.
 	 *
 	 * @example

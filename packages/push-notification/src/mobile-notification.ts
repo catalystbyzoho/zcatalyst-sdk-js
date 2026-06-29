@@ -1,5 +1,3 @@
-'use strict';
-
 import { Handler, IRequestConfig, RequestType } from '@zcatalyst/transport';
 import {
 	CatalystService,
@@ -16,14 +14,15 @@ import { ICatalystMobileNotification, ICatalystPushDetails } from './utils/inter
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 
-/**
- * Catalyst Supported mobile platforms
- */
+/** * Catalyst Supported mobile platforms */
 export enum MOBILE_PLATFORM {
 	IOS = 'ios',
 	ANDROID = 'android'
 }
 
+/**
+ * Sends push notifications to registered mobile applications.
+ */
 export class MobileNotification {
 	_appId: string;
 	requester: Handler;
@@ -33,14 +32,13 @@ export class MobileNotification {
 	}
 
 	/**
-	 * Sends a push notification to iOS mobile devices.
-	 * @param notifyObj - Details of the notification, including the message.
-	 * @param recipient - Catalyst User ID or Email ID of the recipient.
-	 * @returns {ICatalystMobileNotification} Details of the sent notification.
+	 * Sends a push notification to an iOS mobile recipient.
+	 * @param notifyObj - The mobile push notification details.
+	 * @param recipient - The Catalyst user ID or email address of the recipient.
+	 * @returns A promise that resolves to ICatalystMobileNotification.
 	 * @example
 	 * ```ts
-	 * const notification = await notificIns.sendIOSNotification({ message: "Hello, iOS User!" }, "user@example.com");
-	 * console.log(notification);
+	 * const result = await mobile.sendIOSNotification({ message: 'Hello' }, 'user@example.com');
 	 * ```
 	 */
 	async sendIOSNotification(
@@ -51,14 +49,13 @@ export class MobileNotification {
 	}
 
 	/**
-	 * Sends a push notification to Android mobile devices.
-	 * @param notifyObj - Details of the notification to be sent.
-	 * @param recipient - Catalyst User ID or Email ID of the recipient.
-	 * @returns {ICatalystMobileNotification} Details of the sent notification.
+	 * Sends a push notification to an Android mobile recipient.
+	 * @param notifyObj - The mobile push notification details.
+	 * @param recipient - The Catalyst user ID or email address of the recipient.
+	 * @returns A promise that resolves to ICatalystMobileNotification.
 	 * @example
 	 * ```ts
-	 * const notification = await notificIns.sendAndroidNotification({ message: "Hello!" }, "user@example.com");
-	 * console.log(notification);
+	 * const result = await mobile.sendAndroidNotification({ message: 'Hello' }, 'user@example.com');
 	 * ```
 	 */
 	async sendAndroidNotification(
@@ -69,15 +66,14 @@ export class MobileNotification {
 	}
 
 	/**
-	 * @deprecated Use one of the following alternatives:
-	 * - {@link sendIOSNotification} for iOS devices.
-	 * - {@link sendAndroidNotification} for Android devices.
-	 * ---
-	 * Sends a push notification to iOS mobile devices.
-	 * @param notifyObj - Details of the notification.
-	 * @param recipient - Catalyst User ID or Email ID of the recipient.
-	 * @returns {ICatalystMobileNotification} Details of the sent notification.
-	 * @warning This function is deprecated and might be removed in a future release.
+	 * Sends a push notification using the default notification path.
+	 * @param notifyObj - The mobile push notification details.
+	 * @param recipient - The Catalyst user ID or email address of the recipient.
+	 * @returns A promise that resolves to ICatalystMobileNotification.
+	 * @example
+	 * ```ts
+	 * const sent = await web.sendNotification('Hello', ['user@example.com']);
+	 * ```
 	 */
 	async sendNotification(
 		notifyObj: ICatalystPushDetails,
@@ -91,15 +87,15 @@ export class MobileNotification {
 	}
 
 	/**
-	 * Sends a push notification to mobile devices.
-	 * @param notifyObj - Details of the notification.
-	 * @param recipient - Catalyst User ID or Email ID of the recipient.
-	 * @param platform - Mobile platform to send the notification (default: {@link MOBILE_PLATFORM.IOS}).
-	 * @returns {ICatalystMobileNotification} Details of the sent notification.
+	 * Sends a mobile push notification to the selected platform.
+	 * @param notifyObj - The mobile push notification details.
+	 * @param recipient - The Catalyst user ID or email address of the recipient.
+	 * @param platform - The mobile platform to target.
+	 * @returns A promise that resolves to ICatalystMobileNotification.
+	 * @throws {CatalystPushNotificationError} when input validation fails.
 	 * @example
 	 * ```ts
-	 * const notification = await notificIns.notify({ message: "Hello!" }, "user@example.com", MOBILE_PLATFORM.ANDROID);
-	 * console.log(notification);
+	 * const result = await mobile.notify({ message: 'Hello' }, 'user@example.com', MOBILE_PLATFORM.ANDROID);
 	 * ```
 	 */
 	async notify(

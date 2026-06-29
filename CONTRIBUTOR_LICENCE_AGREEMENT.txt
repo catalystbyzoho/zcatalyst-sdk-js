@@ -8,6 +8,7 @@ Full name: _____________________________________________________
 * if you do not enter a public name your full name will be public
 * Public name: ____________________________________________________
 your public name might not include honorific, suffix, or middle name
+Country: _________________________________________________
 * E-Mail: ______________________________________________________
 
 * The starred fields above will become part of your public profile.
