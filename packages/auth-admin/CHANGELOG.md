@@ -1,11 +1,6 @@
-# @zcatalyst/auth
+# @zcatalyst/auth-admin
 
-## [0.0.2](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.2) - 2025-07-21
-
-### Bug Fixes
-- Solved the package installation issue.[`#16`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/16)
-
-## [0.0.1](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.1) - 2025-07-18
+## [0.0.1](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.1) - 2026-06-30
 
 ### Features
-- initial release[`#11`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/11)
+- Introduce server admin auth package.[`#26`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/26)
