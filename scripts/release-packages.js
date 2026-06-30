@@ -75,11 +75,11 @@ function publish(pkg, registryConfig) {
     );
     npmrcCreated = true;
 
-    console.log(`Publishing ${pkg.name}@${pkg.version} to ${url} ...`);
-    execSync(`pnpm publish --no-git-checks --provenance`, {
-      cwd: pkg.path,
-      stdio: 'inherit',
-    });
+    console.log('rc file created for', readFileSync(join(path, '.npmrc'), 'utf-8'));
+
+    const pkg = JSON.parse(readFileSync(join(path, 'package.json'), 'utf-8'));
+    console.log(`Publishing ${pkg.name} (${pkg.version})...`);
+    execSync(`pnpm publish --registry https://${registry} --access=public --no-git-checks`, { cwd: path, stdio: 'inherit' });
     console.log(`Published ${pkg.name}@${pkg.version}`);
   } catch (err) {
     throw new Error(`Failed to publish ${pkg.name}: ${err.message}`);
