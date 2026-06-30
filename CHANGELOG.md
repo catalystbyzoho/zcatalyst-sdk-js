@@ -3,7 +3,7 @@
 ## [v0.0.3](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.3) - 2026-06-30
 
 #### `@zcatalyst/auth@v0.0.3`
-- **Breaking Changes**
+- **Enhancements**
   - Resolve authentication failures and restructure user management, web and node auth flows.[`#26`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/26)
 
 #### `@zcatalyst/auth-admin@v0.0.3`
@@ -26,7 +26,7 @@
 - **Bug Fixes**
   - Security hardening — token expiry fix, scrypt key derivation, encrypted token detection, and decryption failure recovery.[`#26`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/26)
 
-#### `@zcatalyst/datastore@v0.0.3`
+#### `@zcatalyst/datastore@v0.1.0`
 - **Features**
   - Added ZCQL and search operations.[`#26`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/26)
 
