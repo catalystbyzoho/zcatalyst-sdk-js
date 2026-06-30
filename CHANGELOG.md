@@ -64,7 +64,7 @@
 
 #### `@zcatalyst/stratus@v0.0.3`
 - **Bug Fixes**
-  - Bumped to v0.0.3.[`#26`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/26)
+  - Fixed the browser configuration related issues.[`#26`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/26)
 
 #### `@zcatalyst/transport@v0.0.3`
 - **Bug Fixes**
