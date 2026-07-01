@@ -1,27 +1,79 @@
 {
   "name": "@zcatalyst/auth",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "./dist-cjs/index.js",
   "module": "./dist-es/index.js",
   "types": "./dist-types/index.d.ts",
   "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "node": {
+        "types": "./dist-types/node.d.ts",
+        "import": "./dist-es/node.js",
+        "require": "./dist-cjs/node.js",
+        "default": "./dist-cjs/node.js"
+      },
+      "browser": {
+        "types": "./dist-types/index.browser.d.ts",
+        "import": "./dist-es/index.browser.js",
+        "require": "./dist-cjs/index.browser.js",
+        "default": "./dist-cjs/index.browser.js"
+      },
+      "default": {
+        "types": "./dist-types/index.d.ts",
+        "import": "./dist-es/index.js",
+        "require": "./dist-cjs/index.js",
+        "default": "./dist-cjs/index.js"
+      }
+    },
+    "./node": {
+      "types": "./dist-types/node.d.ts",
+      "import": "./dist-es/node.js",
+      "require": "./dist-cjs/node.js",
+      "default": "./dist-cjs/node.js"
+    },
+    "./web": {
+      "types": "./dist-types/web.d.ts",
+      "import": "./dist-es/web.js",
+      "require": "./dist-cjs/web.js",
+      "default": "./dist-cjs/web.js"
+    }
+  },
+  "sideEffects": false,
   "scripts": {
-    "build": "concurrently 'pnpm:build:cjs' 'pnpm:build:es' 'pnpm:build:types && pnpm build:types:downlevel'",
+    "build": "pnpm clean && concurrently 'pnpm:build:cjs' 'pnpm:build:es' 'pnpm:build:types && pnpm build:types:downlevel'",
     "build:cjs": "pnpm tsc -p tsconfig.cjs.json",
     "build:es": "pnpm tsc -p tsconfig.es.json",
     "build:types": "pnpm tsc -p tsconfig.types.json",
     "build:types:downlevel": "rimraf dist-types/ts3.4 && downlevel-dts dist-types dist-types/ts3.4",
     "clean": "rimraf ./dist-* && rimraf *.tsbuildinfo || exit 0",
+    "typedoc": "npx typedoc",
+    "docs": "pnpm run typedoc",
     "lint": "eslint -c ../../eslint.config.mjs \"src/**/*.ts\"",
+    "test": "jest --config ./jest.config.js",
     "format": "prettier  --ignore-path ../.prettierignore --write \"{src, test}/*.ts\""
   },
   "dependencies": {
-    "@zcatalyst/utils": "workspace:^"
+    "@zcatalyst/auth-admin": "workspace:^",
+    "@zcatalyst/transport": "workspace:^",
+    "@zcatalyst/utils": "workspace:^",
+    "@zcatalyst/auth-client": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "ts-jest": "^29.2.5"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "files": [
     "dist-*/**"
   ],
-  "browser": {
-    "server-only-package": true
-  }
+  "keywords": [
+    "user-management",
+    "zcatalyst",
+    "catalyst"
+  ]
 }

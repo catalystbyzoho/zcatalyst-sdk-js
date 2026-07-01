@@ -1,81 +1,122 @@
+/**
+ * Release Packages Script
+ *
+ * Purpose:
+ * Publishes workspace packages whose local `version` is not yet present on the
+ * configured npm registry. This avoids over-publishing packages whose source
+ * changed since the last tag but did not receive a version bump.
+ *
+ * Workflow:
+ * 1. Discovers all workspace packages.
+ * 2. For each package, queries the registry for its published versions.
+ * 3. Publishes the package only if its local version is missing on the registry.
+ *
+ * Requirements:
+ * - NPM_TOKEN environment variable must be set for authentication.
+ * - NPM_REGISTRY environment variable (optional, defaults to registry.npmjs.org).
+ *
+ * Usage:
+ *   node scripts/release-packages.js          # publish missing versions
+ *   node scripts/release-packages.js --dry-run # show what would be published
+ */
+
 const { execSync } = require('child_process');
-const { readFileSync, writeFileSync } = require('fs');
+const { readFileSync, writeFileSync, existsSync, unlinkSync } = require('fs');
 const { join } = require('path');
+const { getWorkspacePackages } = require('./lib/commits');
 
-function getChangedFilesSinceLatestTag() {
-  const tag = getLatestTag();
-  const range = tag ? `${tag}..HEAD` : 'HEAD';
-  const output = execSync(`git diff --name-only ${range}`, { encoding: 'utf-8' });
-  return output.split('\n').filter(Boolean);
+const dryRun = process.argv.includes('--dry-run');
+
+function buildRegistryConfig(rawRegistry) {
+  const stripped = rawRegistry.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+  const scheme = /^http:\/\//i.test(rawRegistry) ? 'http' : 'https';
+  return {
+    host: stripped,
+    url: `${scheme}://${stripped}`,
+  };
 }
 
-
-function getLatestTag() {
+function getPublishedVersions(pkgName, registryUrl) {
   try {
-    return execSync('git describe --tags --abbrev=0', { encoding: 'utf-8' }).trim();
-  } catch {
-    return '';
+    const out = execSync(
+      `npm view ${pkgName} versions --json --registry=${registryUrl}`,
+      { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] }
+    ).trim();
+    if (!out) return [];
+    const parsed = JSON.parse(out);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch (err) {
+    // npm view returns non-zero when the package is not yet published.
+    const stderr = (err.stderr && err.stderr.toString()) || '';
+    if (/E404|not found|no such package/i.test(stderr)) return [];
+    // Other error — surface but treat as "unknown, attempt publish".
+    console.warn(`Could not fetch versions for ${pkgName}: ${stderr.trim() || err.message}`);
+    return [];
   }
 }
 
-function getAllPackages() {
-  const rootPkg = JSON.parse(readFileSync('package.json', 'utf-8'));
-  const workspaces = rootPkg.workspaces || rootPkg.pnpm?.packages || ['packages/*'];
-
-  const pkgs = [];
-  for (const pattern of workspaces) {
-    const dirs = execSync(`find ${pattern} -name package.json`, { encoding: 'utf-8' })
-      .split('\n')
-      .filter(Boolean)
-      .map(pkgJson => join(pkgJson, '..'));
-    pkgs.push(...dirs);
-  }
-  return pkgs;
-}
-
-function getChangedPackagesByDiff(changedFiles, allPackages) {
-  return allPackages.filter(pkgPath => {
-    return changedFiles.some(file => file.startsWith(pkgPath));
-  });
-}
-
-function publish(path) {
+function publish(pkg, registryConfig) {
+  const { host, url } = registryConfig;
+  const npmrcPath = join(pkg.path, '.npmrc');
+  let npmrcCreated = false;
   try {
+    if (dryRun) {
+      console.log(`[dry-run] Would publish ${pkg.name}@${pkg.version} to ${url}`);
+      return;
+    }
+
     const token = process.env.NPM_TOKEN;
-    const registry = process.env.NPM_REGISTRY || 'registry.npmjs.org';
     if (!token) throw new Error('NPM_TOKEN is not set');
 
     writeFileSync(
-      join(path, '.npmrc'),
-      `//${registry}:_authToken=${token}\nregistry=https://${registry}`,
+      npmrcPath,
+      `//${host}/:_authToken=${token}\nregistry=${url}\n`,
       'utf8'
     );
-
-    console.log('rc file created for', readFileSync(join(path, '.npmrc'), 'utf-8'));
+    npmrcCreated = true;
 
     const pkg = JSON.parse(readFileSync(join(path, 'package.json'), 'utf-8'));
     console.log(`Publishing ${pkg.name} (${pkg.version})...`);
     execSync(`pnpm publish --registry https://${registry} --access=public --no-git-checks`, { cwd: path, stdio: 'inherit' });
     console.log(`Published ${pkg.name}@${pkg.version}`);
   } catch (err) {
-    throw new Error(`Failed to publish ${path}: ${err.message}`);
+    throw new Error(`Failed to publish ${pkg.name}: ${err.message}`);
+  } finally {
+    if (npmrcCreated && existsSync(npmrcPath)) {
+      try { unlinkSync(npmrcPath); } catch {}
+    }
   }
 }
 
-const tag = getLatestTag();
-console.log(`Latest tag: ${tag || 'none'}`);
+const registryConfig = buildRegistryConfig(
+  process.env.NPM_REGISTRY || 'registry.npmjs.org'
+);
 
-const changedFiles = getChangedFilesSinceLatestTag();
-console.log('Changed files since last tag:', changedFiles);
+const packages = getWorkspacePackages();
+const toPublish = [];
+const skipped = [];
 
-const allPackages = getAllPackages();
-const changedPackages = getChangedPackagesByDiff(changedFiles, allPackages);
+for (const pkg of packages) {
+  const published = getPublishedVersions(pkg.name, registryConfig.url);
+  if (published.includes(pkg.version)) {
+    skipped.push(`${pkg.name}@${pkg.version} (already published)`);
+  } else {
+    toPublish.push(pkg);
+  }
+}
 
-if (changedPackages.length === 0) {
-  console.log('No matching packages found for changed files.');
+if (skipped.length) {
+  console.log('Skipped:');
+  for (const s of skipped) console.log(`  - ${s}`);
+}
+
+if (toPublish.length === 0) {
+  console.log('No packages need publishing.');
   process.exit(0);
 }
 
-for (const pkgPath of changedPackages) {
-  publish(pkgPath);
+console.log(`\nPublishing ${toPublish.length} package(s):`);
+for (const pkg of toPublish) {
+  publish(pkg, registryConfig);
 }
+

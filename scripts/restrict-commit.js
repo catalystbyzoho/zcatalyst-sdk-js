@@ -1,5 +1,53 @@
 #!/usr/bin/env node
 
+/**
+ * Commit Restriction Script (Pre-commit Hook)
+ * 
+ * Purpose:
+ * This script enforces access control for sensitive files and directories in the
+ * repository by preventing unauthorized users from committing changes to protected
+ * areas. Only designated maintainers can modify these protected resources.
+ * 
+ * Protected Resources:
+ * - Contributor license agreement
+ * - Contributing guidelines
+ * - Build and release scripts
+ * - Git hooks configuration
+ * - GitHub workflows and actions
+ * - TypeDoc configuration
+ * 
+ * Features:
+ * - Validates staged files against a prohibited paths list
+ * - Checks committer's email against allowed maintainers list
+ * - Blocks commits containing unauthorized changes to protected files
+ * - Provides clear error messages indicating which files are restricted
+ * - Handles both files and directories in prohibition list
+ * - Cross-platform path normalization (Windows/Unix)
+ * 
+ * Authorization:
+ * Only users with emails listed in allowedMaintainers array can modify
+ * protected files. The script identifies the user via git config user.email.
+ * 
+ * Workflow:
+ * 1. Retrieves current Git user's email
+ * 2. Gets list of staged files for commit
+ * 3. Checks if any staged files are in prohibited paths
+ * 4. Verifies if user is an authorized maintainer
+ * 5. Blocks commit if violations found and user is not a maintainer
+ * 6. Allows commit if no violations or user is a maintainer
+ * 
+ * Usage:
+ * This script is automatically executed as a pre-commit Git hook.
+ * It should be installed via Husky in .husky/pre-commit
+ * 
+ * Exit Codes:
+ * 0 - Commit allowed (no violations or authorized maintainer)
+ * 1 - Commit blocked (violations detected and not a maintainer)
+ * 
+ * Note: This is a security measure to protect repository integrity and
+ * maintain consistent development workflows.
+ */
+
 const { execSync } = require('child_process');
 
 // Maintainers allowed to modify protected files

@@ -4,6 +4,9 @@ import { Bucket } from '../bucket';
 import { IStratusMultipartSummaryRes } from '../utils/interface';
 import { StratusObjectRequest } from '../utils/types';
 
+/**
+ * Represents an active multipart upload session.
+ */
 export class MultipartUpload {
 	key: string;
 	uploadId: string;
@@ -17,33 +20,38 @@ export class MultipartUpload {
 	}
 
 	/**
-	 * Will upload an individual part of the object to a bucket. Required part is referenced using a distinct part number.
-	 * Parts can be uploaded in any order, and each part should be identified by a unique `partNumber`.
-	 * (ranging from 1 to 1000).
-	 * @param body - The content to be uploaded as part of the file. This can either be a stream or a buffer.
-	 * @param partNumber - The part number (between 1 and 1000) that indicates the order of the part in the multipart upload.
-	 * @returns {boolean} A boolean indicating the success or failure of the part upload.
+	 * Uploads one part of an active multipart upload.
+	 * @param body - The object content or multipart part content.
+	 * @param partNumber - The multipart part number.
+	 * @returns A promise that resolves to void.
+	 * @example
+	 * ```ts
+	 * await bucket.uploadPart(key, uploadId, partBody, 1);
+	 * ```
 	 */
-	async uploadPart(body: StratusObjectRequest, partNumber: number): Promise<boolean> {
-		const resp = await this.bucket.uploadPart(this.key, this.uploadId, body, partNumber);
-		return resp;
+	async uploadPart(body: StratusObjectRequest, partNumber: number): Promise<void> {
+		await this.bucket.uploadPart(this.key, this.uploadId, body, partNumber);
 	}
 
 	/**
-	 * Completes the multipart upload. This method finalizes the upload process
-	 * 				and assembles the parts into the complete object.
-	 * @returns {boolean} A boolean indicating the success or failure of completing the multipart upload.
+	 * Completes this multipart upload session.
+	 * @returns A promise that resolves to void.
+	 * @example
+	 * ```ts
+	 * await multipartUpload.completeUpload();
+	 * ```
 	 */
-	async completeUpload(): Promise<boolean> {
-		const resp = this.bucket.completeMultipartUpload(this.key, this.uploadId);
-		return resp;
+	async completeUpload(): Promise<void> {
+		await this.bucket.completeMultipartUpload(this.key, this.uploadId);
 	}
 
 	/**
-	 * Retrieves a summary of the uploaded parts for the multipart upload.
-	 * This summary contains information about each part of the uploaded file,
-	 *  					including their status and part number.
-	 * @returns {IStratusMultipartSummaryRes} A summary of the multipart upload, containing details of all uploaded parts.
+	 * Retrieves the part summary for this multipart upload session.
+	 * @returns A promise that resolves to IStratusMultipartSummaryRes.
+	 * @example
+	 * ```ts
+	 * const summary = await multipartUpload.getUploadSummary();
+	 * ```
 	 */
 	async getUploadSummary(): Promise<IStratusMultipartSummaryRes> {
 		const resp = await this.bucket.getMultipartUploadSummary(this.key, this.uploadId);

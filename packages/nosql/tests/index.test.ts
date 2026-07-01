@@ -1,25 +1,18 @@
 import { CONSTANTS } from '@zcatalyst/utils';
 
-import { ZCAuth } from '../../auth/src';
 import { NoSQL, NoSQLTable } from '../src';
-import { getAllTables, getTable } from './types/table-responses';
 import { tableDetails, tableId, tableName } from './types/test-constants';
-
-jest.mock('../../auth/src');
-
-const mockedApp = ZCAuth as jest.Mock;
 
 //test constants
 describe('nosql', () => {
-	const app = new mockedApp().init();
-	const nosql: NoSQL = new NoSQL(app);
+	const nosql: NoSQL = new NoSQL();
 
 	it('testing get component name', () => {
 		expect(nosql.getComponentName()).toEqual(CONSTANTS.COMPONENT.no_sql);
 	});
 
 	it('testing get table', async () => {
-		app.setRequestResponseMap(getTable);
+		// app.setRequestResponseMap(getTable);
 		// get table with id
 		await expect(nosql.getTable(tableId)).resolves.toBeInstanceOf(NoSQLTable);
 		expect(await nosql.getTable(tableId)).toStrictEqual(nosql.table(tableDetails));
@@ -38,7 +31,7 @@ describe('nosql', () => {
 	});
 
 	it('testing get all tables', async () => {
-		app.setRequestResponseMap(getAllTables);
+		// app.setRequestResponseMap(getAllTables);
 
 		// get all tables
 		await expect(nosql.getAllTable()).resolves.toBeInstanceOf(Array);

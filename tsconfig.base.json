@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    // ...existing code...
+    "types": ["jest", "node", "./test-utils/global"]
+  }
+  // ...existing code...
+}

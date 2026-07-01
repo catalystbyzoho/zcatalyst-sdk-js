@@ -1,12 +1,16 @@
-'use strict';
-
 /**
- * Override a value with supplied environment variable if present.
+ * Returns an environment override value when one is available.
  *
- * @param {string} envname The env key name.
- * @param {string} value The value to use if key is not present.
- * @param {Function} coerce Function to do manipulation of env value and given value.
- * @return {any} Either the env value or the given value according the presence.
+ * @param envname - The environment variable name.
+ * @param value - The value to validate.
+ * @param coerce - A function that converts the environment value.
+ * @returns The environment value when set; otherwise the supplied value.
+ *
+ * @example
+ * ```ts
+ * import { envOverride } from '@zcatalyst/utils';
+ * const result = envOverride();
+ * ```
  */
 export function envOverride<T>(
 	envname: string,
@@ -18,7 +22,7 @@ export function envOverride<T>(
 			if (coerce !== undefined) {
 				try {
 					return coerce(process.env[envname], value);
-				} catch (e) {
+				} catch {
 					return value;
 				}
 			}
@@ -28,6 +32,18 @@ export function envOverride<T>(
 	return value;
 }
 
+/**
+ * Creates a shallow copy that preserves the prototype of an instance.
+ *
+ * @param original - The instance to copy.
+ * @returns A copied instance with the same prototype.
+ *
+ * @example
+ * ```ts
+ * import { copyInstance } from '@zcatalyst/utils';
+ * const result = copyInstance();
+ * ```
+ */
 export function copyInstance<T>(original: T): T {
 	return Object.assign(Object.create(Object.getPrototypeOf(original)), original);
 }

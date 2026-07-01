@@ -1,16 +1,12 @@
 import moment from 'moment';
 
-import { ZCAuth } from '../../auth/src';
 import { Datastore } from '../src';
 import { Table } from '../src/table';
 
-jest.mock('../../auth/src');
-
-const mockedApp = ZCAuth as jest.Mock;
+const { responses } = require('../../../tests/api-responses.js');
 
 describe('test datastore', () => {
-	const app = new mockedApp().init();
-	const datastore: Datastore = new Datastore(app);
+	const datastore: Datastore = new Datastore();
 
 	const tableReqRes = {
 		[`/table/123`]: {
@@ -67,7 +63,7 @@ describe('test datastore', () => {
 			}
 		}
 	};
-	app.setRequestResponseMap(tableReqRes);
+	// app.setRequestResponseMap(tableReqRes);
 	it('get all tables', async () => {
 		await expect(datastore.getAllTables()).resolves.toBeInstanceOf(Array);
 	});
@@ -84,5 +80,35 @@ describe('test datastore', () => {
 				throw error;
 			}
 		}).toThrowError();
+	});
+
+	it('execute ZCQL query', async () => {
+		await expect(datastore.executeZCQLQuery('SELECT * FROM Users')).resolves.toStrictEqual(
+			responses['/query'].POST.data.data
+		);
+		await expect(datastore.executeZCQLQuery('')).rejects.toThrow();
+	});
+
+	it('execute search query', async () => {
+		await expect(
+			datastore.executeSearchQuery({
+				search: 'test',
+				search_table_columns: { test_table: ['test_column'] },
+				select_table_columns: { test_table: ['test_column'] },
+				order_by: { test_column: 'test_column' },
+				start: 0,
+				end: 10
+			})
+		).resolves.toStrictEqual(responses['/search'].POST.data.data);
+		await expect(
+			datastore.executeSearchQuery({
+				search: 'test',
+				search_table_columns: { test_table: ['test_column'] }
+			})
+		).resolves.toStrictEqual(responses['/search'].POST.data.data);
+
+		await expect((datastore as any).executeSearchQuery({})).rejects.toThrowError();
+
+		await expect((datastore as any).executeSearchQuery({ xx: 'xx' })).rejects.toThrowError();
 	});
 });

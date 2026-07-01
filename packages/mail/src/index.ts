@@ -1,4 +1,8 @@
-'use strict';
+/**
+ * Catalyst Mail — send transactional and bulk email from your Catalyst app.
+ *
+ * @packageDocumentation
+ */
 
 import { Handler, IRequestConfig, RequestType } from '@zcatalyst/transport';
 import {
@@ -11,6 +15,8 @@ import {
 	wrapValidatorsWithPromise
 } from '@zcatalyst/utils';
 
+import pkg from '../package.json';
+const { version } = pkg;
 import { CatalystEmailError } from './utils/error';
 import { ICatalystMail } from './utils/interface';
 import { getFormData } from './utils/validators';
@@ -20,34 +26,38 @@ const { REQ_METHOD, COMPONENT, CREDENTIAL_USER } = CONSTANTS;
 type ICatalystMailRes = ICatalystMail &
 	Omit<ICatalystGResponse, 'created_time' | 'created_by' | 'modified_time' | 'modified_by'>;
 
-export class Email implements Component {
+/**
+ * Sends email through the Catalyst Mail service.
+ */
+export class Mail implements Component {
 	requester: Handler;
 	constructor(app?: unknown) {
 		this.requester = new Handler(app, this);
 	}
 
+	/**
+	 * getComponentName operation.
+	 */
 	getComponentName(): string {
 		return COMPONENT.email;
 	}
 
 	/**
-	 * Sends an email using Catalyst's email service.
-	 *
-	 * @param {ICatalystMail} mailObj - The email object containing sender, recipient, subject, content, and optional fields like CC, BCC, and attachments.
-	 * @returns {ICatalystMailRes} The response containing email details and status.
-	 * @throws {CatalystEmailError} If the email object is invalid or the request fails.
-	 *
+	 * getComponentVersion operation.
+	 */
+	getComponentVersion(): string {
+		return version;
+	}
+
+	/**
+	 * Sends an email using the configured Catalyst Mail service.
+	 * @param mailObj - The mail payload containing sender, recipients, subject, content, and optional fields.
+	 * @returns A promise that resolves to ICatalystMailRes.
+	 * @throws {CatalystEmailError} when input validation fails.
 	 * @example
-	 * const mailObj: ICatalystMail = {
-	 *   from_email: 'sender@example.com',
-	 *   to_email: ['recipient@example.com'],
-	 *   subject: 'Hello from Catalyst',
-	 *   content: 'This is a test email',
-	 *   html_mode: true
-	 * };
-	 *
-	 * const response = await emailInstance.sendMail(mailObj);
-	 * console.log(response.message);
+	 * ```ts
+	 * const response = await mail.sendMail(mailObj);
+	 * ```
 	 */
 	async sendMail(mailObj: ICatalystMail): Promise<ICatalystMailRes> {
 		await wrapValidatorsWithPromise(() => {

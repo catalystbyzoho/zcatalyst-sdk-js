@@ -10,6 +10,9 @@ interface IStratusBucketSignature {
 	expiry_time?: number;
 }
 
+/**
+ * Manages Stratus bucket signatures for authenticated requests.
+ */
 export class Util {
 	bucket: Bucket;
 	_requester: Handler;
@@ -19,14 +22,41 @@ export class Util {
 		this._requester = bucket.getAuthorizationClient();
 	}
 
+	/**
+	 * Returns the cached signature for a bucket.
+	 * @param bucketName - The Stratus bucket name.
+	 * @returns IStratusBucketSignature.
+	 * @example
+	 * ```ts
+	 * const signature = Util.getSignature('bucket-name');
+	 * ```
+	 */
 	static getSignature(bucketName: string): IStratusBucketSignature {
 		return Util.bucketSignatures[bucketName];
 	}
 
+	/**
+	 * Stores a bucket signature in the in-memory signature cache.
+	 * @param bucketName - The Stratus bucket name.
+	 * @param signature - The signature details to cache.
+	 * @returns void.
+	 * @example
+	 * ```ts
+	 * Util.setSignature('bucket-name', signature);
+	 * ```
+	 */
 	static setSignature(bucketName: string, signature: IStratusBucketSignature): void {
 		Util.bucketSignatures[bucketName] = signature;
 	}
 
+	/**
+	 * Checks whether the active requester is using an admin credential.
+	 * @returns boolean.
+	 * @example
+	 * ```ts
+	 * const admin = util.isAdmin();
+	 * ```
+	 */
 	isAdmin(): boolean {
 		return (
 			typeof window === 'undefined' &&
@@ -34,6 +64,14 @@ export class Util {
 		);
 	}
 
+	/**
+	 * Retrieves or refreshes the signed query parameters for a bucket.
+	 * @returns A promise that resolves to unknown.
+	 * @example
+	 * ```ts
+	 * const signature = await util.getBucketSignature();
+	 * ```
+	 */
 	async getBucketSignature(): Promise<unknown> {
 		const signJson: IStratusBucketSignature = Util.getSignature(this.bucket.getName()) || {};
 		if (signJson && Number(signJson?.expiry_time) > Date.now()) {
@@ -42,7 +80,7 @@ export class Util {
 		const request: IRequestConfig = {
 			method: REQ_METHOD.post,
 			path: '/bucket/signature',
-			qs: { bucket_name: this.bucket.bucketDetails.bucket_name },
+			qs: { bucket_name: this.bucket._bucketDetails.bucket_name },
 			type: RequestType.JSON,
 			expecting: ResponseType.JSON,
 			service: CatalystService.BAAS,

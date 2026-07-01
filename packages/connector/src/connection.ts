@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use strict';
 
 import { Cache, ICatalystCache } from '@zcatalyst/cache';
 import { Handler, IRequestConfig } from '@zcatalyst/transport';
@@ -38,6 +37,9 @@ const {
 
 const SECRET_KEY = 'secret_key';
 
+/**
+ * Manages OAuth access tokens for a configured Catalyst connector.
+ */
 export class Connector {
 	connectorName: string;
 	authUrl: string;
@@ -74,15 +76,16 @@ export class Connector {
 		return 'ZC_CONN_' + this.connectorName;
 	}
 	/**
-	 * Retrieves the access token from cache or refreshes it if expired.
-	 * @returns {string} The access token.
-	 * @throws {CatalystConnectorError} If fetching the token fails.
+	 * Retrieves a valid access token, refreshing or reading from cache when needed.
+	 * @returns A promise that resolves to string.
+	 * @throws {Error} when the underlying request or stream operation fails.
 	 * @example
+	 * ```ts
 	 * const token = await connector.getAccessToken();
-	 * console.log(token);
+	 * ```
 	 */
 	async getAccessToken(): Promise<string> {
-		if (this.accessToken && this.expiresAt && this.expiresAt < Date.now()) {
+		if (this.accessToken && this.expiresAt && this.expiresAt > Date.now()) {
 			return this.accessToken;
 		}
 		const cachedTokenObj = await (new Cache(this.app) as any)
@@ -98,7 +101,23 @@ export class Connector {
 				return await this.refreshAndPersistToken();
 			}
 			this.expiresAt = expiryTime;
-			this.accessToken = value.access_token;
+			if (this.#isEncrypted(value.access_token)) {
+				if (!this.secretKey) {
+					throw new CatalystConnectorError(
+						'SECRET_KEY_MISSING',
+						'The cached access token is encrypted. Please provide a valid secret key to decrypt it.'
+					);
+				}
+				try {
+					this.accessToken = this.#decrypt(value.access_token, this.secretKey as string);
+				} catch {
+					// Decryption failed (wrong secret key or corrupted ciphertext) —
+					// discard the stale cache entry and fetch a fresh token.
+					return await this.refreshAndPersistToken();
+				}
+			} else {
+				this.accessToken = value.access_token;
+			}
 			return this.accessToken as string;
 		} catch (err) {
 			if (err instanceof SyntaxError) return await this.refreshAndPersistToken();
@@ -107,13 +126,14 @@ export class Connector {
 	}
 
 	/**
-	 * Generates a new access token using an authorization code.
-	 * @param {string} code - The authorization code.
-	 * @returns {string} The newly generated access token.
-	 * @throws {CatalystConnectorError} If the provided grant token or redirect URL is invalid.
+	 * Generates a new access token with an authorization code and persists it.
+	 * @param code - The OAuth authorization code.
+	 * @returns A promise that resolves to string.
+	 * @throws {CatalystConnectorError} when input validation fails.
 	 * @example
-	 * const token = await connector.generateAccessToken('auth_code_here');
-	 * console.log(token);
+	 * ```ts
+	 * const token = await connector.generateAccessToken('grant-code');
+	 * ```
 	 */
 	async generateAccessToken(code: string): Promise<string> {
 		await wrapValidatorsWithPromise(() => {
@@ -147,18 +167,18 @@ export class Connector {
 		this.refreshToken = tokenObj[REFRESH_TOKEN] as string;
 		this.expiresIn = parseInt(tokenObj[EXPIRES_IN] as string);
 		const expires = Date.now() + (this.expiresIn * 1000 - 900000); // Convert expiryIn seconds to milliseconds and subtract 15 minutes
-		this.expiresAt = this.refreshIn ? Date.now() + this.refreshIn * 1000 : expires;
+		this.expiresAt = this.refreshIn ? Date.now() + this.refreshIn : expires;
 		await this.putAccessTokenInCache();
 		return this.accessToken;
 	}
 
 	/**
-	 * Refreshes the access token and stores it in cache.
-	 * @returns {string} The refreshed access token.
-	 * @throws {CatalystConnectorError} If refreshing fails.
+	 * Refreshes the access token and persists it in Catalyst Cache.
+	 * @returns A promise that resolves to string.
 	 * @example
-	 * const refreshedToken = await connector.refreshAndPersistToken();
-	 * console.log(refreshedToken);
+	 * ```ts
+	 * const token = await connector.refreshAndPersistToken();
+	 * ```
 	 */
 	async refreshAndPersistToken(): Promise<string> {
 		await this.refreshAccessToken();
@@ -167,10 +187,13 @@ export class Connector {
 	}
 
 	/**
-	 * Refreshes the access token using the refresh token.
-	 * @throws {CatalystConnectorError} If the refresh token or refresh URL is invalid.
+	 * Refreshes the connector access token using the refresh token.
+	 * @returns A promise that resolves to void.
+	 * @throws {CatalystConnectorError} when input validation fails.
 	 * @example
+	 * ```ts
 	 * await connector.refreshAccessToken();
+	 * ```
 	 */
 	async refreshAccessToken(): Promise<void> {
 		await wrapValidatorsWithPromise(() => {
@@ -197,16 +220,35 @@ export class Connector {
 		this.accessToken = tokenObject[ACCESS_TOKEN] as string;
 		this.expiresIn = parseInt(tokenObject[EXPIRES_IN] as string);
 		const expires = Date.now() + (this.expiresIn * 1000 - 900000);
-		this.expiresAt = this.refreshIn ? Date.now() + this.refreshIn * 1000 : expires;
+		this.expiresAt = this.refreshIn ? Date.now() + this.refreshIn : expires;
 	}
 
-	#deriveKey(userKey: string): Buffer {
-		return crypto.createHash('sha256').update(userKey).digest(); // 256-bit key
+	/**
+	 * Detects whether a stored token value is in the AES-GCM encrypted format.
+	 * Encrypted tokens are base64 strings that decode to 3 (legacy) or 4 (current)
+	 * colon-separated segments where the IV and authTag are 32-char hex strings (16 bytes).
+	 */
+	#isEncrypted(value: string): boolean {
+		try {
+			const decoded = Buffer.from(value, 'base64').toString('utf8');
+			const parts = decoded.split(':');
+			if (parts.length !== 3 && parts.length !== 4) return false;
+			const [, ivHex, authTagHex] = parts;
+			// IV and authTag are each 16 bytes = 32 hex characters
+			return ivHex.length === 32 && authTagHex.length === 32;
+		} catch {
+			return false;
+		}
+	}
+
+	#deriveKey(userKey: string, salt: Buffer): Buffer {
+		return crypto.scryptSync(userKey, salt, 32); // 256-bit key with salt
 	}
 
 	#encrypt(text: string, key: string) {
 		const iv = crypto.randomBytes(16); // Generate 16-byte IV
-		const derivedKey = this.#deriveKey(key);
+		const salt = crypto.randomBytes(16); // Per-encryption random salt
+		const derivedKey = this.#deriveKey(key, salt);
 
 		const cipher = crypto.createCipheriv('aes-256-gcm', derivedKey, iv);
 		let encrypted = cipher.update(text, 'utf8', 'hex');
@@ -214,19 +256,24 @@ export class Connector {
 
 		const authTag = cipher.getAuthTag().toString('hex');
 
-		const result = `${encrypted}:${iv.toString('hex')}:${authTag}`;
+		const result = `${encrypted}:${iv.toString('hex')}:${authTag}:${salt.toString('hex')}`;
 		return Buffer.from(result).toString('base64');
 	}
 
 	#decrypt(cipherText: string, key: string) {
-		const derivedKey = this.#deriveKey(key);
-
-		// Decode from base64 and split cipherText, IV, and authTag
+		// Decode from base64 and split cipherText, IV, authTag, and salt
 		const decoded = Buffer.from(cipherText, 'base64').toString('utf8');
-		const [text, ivHex, authTagHex] = decoded.split(':');
+		const parts = decoded.split(':');
 
+		const [text, ivHex, authTagHex] = parts;
 		const iv = Buffer.from(ivHex, 'hex');
 		const authTag = Buffer.from(authTagHex, 'hex');
+
+		// Support legacy ciphertext (3 parts, no salt) using SHA-256 derivation
+		const derivedKey =
+			parts.length === 4
+				? this.#deriveKey(key, Buffer.from(parts[3], 'hex'))
+				: crypto.createHash('sha256').update(key).digest();
 
 		const decipher = crypto.createDecipheriv('aes-256-gcm', derivedKey, iv);
 		decipher.setAuthTag(authTag);
@@ -238,11 +285,12 @@ export class Connector {
 	}
 
 	/**
-	 * Stores the access token in cache.
-	 * @returns {ICatalystCacheRes} The cache response.
+	 * Persists the current connector access token state in Catalyst Cache.
+	 * @returns A promise that resolves to ICatalystCacheRes.
 	 * @example
-	 * const cacheResponse = await connector.putAccessTokenInCache();
-	 * console.log(cacheResponse);
+	 * ```ts
+	 * const cacheEntry = await connector.putAccessTokenInCache();
+	 * ```
 	 */
 	async putAccessTokenInCache(): Promise<ICatalystCacheRes> {
 		const tokenObj = {

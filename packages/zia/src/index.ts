@@ -1,4 +1,8 @@
-'use strict';
+/**
+ * Catalyst Zia — AI services such as OCR, object detection, sentiment analysis and more.
+ *
+ * @packageDocumentation
+ */
 
 import { Handler, IRequestConfig, RequestType } from '@zcatalyst/transport';
 import {
@@ -12,6 +16,8 @@ import {
 } from '@zcatalyst/utils';
 import fs from 'fs';
 
+import pkg from '../package.json';
+const { version } = pkg;
 import { CatalystZiaError } from './utils/errors';
 import {
 	ICatalsytZiaKeywordExtraction,
@@ -35,6 +41,9 @@ import {
 
 const { REQ_METHOD, COMPONENT, CREDENTIAL_USER } = CONSTANTS;
 
+/**
+ * Provides Catalyst Zia AI and ML service operations.
+ */
 export class Zia implements Component {
 	requester: Handler;
 	constructor(app?: unknown) {
@@ -42,17 +51,27 @@ export class Zia implements Component {
 	}
 
 	/**
-	 * Get the name of the Zia component.
-	 * @returns The name of the component.
+	 * getComponentName operation.
 	 */
 	getComponentName(): string {
 		return COMPONENT.zia;
 	}
 
 	/**
-	 * Detect objects in an image.
-	 * @param file Read stream of the image file.
-	 * @returns The detected objects in the image.
+	 * getComponentVersion operation.
+	 */
+	getComponentVersion(): string {
+		return version;
+	}
+
+	/**
+	 * Detects objects in an image using Zia object detection.
+	 * @param file - The image file stream to analyze.
+	 * @returns A promise that resolves to ICatalystZiaObject.
+	 * @example
+	 * ```ts
+	 * const result = await zia.detectObject(fs.createReadStream('image.png'));
+	 * ```
 	 */
 	async detectObject(file: fs.ReadStream): Promise<ICatalystZiaObject> {
 		const fileData = { image: file };
@@ -70,10 +89,21 @@ export class Zia implements Component {
 	}
 
 	/**
-	 * Extract text from an image using Optical Character Recognition (OCR).
-	 * @param file Read stream of the image file.
-	 * @param opts Optional parameters for language and model type.
-	 * @returns Extracted text from the image.
+	 * Extracts text from an image using Zia OCR.
+	 * @param file - The image file stream to analyze.
+	 * @param opts - Optional request settings.
+	 *   - language - Optional language setting.
+	 *   - modelType - Optional modelType setting.
+	 *   - format - Optional format setting.
+	 *   - mode - Optional mode setting.
+	 *   - emotion - Optional emotion setting.
+	 *   - age - Optional age setting.
+	 *   - gender - Optional gender setting.
+	 * @returns A promise that resolves to ICatalystZiaOCR.
+	 * @example
+	 * ```ts
+	 * const result = await zia.extractOpticalCharacters(fs.createReadStream('image.png'), { language: 'eng' });
+	 * ```
 	 */
 	async extractOpticalCharacters(
 		file: fs.ReadStream,
@@ -94,11 +124,16 @@ export class Zia implements Component {
 	}
 
 	/**
-	 * Extract Aadhaar card details using OCR.
-	 * @param frontImg Read stream of the Aadhaar front image.
-	 * @param backImg Read stream of the Aadhaar back image.
-	 * @param language Language for text extraction.
-	 * @returns Extracted Aadhaar card details.
+	 * Extracts Aadhaar card details from front and back images.
+	 * @param frontImg - The Aadhaar front image stream.
+	 * @param backImg - The Aadhaar back image stream.
+	 * @param language - The OCR language to use.
+	 * @returns A promise that resolves to ICatalystZiaOCR.
+	 * @throws {CatalystZiaError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const result = await zia.extractAadhaarCharacters(front, back, 'eng');
+	 * ```
 	 */
 	async extractAadhaarCharacters(
 		frontImg: fs.ReadStream,
@@ -128,10 +163,22 @@ export class Zia implements Component {
 	}
 
 	/**
-	 * Scan a barcode from an image.
-	 * @param image Read stream of the barcode image.
-	 * @param opts Optional parameters such as format.
-	 * @returns Scanned barcode details.
+	 * Scans barcode information from an image.
+	 * @param image - The image file stream to process.
+	 * @param opts - Optional request settings.
+	 *   - language - Optional language setting.
+	 *   - modelType - Optional modelType setting.
+	 *   - format - Optional format setting.
+	 *   - mode - Optional mode setting.
+	 *   - emotion - Optional emotion setting.
+	 *   - age - Optional age setting.
+	 *   - gender - Optional gender setting.
+	 * @returns A promise that resolves to ICatalystZiaBarcode.
+	 * @throws {CatalystZiaError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const result = await zia.scanBarcode(fs.createReadStream('barcode.png'));
+	 * ```
 	 */
 	async scanBarcode(
 		image: fs.ReadStream,
@@ -155,14 +202,22 @@ export class Zia implements Component {
 	}
 
 	/**
-	 * Moderates an image by analyzing its content for potentially inappropriate or unsafe elements.
-	 *
-	 * @param image - A readable stream of the image file to be moderated.
-	 * @param opts - Optional parameters for image moderation.
-	 *   @param opts.mode - The moderation mode (e.g., strict, moderate, or relaxed).
-	 * @returns An object containing the moderation analysis results.
-	 *
-	 * @throws {CatalystZiaError} If the provided image is not valid.
+	 * Analyzes an image for unsafe or inappropriate content.
+	 * @param image - The image file stream to process.
+	 * @param opts - Optional request settings.
+	 *   - language - Optional language setting.
+	 *   - modelType - Optional modelType setting.
+	 *   - format - Optional format setting.
+	 *   - mode - Optional mode setting.
+	 *   - emotion - Optional emotion setting.
+	 *   - age - Optional age setting.
+	 *   - gender - Optional gender setting.
+	 * @returns A promise that resolves to ICatalystZiaModeration.
+	 * @throws {CatalystZiaError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const result = await zia.moderateImage(fs.createReadStream('image.png'));
+	 * ```
 	 */
 	async moderateImage(
 		image: fs.ReadStream,
@@ -189,17 +244,22 @@ export class Zia implements Component {
 	}
 
 	/**
-	 * Analyzes a face in an image and extracts attributes such as emotions, age, and gender.
-	 *
-	 * @param image - A readable stream of the image file containing the face to be analyzed.
-	 * @param opts - Optional parameters for face analysis.
-	 *   @param opts.mode - The mode of face analysis (e.g., basic or advanced).
-	 *   @param opts.emotion - Whether to analyze emotions in the face.
-	 *   @param opts.age - Whether to estimate the age of the person in the image.
-	 *   @param opts.gender - Whether to determine the gender of the person in the image.
-	 * @returns An object containing the analyzed face attributes.
-	 *
-	 * @throws {CatalystZiaError} If the provided image is not valid.
+	 * Analyzes faces in an image and returns detected attributes.
+	 * @param image - The image file stream to process.
+	 * @param opts - Optional request settings.
+	 *   - language - Optional language setting.
+	 *   - modelType - Optional modelType setting.
+	 *   - format - Optional format setting.
+	 *   - mode - Optional mode setting.
+	 *   - emotion - Optional emotion setting.
+	 *   - age - Optional age setting.
+	 *   - gender - Optional gender setting.
+	 * @returns A promise that resolves to ICatalystZiaFace.
+	 * @throws {CatalystZiaError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const result = await zia.analyseFace(fs.createReadStream('face.png'), { emotion: true });
+	 * ```
 	 */
 	async analyseFace(
 		image: fs.ReadStream,
@@ -231,10 +291,15 @@ export class Zia implements Component {
 	}
 
 	/**
-	 * Compare two faces to check for a match.
-	 * @param sourceImage Read stream of the source image.
-	 * @param queryImage Read stream of the image to be compared.
-	 * @returns Object containing match status and confidence value.
+	 * Compares two face images and returns match details.
+	 * @param sourceImage - The source face image stream.
+	 * @param queryImage - The face image stream to compare.
+	 * @returns A promise that resolves to ICatalystZiaFaceComparison.
+	 * @throws {CatalystZiaError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const result = await zia.compareFace(sourceImage, queryImage);
+	 * ```
 	 */
 	async compareFace(
 		sourceImage: fs.ReadStream,
@@ -259,13 +324,15 @@ export class Zia implements Component {
 	}
 
 	/**
-	 * Perform an inference request on a deployed AutoML model.
-	 *
-	 * @param modelId - The ID of the AutoML model to be used for inference.
-	 * @param data - The input data to be passed to the model for prediction.
-	 * @returns The prediction result from the AutoML model.
-	 *
-	 * @throws {CatalystZiaError} If the model ID is invalid or the data is not an object.
+	 * Runs inference against a deployed Zia AutoML model.
+	 * @param modelId - The AutoML model identifier.
+	 * @param data - The input data for the model.
+	 * @returns A promise that resolves to ICatalystZiaAutoML.
+	 * @throws {CatalystZiaError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const result = await zia.automl('model-id', { field: 'value' });
+	 * ```
 	 */
 	async automl(
 		modelId: string,
@@ -290,11 +357,14 @@ export class Zia implements Component {
 	}
 
 	/**
-	 * Get the sentiment analytics for the list of documents.
-	 * @param listOfDocuments Array of strings whose sentiment is to be analysed.
-	 * @param keywords Entity-level sentiment key
-	 * @returns `ICatalystZiaSentimentAnalysis`
-	 * @link https://www.zoho.com/catalyst/sdk/nodeJS-sdk/zia_compinst.html
+	 * Analyzes sentiment for a list of text documents.
+	 * @param listOfDocuments - The text documents to analyze.
+	 * @param keywords - Optional keywords for entity-level sentiment analysis.
+	 * @returns A promise that resolves to ICatalystZiaSentimentAnalysis.
+	 * @example
+	 * ```ts
+	 * const result = await zia.getSentimentAnalysis(['Catalyst is great']);
+	 * ```
 	 */
 	async getSentimentAnalysis(
 		listOfDocuments: Array<string>,
@@ -304,10 +374,13 @@ export class Zia implements Component {
 	}
 
 	/**
-	 * Extracts the keywords from the list of documents provided.
-	 * @param listOfDocuments Array of strings, which has to processed for keyword extraction
-	 * @returns `ICatalsytZiaKeywordExtraction`
-	 * @link https://www.zoho.com/catalyst/sdk/nodeJS-sdk/zia_compinst.html
+	 * Extracts keywords from a list of text documents.
+	 * @param listOfDocuments - The text documents to analyze.
+	 * @returns A promise that resolves to ICatalsytZiaKeywordExtraction.
+	 * @example
+	 * ```ts
+	 * const result = await zia.getKeywordExtraction(['Catalyst provides serverless tools']);
+	 * ```
 	 */
 	async getKeywordExtraction(
 		listOfDocuments: Array<string>
@@ -316,29 +389,27 @@ export class Zia implements Component {
 	}
 
 	/**
-	 * Performs NER (Named Entity Recognition) on the given list of documents.
-	 * @param listOfDocuments Array of strings to be processed for NER.
-	 * @returns `ICatalystZiaNERPrediction`
-	 * @link https://www.zoho.com/catalyst/sdk/nodeJS-sdk/zia_compinst.html
+	 * Runs named-entity recognition on text documents.
+	 * @param listOfDocuments - The text documents to analyze.
+	 * @returns A promise that resolves to ICatalystZiaNERPrediction.
+	 * @example
+	 * ```ts
+	 * const result = await zia.getNERPrediction(['Zoho Catalyst is a platform']);
+	 * ```
 	 */
 	async getNERPrediction(listOfDocuments: Array<string>): Promise<ICatalystZiaNERPrediction> {
 		return _getNERPrediction(this.requester, listOfDocuments);
 	}
 
 	/**
-	 * Performs all the three available text analytics on the list of documents provided.
-	 *
-	 * Available text anaytics features:
-	 * * `Sentiment Analysis`
-	 * * `Keyword Extraction`
-	 * * `NER Prediction`
-	 *
-	 * Note: These text analytics features are also available as seperate functions. Please check other functions under `textAnalysis`.
-	 *
-	 * @param listOfDocuments Array of strings to be processed for text anaytics.
-	 * @param keywords Entity-level sentiment key
-	 * @returns `ICatalystZiaTextAnalytics`
-	 * @link https://www.zoho.com/catalyst/sdk/nodeJS-sdk/zia_compinst.html
+	 * Runs sentiment analysis, keyword extraction, and NER on text documents.
+	 * @param listOfDocuments - The text documents to analyze.
+	 * @param keywords - Optional keywords for entity-level sentiment analysis.
+	 * @returns A promise that resolves to ICatalystZiaTextAnalytics.
+	 * @example
+	 * ```ts
+	 * const result = await zia.getTextAnalytics(['Zoho Catalyst is great']);
+	 * ```
 	 */
 	async getTextAnalytics(
 		listOfDocuments: Array<string>,

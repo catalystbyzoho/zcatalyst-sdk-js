@@ -4,21 +4,13 @@ import { DataType } from './enum';
 import { NoSQLByteSet, NoSQLNumberSet, NoSQLStringSet } from './set';
 import { TNoSQLAttribute, TNoSQLByte, TNoSQLValues } from './types';
 
-/**
- * An optional configuration object for `serialize`
- */
+/** * An optional configuration object for `serialize` */
 export interface MarshallOptions {
-	/**
-	 * Whether to automatically convert empty strings, buffers, and sets to `null`
-	 */
+	/** * Whether to automatically convert empty strings, buffers, and sets to `null` */
 	convertEmptyValues?: boolean;
-	/**
-	 * Whether to remove undefined values while serializing.
-	 */
+	/** * Whether to remove undefined values while serializing. */
 	removeUndefinedValues?: boolean;
-	/**
-	 * Whether to convert class object to map attribute.
-	 */
+	/** * Whether to convert class object to map attribute. */
 	convertClassInstanceToMap?: boolean;
 	// /**
 	//  * Whether to convert the top level container
@@ -35,6 +27,11 @@ export class NoSQLMarshall {
 	/**
 	 * Make a NoSQL null attribute
 	 * @returns NoSQL null(NULL) attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const attr = NoSQLMarshall.makeNull();
+	 * ```
 	 */
 	static makeNull(): { [DataType.NULL]: true } {
 		return {
@@ -44,8 +41,13 @@ export class NoSQLMarshall {
 
 	/**
 	 * Make a NoSQL string attribute from string value
-	 * @param value string value
+	 * @param value - string value
 	 * @returns NoSQL string(S) attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const attr = NoSQLMarshall.makeString('active');
+	 * ```
 	 */
 	static makeString(value: string): { [DataType.S]: string } {
 		return {
@@ -55,8 +57,14 @@ export class NoSQLMarshall {
 
 	/**
 	 * Make a NoSQL number attribute from number or bigint values
-	 * @param value number or bigint value
+	 * @param value - number or bigint value
 	 * @returns NoSQL number(N) attribute
+	 * @throws {CatalystNoSQLError} when the number is unsafe, infinite, or NaN.
+	 *
+	 * @example
+	 * ```ts
+	 * const attr = NoSQLMarshall.makeNumber(42);
+	 * ```
 	 */
 	static makeNumber(value: number | bigint): { [DataType.N]: string } {
 		if (
@@ -84,8 +92,13 @@ export class NoSQLMarshall {
 
 	/**
 	 * Make a NoSQL byte attribute
-	 * @param value base64 encoded string or NoSQLByte or array buffers listed in TNoSQLByte type
+	 * @param value - base64 encoded string or NoSQLByte or array buffers listed in TNoSQLByte type
 	 * @returns NoSQL byte attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const attr = NoSQLMarshall.makeByte(Buffer.from('hello'));
+	 * ```
 	 */
 	static makeByte(value: string | TNoSQLByte | NoSQLByte): { [DataType.B]: NoSQLByte } {
 		return {
@@ -95,8 +108,13 @@ export class NoSQLMarshall {
 
 	/**
 	 * Make a NoSQL boolean attribute
-	 * @param value boolean value
+	 * @param value - boolean value
 	 * @returns NoSQL boolean (BOOL) attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const attr = NoSQLMarshall.makeBoolean(true);
+	 * ```
 	 */
 	static makeBoolean(value: boolean): { [DataType.BOOL]: string } {
 		return {
@@ -106,8 +124,13 @@ export class NoSQLMarshall {
 
 	/**
 	 * Make a NoSQL list attribute from an Array
-	 * @param value Array of NoSQL compatible data types
+	 * @param value - Array of NoSQL compatible data types
 	 * @returns NoSQL list(L) attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const attr = NoSQLMarshall.makeList(['vip', 42]);
+	 * ```
 	 */
 	static makeList(value: Array<TNoSQLValues>): { [DataType.L]: Array<TNoSQLAttribute> } {
 		return {
@@ -119,9 +142,14 @@ export class NoSQLMarshall {
 
 	/**
 	 * Make a NoSQL map attribute from an object
-	 * @param value object
-	 * @param options marshalling options
+	 * @param value - object
+	 * @param options - marshalling options
 	 * @returns NoSQL Map(M) attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const attr = NoSQLMarshall.makeMap({ email: 'user@example.com' });
+	 * ```
 	 */
 	static makeMap(
 		value: Record<string, TNoSQLValues> | Map<string, TNoSQLValues>,
@@ -155,8 +183,13 @@ export class NoSQLMarshall {
 
 	/**
 	 * Make a NoSQL string set attribute from a set of strings or NoSQLStringSet
-	 * @param value Set of strings or NoSQLStringSet value
+	 * @param value - Set of strings or NoSQLStringSet value
 	 * @returns NoSQL string set(SS) attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const attr = NoSQLMarshall.makeStringSet(new Set(['vip']));
+	 * ```
 	 */
 	static makeStringSet(value: Set<string> | NoSQLStringSet): { [DataType.SS]: NoSQLStringSet } {
 		return {
@@ -166,8 +199,13 @@ export class NoSQLMarshall {
 
 	/**
 	 * Make a NoSQL number set attribute from a set of number or bigint or NoSQLNumberSet
-	 * @param value Set of number or bigint or NoSQLNumberSet value
+	 * @param value - Set of number or bigint or NoSQLNumberSet value
 	 * @returns NoSQL number set(SN) attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const attr = NoSQLMarshall.makeNumberSet(new Set([1, 2]));
+	 * ```
 	 */
 	static makeNumberSet(value: Set<number | bigint> | NoSQLNumberSet): {
 		[DataType.SN]: NoSQLNumberSet;
@@ -179,8 +217,13 @@ export class NoSQLMarshall {
 
 	/**
 	 * Make a NoSQL byte set attribute from a set of byte or base64 encoded string or NoSQLByteSet
-	 * @param value Set of byte or base64 encoded string or NoSQLByteSet value
+	 * @param value - Set of byte or base64 encoded string or NoSQLByteSet value
 	 * @returns NoSQL byte set(SB) attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const attr = NoSQLMarshall.makeByteSet(new Set([Buffer.from('a')]));
+	 * ```
 	 */
 	static makeByteSet(value: Set<TNoSQLByte> | Set<string> | Set<NoSQLByte> | NoSQLByteSet): {
 		[DataType.SB]: NoSQLByteSet;
@@ -192,9 +235,15 @@ export class NoSQLMarshall {
 
 	/**
 	 * Make NoSQL set attribute from set
-	 * @param set set to be converted
-	 * @param options options to be used when marshalling
+	 * @param set - set to be converted
+	 * @param options - options to be used when marshalling
 	 * @returns NoSQL set attribute (SS, SN, SB)
+	 * @throws {Error} when the set is empty, contains unsupported values, or contains undefined without removal enabled.
+	 *
+	 * @example
+	 * ```ts
+	 * const attr = NoSQLMarshall.makeSet(new Set(['vip']));
+	 * ```
 	 */
 	static makeSet(
 		set:
@@ -244,9 +293,15 @@ export class NoSQLMarshall {
 
 	/**
 	 * Make a NoSQL attribute from native js values
-	 * @param data value to be converted to NoSQL attribute
-	 * @param options options to be used when converting js values to NoSQL attributes
+	 * @param data - value to be converted to NoSQL attribute
+	 * @param options - options to be used when converting js values to NoSQL attributes
 	 * @returns NoSQL attribute
+	 * @throws {Error} when the value cannot be converted to a NoSQL attribute.
+	 *
+	 * @example
+	 * ```ts
+	 * const attr = NoSQLMarshall.make({ email: 'user@example.com' });
+	 * ```
 	 */
 	static make(data: TNoSQLValues, options?: MarshallOptions): TNoSQLAttribute {
 		if (data === undefined) {

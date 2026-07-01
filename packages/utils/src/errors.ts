@@ -1,5 +1,3 @@
-'use strict';
-
 export interface ICatalystError {
 	code: string;
 	message: string;
@@ -9,41 +7,70 @@ export interface ICatalystError {
 
 export class CatalystError extends Error {
 	errorInfo: ICatalystError;
+	/**
+	 * Creates a CatalystError instance.
+	 * @param errorInfo - The errorInfo value.
+	 */
 	constructor(errorInfo: ICatalystError) {
 		super(errorInfo.message);
 		this.errorInfo = errorInfo;
 	}
 
-	/** @return {string} The error code. */
+	/** @returns The error code.  *
+	 * @example
+	 * ```ts
+	 * import { CatalystError } from '@zcatalyst/utils';
+	 * const result = new CatalystError();
+	 * ```
+	 */
 	get code(): string {
 		return this.errorInfo?.code;
 	}
 
-	/** @return {string} The error message. */
+	/** @returns The error message.  *
+	 * @example
+	 * ```ts
+	 * import { CatalystError } from '@zcatalyst/utils';
+	 * const result = new CatalystError();
+	 * ```
+	 */
 	get message(): string {
 		return this.errorInfo?.message;
 	}
 
-	/** @return {any} The value that caused this error. */
+	/** @returns The value that caused this error.  *
+	 * @example
+	 * ```ts
+	 * import { CatalystError } from '@zcatalyst/utils';
+	 * const result = new CatalystError();
+	 * ```
+	 */
 	get value(): unknown {
 		return this.errorInfo?.value;
 	}
 
-	/** @return {any} The error status code. */
+	/** @returns The error status code.  *
+	 * @example
+	 * ```ts
+	 * import { CatalystError } from '@zcatalyst/utils';
+	 * const result = new CatalystError();
+	 * ```
+	 */
 	get statusCode(): number {
 		return this.errorInfo.statusCode || 400;
 	}
 
-	/** @return {ICatalystError} The object representation of the error. */
+	/** @returns The object representation of the error. */
 	toJSON(): ICatalystError {
 		return {
 			code: this.code,
 			message: this.message,
-			value: this.value
+			value: this.value,
+			statusCode: this.statusCode
 		};
 	}
 
-	/** @return {string} The string representation of the error. */
+	/** @returns The string representation of the error. */
 	toString(): string {
 		return JSON.stringify(this.toJSON());
 	}
@@ -51,6 +78,14 @@ export class CatalystError extends Error {
 
 export class PrefixedCatalystError extends CatalystError {
 	codePrefix: string;
+	/**
+	 * Creates a PrefixedCatalystError instance.
+	 * @param codePrefix - The codePrefix value.
+	 * @param code - The code value.
+	 * @param message - The message value.
+	 * @param value - The value value.
+	 * @param statusCode - The statusCode value.
+	 */
 	constructor(
 		codePrefix: string,
 		code: string,
@@ -69,6 +104,12 @@ export class PrefixedCatalystError extends CatalystError {
 }
 
 export class CatalystAppError extends PrefixedCatalystError {
+	/**
+	 * Creates a CatalystAppError instance.
+	 * @param code - The code value.
+	 * @param message - The message value.
+	 * @param value - The value value.
+	 */
 	constructor(code: string, message: string, value?: unknown) {
 		super('app', code, message, value);
 	}

@@ -1,10 +1,19 @@
 # @zcatalyst/mail
 
-ZOHO CATALYST SDK for JavaScript Mail for Node.js and Browser.
+JavaScript SDK for Catalyst Mail - Email Sending
 
-<p></p>
+## Overview
 
-## Installing
+The `@zcatalyst/mail` package provides JavaScript/TypeScript methods to send email through [Catalyst Mail](https://docs.catalyst.zoho.com/en/cloud-scale/help/mail/introduction/). Runs in Node.js (server-side) environments only.
+
+### Prerequisites
+
+- A [Catalyst project](https://docs.catalyst.zoho.com/en/getting-started/catalyst-projects) set up
+- Sender email addresses configured in [Mail settings](https://docs.catalyst.zoho.com/en/cloud-scale/help/mail/email-configuration/)
+- Domain verification completed (if using custom domains)
+- [SMTP settings](https://docs.catalyst.zoho.com/en/cloud-scale/help/mail/smtp-configuration/) configured (if using external email client)
+
+## Installation
 
 To install this package, simply type add or install @zcatalyst/mail
 using your favorite package manager:
@@ -17,7 +26,7 @@ using your favorite package manager:
 
 ### Import
 
-The Catalyst SDK is modulized by Components.
+The Catalyst SDK is modularized by Components.
 To send a request, you only need to import the `Mail`:
 
 ```js
@@ -41,14 +50,14 @@ To send a request, you:
 const mail = new Mail();
 
 const data = await mail.sendMail({
-	from_mail: 'emma@zylker.com',
-	to_mail: ['vanessa.hyde@zoho.com', 'r.owens@zoho.com', 'chang.lee@zoho.com'],
+	from_email: 'emma@zylker.com',
+	to_email: ['vanessa.hyde@zoho.com', 'r.owens@zoho.com', 'chang.lee@zoho.com'],
 	subject: 'Greetings from Zylker Corp!',
 	content: "Hello,We're glad to welcome you at Zylker Corp."
 });
 ```
 
-#### Async/await
+### Async/await
 
 We recommend using [await](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await)
 operator to wait for the promise returned by send operation as follows:
@@ -57,8 +66,8 @@ operator to wait for the promise returned by send operation as follows:
 // async/await.
 try {
 	const data = await mail.sendMail({
-		from_mail: 'emma@zylker.com',
-		to_mail: ['vanessa.hyde@zoho.com', 'r.owens@zoho.com', 'chang.lee@zoho.com'],
+		from_email: 'emma@zylker.com',
+		to_email: ['vanessa.hyde@zoho.com', 'r.owens@zoho.com', 'chang.lee@zoho.com'],
 		subject: 'Greetings from Zylker Corp!',
 		content: "Hello,We're glad to welcome you at Zylker Corp."
 	});
@@ -70,83 +79,13 @@ try {
 }
 ```
 
-Async-await is clean, concise, intuitive, easy to debug and has better error handling
-as compared to using Promise chains or callbacks.
-
-#### Promises
-
-You can also use [Promise chaining](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises#chaining)
-to execute send operation.
-
-```js
-mail
-	.sendMail({
-		from_mail: 'emma@zylker.com',
-		to_mail: ['vanessa.hyde@zoho.com', 'r.owens@zoho.com', 'chang.lee@zoho.com'],
-		subject: 'Greetings from Zylker Corp!',
-		content: "Hello,We're glad to welcome you at Zylker Corp."
-	})
-	.then(
-		(data) => {
-			// process data.
-		},
-		(error) => {
-			// error handling.
-		}
-	);
-```
-
-Promises can also be called using `.catch()` and `.finally()` as follows:
-
-```js
-mail
-	.sendMail({
-		from_mail: 'emma@zylker.com',
-		to_mail: ['vanessa.hyde@zoho.com', 'r.owens@zoho.com', 'chang.lee@zoho.com'],
-		subject: 'Greetings from Zylker Corp!',
-		content: "Hello,We're glad to welcome you at Zylker Corp."
-	})
-	.then((data) => {
-		// process data.
-	})
-	.catch((error) => {
-		// error handling.
-	})
-	.finally(() => {
-		// finally.
-	});
-```
-
-#### Callbacks
-
-We do not recommend using callbacks because of [callback hell](http://callbackhell.com/),
-but they are supported by the send operation.
-
-```js
-// callbacks.
-mail.sendMail(
-	{
-		from_mail: 'emma@zylker.com',
-		to_mail: ['vanessa.hyde@zoho.com', 'r.owens@zoho.com', 'chang.lee@zoho.com'],
-		subject: 'Greetings from Zylker Corp!',
-		content: "Hello,We're glad to welcome you at Zylker Corp."
-	},
-	(err, data) => {
-		// process err and data.
-	}
-);
-```
-
-### Troubleshooting
-
-When the service returns an exception, the error will include the exception information,
-as well as response metadata (e.g. request id).
+### Error Handling
 
 ```js
 try {
 	const data = await mail.sendMail({
-		from_mail: 'emma@zylker.com',
-		to_mail: ['vanessa.hyde@zoho.com', 'r.owens@zoho.com', 'chang.lee@zoho.com'],
+		from_email: 'emma@zylker.com',
+		to_email: ['vanessa.hyde@zoho.com', 'r.owens@zoho.com', 'chang.lee@zoho.com'],
 		subject: 'Greetings from Zylker Corp!',
 		content: "Hello,We're glad to welcome you at Zylker Corp."
 	});
@@ -158,23 +97,16 @@ try {
 }
 ```
 
-## Contributing
+## Resources
 
-Contributions to this library are always welcome and highly encouraged.
+- [Catalyst Mail Documentation](https://docs.catalyst.zoho.com/en/cloud-scale/help/mail/introduction/)
+- [Email Configuration](https://docs.catalyst.zoho.com/en/cloud-scale/help/mail/email-configuration/)
+- [SMTP Configuration](https://docs.catalyst.zoho.com/en/cloud-scale/help/mail/smtp-configuration/)
+
+## Contributing
 
 See [CONTRIBUTING](../../CONTRIBUTING.md) for more information on how to get started.
 
 ## License
 
 This SDK is distributed under the Apache License 2.0. See [LICENSE](../../LICENCE) file for more information.
-
-## Mail operations
-
-<details>
-<summary>
-sendMail
-</summary>
-
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/retrieve-folder-details/)[API References]() -->
-
-</details>

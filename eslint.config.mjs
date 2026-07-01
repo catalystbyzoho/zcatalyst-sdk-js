@@ -36,4 +36,13 @@ export default [
       'simple-import-sort/exports': 'error',
     },
   },
+  {
+    // Test files often need `any` to exercise runtime-invalid-input paths
+    // (e.g. `new CatalystApp(null as any)`). `unknown` doesn't compile in those
+    // positions because it can't be passed to narrower-typed parameters.
+    files: ['**/tests/**/*.ts', '**/__mocks__/**/*.ts', '**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 ];

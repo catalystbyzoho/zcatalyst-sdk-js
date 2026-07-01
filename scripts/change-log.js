@@ -1,53 +1,66 @@
-const parser = require('conventional-commits-parser').sync;
-const { writeFileSync, existsSync, readFileSync, readdirSync } = require('fs');
+/**
+ * Changelog Generator Script
+ * 
+ * Purpose:
+ * This script automatically generates and updates CHANGELOG.md files for both
+ * the global monorepo and individual packages based on conventional commits
+ * since the last git tag.
+ * 
+ * Features:
+ * - Parses conventional commit messages following the Angular convention
+ * - Groups commits by type (feat, fix, docs, test, refactor, breaking changes)
+ * - Handles breaking changes from both explicit BREAKING CHANGE commits and ! syntax
+ * - Updates global CHANGELOG.md with all package changes
+ * - Updates individual package CHANGELOG.md files with scoped commits
+ * - Generates GitHub PR links for each commit
+ * 
+ * Commit Types Supported:
+ * - feat: New features
+ * - fix: Bug fixes
+ * - docs: Documentation changes
+ * - test: Test additions/modifications
+ * - refactor: Code refactoring
+ * - breaking: Breaking changes (BREAKING CHANGE or feat/fix!)
+ * 
+ * Workflow:
+ * 1. Retrieves all commits since the last git tag
+ * 2. Normalizes commit messages to handle various breaking change formats
+ * 3. Parses commits using conventional-commits-parser
+ * 4. Groups commits by type and package scope
+ * 5. Generates formatted changelog entries with PR links
+ * 6. Updates global and package-specific CHANGELOG.md files
+ * 
+ * Usage:
+ * node scripts/change-log.js
+ * 
+ * Note: This script is typically run after version updates and before publishing
+ */
+
+const { writeFileSync, existsSync, readFileSync } = require('fs');
 const { join } = require('path');
-const { execSync } = require('child_process');
+const {
+  parseCommit,
+  normalizeCommitMessage,
+  getCommitObjectsSinceTag,
+  getWorkspacePackages,
+} = require('./lib/commits');
 
 const REPO_URL = 'https://github.com/catalystbyzoho/zcatalyst-sdk-js';
-
-const parseOptions = {
-  noteKeywords: ['BREAKING CHANGE', 'BREAKING CHANGES'],
-  headerPattern: /^([\w\s]+)(?:\(([\w\$\.\*/-]*)\))?(!)?: (.*)$/,
-  headerCorrespondence: ['type', 'scope', 'breaking', 'subject'],
-};
-
-function normalizeCommitMessage(msg) {
-  // breaking(scope): ... → BREAKING CHANGE(scope): ...
-  msg = msg.replace(/^breaking(\([^)]+\))?:/i, 'BREAKING CHANGE$1:');
-  // feat(scope)!: ... → BREAKING CHANGE(scope): ...
-  msg = msg.replace(/^feat(\([^)]+\))?!:/i, 'BREAKING CHANGE$1:');
-  // fix(scope)!: ... → BREAKING CHANGE(scope): ...
-  msg = msg.replace(/^fix(\([^)]+\))?!:/i, 'BREAKING CHANGE$1:');
-  // BREAKING CHANGE(scope): ... (already correct)
-  return msg;
-}
-
-function getCommitObjectsSinceTag() {
-  const separator = '===END===';
-  let log;
-  try {
-    const latestTag = execSync("git describe --tags --abbrev=0", { encoding: "utf8" }).trim();
-    log = execSync(`git log ${latestTag}..HEAD --pretty=format:%B${separator}`, { encoding: "utf8" });
-  } catch (err) {
-    log = execSync(`git log --pretty=format:%B${separator}`, { encoding: "utf8" });
-  }
-  return log.split(separator).map(chunk => {
-    const lines = chunk.trim().split('\n');
-    return { hash: lines[0].split(/\(#(\d+)\)/)[1], message: lines.join('\n').trim() };
-  }).filter(c => c.hash && c.message);
-}
+const force = process.argv.includes('--force');
 
 function groupCommitsByType(parsedCommits) {
   const groups = {};
   for (const commit of parsedCommits) {
-    // Treat any commit with breaking: true or type BREAKING CHANGE as breaking
+    // `breaking` from conventional-commits-parser is the matched '!' string or null,
+    // not a boolean — coerce explicitly.
     const isBreaking =
-      commit.breaking === true ||
+      Boolean(commit.breaking) ||
       commit.type === 'BREAKING CHANGE' ||
-      (commit.notes && commit.notes.some(n => n.title.toLowerCase() === 'breaking change'));
+      (commit.notes && commit.notes.some(n => n.title && n.title.toLowerCase().startsWith('breaking change')));
     let type = commit.type;
     if (isBreaking) type = 'breaking';
-    if (['feat', 'chore'].includes(type)) type = 'feat';
+    // `chore` is intentionally excluded from the changelog — it's noise.
+    if (type === 'chore') continue;
     if (!['feat', 'fix', 'docs', 'test', 'refactor', 'breaking'].includes(type)) type = 'others';
     if (!groups[type]) groups[type] = [];
     groups[type].push(commit);
@@ -56,20 +69,20 @@ function groupCommitsByType(parsedCommits) {
 }
 function formatCommit(commit) {
   const summary = commit.subject;
-  const prLink = `(${REPO_URL}/pull/${commit.hash})`;
-  return `- ${summary}[\`#${commit.hash}\`]${prLink}`;
+  const prLink = `(${REPO_URL}/pull/${commit.prNumber})`;
+  return `- ${summary}[\`#${commit.prNumber}\`]${prLink}`;
 }
 
 function generateChangelog(version, tagVersion, commitObjects, linkVersion = true) {
-  const parsed = commitObjects.map(({ message, hash }) => {
-    const parsedCommit = parser(normalizeCommitMessage(message), parseOptions);
-    parsedCommit.hash = hash;
+  const parsed = commitObjects.map(({ message, prNumber }) => {
+    const parsedCommit = parseCommit(message);
+    parsedCommit.prNumber = prNumber;
     return parsedCommit;
   });
   const grouped = groupCommitsByType(parsed);
   const date = new Date().toISOString().split('T')[0];
 
-  if (parsed.length === 0) return `## ${linkVersion ? `[${version}](${REPO_URL}/releases/tag/${tagVersion})` : date} - ${date}\n\n_No significant changes_\n\n`;
+  if (Object.keys(grouped).length === 0) return `## ${linkVersion ? `[${version}](${REPO_URL}/releases/tag/${tagVersion})` : date} - ${date}\n\n_No significant changes_\n\n`;
 
   let output = linkVersion ? `## [${version}](${REPO_URL}/releases/tag/${tagVersion}) - ${date}\n\n` : `## ${date}\n\n`;
 
@@ -87,11 +100,11 @@ function generateChangelog(version, tagVersion, commitObjects, linkVersion = tru
     const commits = grouped[type];
     if (!commits) continue;
     output += `${titles[type]}\n`;
-    for (const commit of commits.reverse()) {
+    for (const commit of [...commits].reverse()) {
       output += `${formatCommit(commit)}\n`;
       if (type === 'breaking') {
         for (const note of commit.notes || []) {
-          if (note.title.toLowerCase() === 'breaking change') {
+          if (note.title && note.title.toLowerCase().startsWith('breaking change')) {
             output += `  - ${note.text.trim()}\n`;
           }
         }
@@ -102,85 +115,141 @@ function generateChangelog(version, tagVersion, commitObjects, linkVersion = tru
   return output;
 }
 
-function writeChangelog(filePath, entry) {
-  if (existsSync(filePath)) {
-    const lines = readFileSync(filePath, 'utf-8').split('\n');
-    const preserved = lines.slice(0, 1).join('\n');
-    const rest = lines.slice(1).join('\n');
-    const finalContent = `${preserved}\n\n${entry.trim()}\n\n${rest.trim()}\n`;
-    writeFileSync(filePath, finalContent.trim() + '\n', 'utf-8');
+/**
+ * Writes (or creates) a CHANGELOG.md, normalising the title from `pkgName`.
+ *
+ * Idempotency: if an entry for `tagVersion` already exists in the file,
+ * the file is left untouched (caller should bump the version first, or pass
+ * `force=true` to overwrite). This protects history when `change-log` is
+ * accidentally re-run without a preceding version bump.
+ */
+function writeChangelog(filePath, pkgName, tagVersion, entry, { force = false } = {}) {
+  const title = pkgName ? `# ${pkgName}` : '# Change Log';
+
+  if (!existsSync(filePath)) {
+    writeFileSync(filePath, `${title}\n\n${entry.trim()}\n`, 'utf-8');
+    return 'created';
   }
+
+  const original = readFileSync(filePath, 'utf-8');
+  const lines = original.split('\n');
+  const restStart = lines[0].startsWith('# ') ? 1 : 0;
+  let body = lines.slice(restStart).join('\n').trim();
+
+  const tagEsc = tagVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const dupRegex = new RegExp(
+    `^## (?:\\[${tagEsc}\\][^\\n]*|${tagEsc}[^\\n]*)\\n[\\s\\S]*?(?=^## |\\Z)`,
+    'm'
+  );
+  const alreadyPresent = dupRegex.test(body);
+
+  if (alreadyPresent && !force) {
+    return 'skipped';
+  }
+  if (alreadyPresent && force) {
+    body = body.replace(dupRegex, '').trim();
+  }
+
+  const finalContent = `${title}\n\n${entry.trim()}${body ? `\n\n${body}` : ''}\n`;
+  writeFileSync(filePath, finalContent, 'utf-8');
+  return alreadyPresent ? 'replaced' : 'prepended';
+}
+
+/**
+ * Returns true if `line` mentions `pkgName` as a token (e.g. `@scope/foo@1.2`,
+ * `@scope/foo:` or whitespace-bounded). Avoids substring leaks like `@x/auth`
+ * matching `@x/auth-admin`.
+ */
+function lineMentionsPackage(line, pkgName) {
+  const esc = pkgName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^\\w@/-])${esc}(?![\\w/-])`).test(line);
 }
 
 function getAllPackagesFromFs() {
-  const packagesDir = join(process.cwd(), 'packages');
-  return readdirSync(packagesDir).map(dir => {
-    const pkgPath = join(packagesDir, dir, 'package.json');
-    if (existsSync(pkgPath)) {
-      const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
-      return { dir, name: pkg.name, version: pkg.version };
-    }
-    return null;
-  }).filter(Boolean);
+  return getWorkspacePackages();
+}
+
+/**
+ * Match commits to a package by:
+ *   1. Header `scope` equals the package directory, OR
+ *   2. Commit subject explicitly mentions the package name as a token.
+ * Body-line scanning was removed — it produced false positives and parsing noise.
+ */
+function commitMatchesPackage(parsedHeader, message, pkg) {
+  if (parsedHeader.scope === pkg.dir) return true;
+  if (parsedHeader.subject && lineMentionsPackage(parsedHeader.subject, pkg.name)) return true;
+  // Fallback: first line of message (subject is sometimes empty for malformed commits).
+  const firstLine = (message.split('\n')[0] || '').trim();
+  return lineMentionsPackage(firstLine, pkg.name);
 }
 
 function updatePackageChangelogs(commitObjects) {
   const allPkgs = getAllPackagesFromFs();
-  const rootPkg = require(join(process.cwd(), 'package.json'));
-  const tagVersion = `v${rootPkg.version}`;
 
-  for (const { dir, name, version } of allPkgs) {
+  for (const pkg of allPkgs) {
+    const { dir, name, version } = pkg;
     const changelogPath = join(process.cwd(), 'packages', dir, 'CHANGELOG.md');
-    const date = new Date().toISOString().split('T')[0];
+    const tagVersion = `v${version}`;
     const scopedCommits = [];
 
-    for (const { message, hash } of commitObjects) {
-      const lines = message.split('\n').map(l => l.trim()).filter(Boolean);
-      for (const line of lines) {
-        try {
-          const parsed = parser(normalizeCommitMessage(line), parseOptions);
-          if (parsed.scope === dir || line.includes(name)) {
-            parsed.hash = hash;
-            parsed.message = line;
-            parsed.subject = parsed.subject || `_Only version bump detected._`;
-            scopedCommits.push(parsed);
-          }
-        } catch {}
+    for (const { message, prNumber } of commitObjects) {
+      let parsed;
+      try {
+        parsed = parseCommit(message);
+      } catch {
+        continue;
+      }
+      if (!parsed.subject) continue;
+      if (commitMatchesPackage(parsed, message, pkg)) {
+        scopedCommits.push({ prNumber, message });
       }
     }
     if (scopedCommits.length === 0) continue;
     const entry = generateChangelog(version, tagVersion, scopedCommits, true);
-    writeChangelog(changelogPath, entry);
-    console.log(`Updated packages/${dir}/CHANGELOG.md`);
+    // Per-package headings use bare `version` (e.g. `## [0.0.2]`), not `v0.0.2`.
+    const result = writeChangelog(changelogPath, name, version, entry, { force });
+    if (result === 'skipped') {
+      console.log(`Skipped packages/${dir}/CHANGELOG.md (entry for ${version} already present; use --force to overwrite)`);
+    } else {
+      console.log(`Updated packages/${dir}/CHANGELOG.md (${result})`);
+    }
   }
 }
 
 function updateGlobalChangelog(commitObjects) {
   const allPkgs = getAllPackagesFromFs();
   const rootPkg = require(join(process.cwd(), 'package.json'));
-  const tagVersion = `v${rootPkg.version}`;
+  const rootTag = `v${rootPkg.version}`;
   const date = new Date().toISOString().split('T')[0];
-  let output = `## [${tagVersion}](${REPO_URL}/releases/tag/${tagVersion}) - ${date}\n\n`;
+  let output = `## [${rootTag}](${REPO_URL}/releases/tag/${rootTag}) - ${date}\n\n`;
 
-  for (const { dir, name } of allPkgs) {
+  let anyChanges = false;
+
+  for (const pkg of allPkgs) {
+    const { dir, name, version } = pkg;
+    const pkgTag = `v${version}`;
     const scopedCommits = [];
-    for (const { message, hash } of commitObjects) {
-      const lines = message.split('\n').map(l => l.trim()).filter(Boolean);
-      for (const line of lines) {
-        try {
-          const parsed = parser(normalizeCommitMessage(line), parseOptions);
-          if (parsed.scope === dir || line.includes(name)) {
-            parsed.hash = hash;
-            parsed.message = line;
-            parsed.subject = parsed.subject || `_Only version bump detected._`;
-            scopedCommits.push(parsed);
-          }
-        } catch {}
+
+    for (const { message, prNumber } of commitObjects) {
+      let parsed;
+      try {
+        parsed = parseCommit(message);
+      } catch {
+        continue;
+      }
+      if (!parsed.subject) continue;
+      if (commitMatchesPackage(parsed, message, pkg)) {
+        parsed.prNumber = prNumber;
+        scopedCommits.push(parsed);
       }
     }
     if (scopedCommits.length === 0) continue;
-    output += `#### \`${name}@${tagVersion}\`\n`;
+
     const grouped = groupCommitsByType(scopedCommits);
+    if (Object.keys(grouped).length === 0) continue;
+
+    anyChanges = true;
+    output += `#### \`${name}@${pkgTag}\`\n`;
     const order = ['feat', 'fix', 'docs', 'test', 'refactor', 'breaking'];
     const titles = {
       feat: 'Features',
@@ -194,11 +263,11 @@ function updateGlobalChangelog(commitObjects) {
       const commitsOfType = grouped[type];
       if (!commitsOfType) continue;
       output += `- **${titles[type]}**\n`;
-      for (const commit of commitsOfType.reverse()) {
+      for (const commit of [...commitsOfType].reverse()) {
         output += `  ${formatCommit(commit)}\n`;
         if (type === 'breaking') {
           for (const note of commit.notes || []) {
-            if (note.title.toLowerCase() === 'breaking change') {
+            if (note.title && note.title.toLowerCase().startsWith('breaking change')) {
               output += `    - ${note.text.trim()}\n`;
             }
           }
@@ -207,16 +276,26 @@ function updateGlobalChangelog(commitObjects) {
     }
     output += `\n`;
   }
+
+  if (!anyChanges) {
+    console.log('No package changes to record in global CHANGELOG.md.');
+    return;
+  }
+
   const changelogPath = join(process.cwd(), 'CHANGELOG.md');
-  writeChangelog(changelogPath, output);
-  console.log(`Updated global CHANGELOG.md`);
+  const result = writeChangelog(changelogPath, null, rootTag, output, { force });
+  if (result === 'skipped') {
+    console.log(`Skipped global CHANGELOG.md (entry for ${rootTag} already present; use --force to overwrite)`);
+  } else {
+    console.log(`Updated global CHANGELOG.md (${result})`);
+  }
 }
 
 function updateAll(commitObjects) {
   const parsedCommits = commitObjects.map(commit => {
     commit.message = normalizeCommitMessage(commit.message);
     return commit;
-  }).filter(commit => (/(\(#\d+\))/).test(commit.message));
+  });
 
   updateGlobalChangelog(parsedCommits);
   updatePackageChangelogs(parsedCommits);

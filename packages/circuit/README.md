@@ -1,10 +1,19 @@
 # @zcatalyst/circuit
 
-ZOHO CATALYST SDK for JavaScript Circuit for Node.js and Browser.
+JavaScript SDK for Catalyst Circuit - Circuit Execution
 
-<p></p>
+## Overview
 
-## Installing
+The `@zcatalyst/circuit` package provides JavaScript/TypeScript methods to execute [Catalyst Circuit](https://docs.catalyst.zoho.com/en/serverless/help/circuits/introduction/) and check or abort executions. Runs in Node.js (server-side) environments only.
+
+### Prerequisites
+
+- A [Catalyst project](https://docs.catalyst.zoho.com/en/getting-started/catalyst-projects) set up
+- Circuit configured in your project
+- Functions created for circuit execution
+- Understanding of [circuit concepts](https://docs.catalyst.zoho.com/en/serverless/help/circuits/key-concepts/)
+
+## Installation
 
 To install this package, simply type add or install @zcatalyst/circuit
 using your favorite package manager:
@@ -17,7 +26,7 @@ using your favorite package manager:
 
 ### Import
 
-The Catalyst SDK is modulized by Components.
+The Catalyst SDK is modularized by Components.
 To send a request, you only need to import the `Circuit`:
 
 ```js
@@ -40,7 +49,7 @@ To send a request, you:
 ```js
 const circuit = new Circuit();
 
-const circuit = await circuit.execute('195000000041001', 'sampleName', { name: 'Aaron Jone'});
+const result = await circuit.execute('195000000041001', 'sampleName', { name: 'Aaron Jone'});
 ```
 
 #### Async/await
@@ -49,99 +58,42 @@ We recommend using [await](https://developer.mozilla.org/en-US/docs/Web/JavaScri
 operator to wait for the promise returned by send operation as follows:
 
 ```js
-// async/await.
 try {
-const data = await circuit.execute('195000000041001', 'sampleName', { name: 'Aaron Jone'});
-// process data.
-} catch (error) {
-// error handling.
-} finally {
-// finally.
-}
-```
-
-Async-await is clean, concise, intuitive, easy to debug and has better error handling
-as compared to using Promise chains or callbacks.
-
-#### Promises
-
-You can also use [Promise chaining](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises#chaining)
-to execute send operation.
-
-```js
-circuit.execute('195000000041001', 'sampleName', { name: 'Aaron Jone'})
-.then(
-	(data) => {
-		// process data.
-	},
-	(error) => {
-		// error handling.
-	}
-);
-```
-
-Promises can also be called using `.catch()` and `.finally()` as follows:
-
-```js
-circuit.execute('195000000041001', 'sampleName', { name: 'Aaron Jone'})
-.then((data) => {
+	const data = await circuit.execute('195000000041001', 'sampleName', { name: 'Aaron Jone'});
 	// process data.
-})
-.catch((error) => {
+} catch (error) {
 	// error handling.
-})
-.finally(() => {
+} finally {
 	// finally.
-});
-```
-
-#### Callbacks
-
-We do not recommend using callbacks because of [callback hell](http://callbackhell.com/),
-but they are supported by the send operation.
-
-```js
-// callbacks.
-circuit.execute('195000000041001', 'sampleName', { name: 'Aaron Jone'},
-(err, data) => {
-	// process err and data.
 }
-);
 ```
 
-### Troubleshooting
+### Error Handling
 
-When the service returns an exception, the error will include the exception information,
-as well as response metadata (e.g. request id).
 
 ```js
 try {
-const data = await circuit.execute('195000000041001', 'sampleName', { name: 'Aaron Jone'});
-// process data.
+	const data = await circuit.execute('195000000041001', 'sampleName', { name: 'Aaron Jone'});
+	// process data.
 } catch (error) {
-const message = error.message;
-const status = error.statusCode;
-console.log({ message, status });
+	const message = error.message;
+	const status = error.statusCode;
+	console.log({ message, status });
 }
 ```
+
+## Resources
+
+- [Catalyst Circuit Documentation](https://docs.catalyst.zoho.com/en/serverless/help/circuits/introduction/)
+- [Circuit Key Concepts](https://docs.catalyst.zoho.com/en/serverless/help/circuits/key-concepts/)
+- [Circuit Configuration](https://docs.catalyst.zoho.com/en/serverless/help/circuits/introduction/)
+- [Circuit SDK Reference](https://docs.catalyst.zoho.com/en/sdk/)
+- [SDK Documentation](https://docs.catalyst.zoho.com/en/sdk/)
 
 ## Contributing
-
-Contributions to this library are always welcome and highly encouraged.
 
 See [CONTRIBUTING](../../CONTRIBUTING.md) for more information on how to get started.
 
 ## License
 
 This SDK is distributed under the Apache License 2.0. See [LICENSE](../../LICENCE) file for more information.
-
-## Circuit operations
-
-<details>
-<summary>
-execute
-</summary>
-
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/retrieve-folder-details/)[API References]() -->
-
-</details>

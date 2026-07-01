@@ -17,6 +17,9 @@ import {
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 
+/**
+ * Represents a Stratus object and its metadata/version operations.
+ */
 export class StratusObject {
 	keyDetails: IStratusObjectDetails | { key: string };
 	#requester: Handler;
@@ -36,10 +39,13 @@ export class StratusObject {
 	}
 
 	/**
-	 * Retrieves the details of this object in the bucket.
-	 * @param versionId - Unique version identifier of the object.
-	 * 					If not provided, details for the latest version are fetched.
-	 * @returns {IStratusObjectDetails} The details of the object, including metadata, version information, etc.
+	 * Retrieves bucket or object details.
+	 * @param versionId - The optional object version identifier.
+	 * @returns A promise that resolves to IStratusObjectDetails.
+	 * @example
+	 * ```ts
+	 * const details = await bucket.getDetails();
+	 * ```
 	 */
 	async getDetails(versionId?: string): Promise<IStratusObjectDetails> {
 		const params = {
@@ -63,10 +69,14 @@ export class StratusObject {
 	}
 
 	/**
-	 * Sets the metadata for an object. It will replace the existing metadata.
-	 * @param metaDetails - A record of metadata key-value pairs to be set for the object.
-	 * @access admin
-	 * @returns {Record<string, string>} The updated object details, including the new metadata.
+	 * Replaces the metadata for an object.
+	 * @param metaDetails - The metadata key/value pairs to store.
+	 * @returns A promise that resolves to Record<string, string>.
+	 * @throws {CatalystStratusError} when input validation fails.
+	 * @example
+	 * ```ts
+	 * const result = await object.putMeta({ owner: 'team' });
+	 * ```
 	 */
 	async putMeta(metaDetails: Record<string, string>): Promise<Record<string, string>> {
 		await wrapValidatorsWithPromise(() => {
@@ -88,12 +98,14 @@ export class StratusObject {
 	}
 
 	/**
-	 * Generates a signed URL for an object in a caching-enabled bucket.
-	 * The signed URL can be used to access the object for a specified duration.
-	 * @param url - The cached URL of the object.
-	 * @param expiry - The expiration time for the signed URL in seconds. Default 3600.
-	 * @access admin
-	 * @returns {IStratusSignedURLRes} The response containing the signed URL.
+	 * Generates a signed URL for an object in a cached bucket.
+	 * @param url - The object URL to sign.
+	 * @param expiry - The optional expiry duration in hours.
+	 * @returns A promise that resolves to IStratusSignedURLRes.
+	 * @example
+	 * ```ts
+	 * const result = await object.generateCacheSignedUrl('https://bucket.example/file.txt', '300');
+	 * ```
 	 */
 	async generateCacheSignedUrl(url: string, expiry?: string): Promise<IStratusSignedURLRes> {
 		const request: IRequestConfig = {
@@ -111,12 +123,14 @@ export class StratusObject {
 	}
 
 	/**
-	 * Lists the versions of an object in a paginated manner.
-	 * This method can be used to retrieve a limited set of object versions at a time, with support for pagination.
-	 * @param maxVersion - The maximum number of versions to return. Default 1000.
-	 * @param nextToken - The token for the next page of results. This is used to fetch the next set of versions.
-	 * @access admin
-	 * @returns {IStratusObjectVersions} The paginated list of object versions.
+	 * Retrieves one page of versions for an object.
+	 * @param maxVersion - The maximum number of object versions to return.
+	 * @param nextToken - The pagination token for the next page.
+	 * @returns A promise that resolves to IStratusObjectVersions.
+	 * @example
+	 * ```ts
+	 * const versions = await object.listPagedVersions();
+	 * ```
 	 */
 	async listPagedVersions(
 		maxVersion?: string,
@@ -142,11 +156,13 @@ export class StratusObject {
 	}
 
 	/**
-	 * Retrieves the object versions as an iterable. This method allows iteration over object
-	 * 						versions without needing to handle pagination manually.
-	 * @param maxVersion - The maximum number of versions per response. Default 1000.
-	 * @access admin
-	 * @returns {AsyncGenerator<IStratusObjectVersionDetails, void>} An asynchronous generator that yields the object version details.
+	 * Iterates through all versions of an object.
+	 * @param maxVersion - The maximum number of object versions to return.
+	 * @returns AsyncGenerator<IStratusObjectVersionDetails, void>.
+	 * @example
+	 * ```ts
+	 * for await (const version of object.listIterableVersions()) { console.log(version); }
+	 * ```
 	 */
 	async *listIterableVersions(
 		maxVersion?: string
@@ -164,10 +180,16 @@ export class StratusObject {
 		} while (nextToken);
 	}
 
+	/**
+	 * function toString() { [native code] }
+	 */
 	toString(): string {
 		return JSON.stringify(this.keyDetails);
 	}
 
+	/**
+	 * toJSON operation.
+	 */
 	toJSON(): IStratusObjectDetails {
 		return this.keyDetails as IStratusObjectDetails;
 	}

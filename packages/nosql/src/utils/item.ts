@@ -11,12 +11,11 @@ import {
 } from './types';
 import { NoSQLUnMarshall } from './unmarshall';
 
-/**
- * Implementation of a NoSQL Item
- */
+/** * Implementation of a NoSQL Item */
 export class NoSQLItem {
 	#attributes = {} as TNoSQLItem;
 
+	/** Creates a NoSQL item from an optional attribute map. */
 	constructor(item?: TNoSQLItem) {
 		if (item) {
 			this.#attributes = item;
@@ -25,8 +24,13 @@ export class NoSQLItem {
 
 	/**
 	 * Get value of the null attribute
-	 * @param name Attribute name
+	 * @param name - Attribute name
 	 * @returns null if attribute is present
+	 *
+	 * @example
+	 * ```ts
+	 * const value = item.getNull('deleted_at');
+	 * ```
 	 */
 	getNull(name: string): null | undefined {
 		const _null = this.#attributes[name]?.NULL;
@@ -34,8 +38,13 @@ export class NoSQLItem {
 	}
 	/**
 	 * Add null(NULL) attribute to the item
-	 * @param name name of the null attribute
+	 * @param name - name of the null attribute
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addNull('deleted_at');
+	 * ```
 	 */
 	addNull(name: string): this {
 		this.#attributes[name] = NoSQLMarshall.makeNull();
@@ -44,17 +53,27 @@ export class NoSQLItem {
 
 	/**
 	 * Get value of a string(S) attribute
-	 * @param name name of the string attribute
+	 * @param name - name of the string attribute
 	 * @returns value of the string attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const email = item.getString('email');
+	 * ```
 	 */
 	getString(name: string): string | undefined {
 		return this.#attributes[name]?.S as string;
 	}
 	/**
 	 * Add string(S) attribute to the item
-	 * @param name name of the string attribute
-	 * @param value value of the string attribute
+	 * @param name - name of the string attribute
+	 * @param value - value of the string attribute
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addString('email', 'user@example.com');
+	 * ```
 	 */
 	addString(name: string, value: string): this {
 		this.#attributes[name] = NoSQLMarshall.makeString(value);
@@ -63,8 +82,13 @@ export class NoSQLItem {
 
 	/**
 	 * Get value of a number(N) attribute
-	 * @param name name of the number attribute
+	 * @param name - name of the number attribute
 	 * @returns value of the number attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const score = item.getNumber('score');
+	 * ```
 	 */
 	getNumber(name: string): number | bigint | undefined {
 		const num = this.#attributes[name]?.N;
@@ -72,9 +96,14 @@ export class NoSQLItem {
 	}
 	/**
 	 * Add number(N) attribute to the item
-	 * @param name name of the number attribute
-	 * @param value value of the number attribute
+	 * @param name - name of the number attribute
+	 * @param value - value of the number attribute
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addNumber('score', 42);
+	 * ```
 	 */
 	addNumber(name: string, value: number | bigint): this {
 		this.#attributes[name] = NoSQLMarshall.makeNumber(value);
@@ -83,8 +112,13 @@ export class NoSQLItem {
 
 	/**
 	 * Get value of a byte(B) attribute
-	 * @param name name of the byte attribute
+	 * @param name - name of the byte attribute
 	 * @returns value of the byte attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const avatar = item.getByte('avatar');
+	 * ```
 	 */
 	getByte(name: string): NoSQLByte | undefined {
 		const byte = this.#attributes[name]?.B;
@@ -95,24 +129,51 @@ export class NoSQLItem {
 	}
 	/**
 	 * Add a byte(B) attribute to the item
-	 * @param name name of the byte attribute
-	 * @param value value(ArrayBuffer) of the byte attribute as base64 encoded string
+	 * @param name - name of the byte attribute
+	 * @param value - value(ArrayBuffer) of the byte attribute as base64 encoded string
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addByte('avatar', Buffer.from('image'));
+	 * ```
 	 */
 	addByte(name: string, value: string): this;
 	/**
 	 * Add a byte(B) attribute to the item
-	 * @param name name of the byte attribute
-	 * @param value value of the byte attribute as NoSQLByte
+	 * @param name - name of the byte attribute
+	 * @param value - value of the byte attribute as NoSQLByte
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addByte('avatar', Buffer.from('image'));
+	 * ```
 	 */
 	addByte(name: string, value: NoSQLByte): this;
 	/**
 	 * Add a byte(B) attribute to the item
-	 * @param name name of the byte attribute
-	 * @param value ArrayBuffer of type {@link TNoSQLByte}
+	 * @param name - name of the byte attribute
+	 * @param value - an `ArrayBuffer`-like value (see `TNoSQLByte`)
+	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addByte('avatar', Buffer.from('image'));
+	 * ```
 	 */
 	addByte(name: string, value: TNoSQLByte): this;
+	/**
+	 * Add a byte(B) attribute to the item.
+	 * @param name - name of the byte attribute
+	 * @param value - base64 string, NoSQLByte, or supported binary value
+	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addByte('avatar', Buffer.from('image'));
+	 * ```
+	 */
 	addByte(name: string, value: string | TNoSQLByte | NoSQLByte): this {
 		this.#attributes[name] = NoSQLMarshall.makeByte(value);
 		return this;
@@ -120,17 +181,27 @@ export class NoSQLItem {
 
 	/**
 	 * Get value of a boolean(BOOL) attribute
-	 * @param name name of the boolean attribute
+	 * @param name - name of the boolean attribute
 	 * @returns value of the boolean attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const enabled = item.getBoolean('enabled');
+	 * ```
 	 */
 	getBoolean(name: string): boolean | undefined {
 		return this.#attributes[name].BOOL === 'true';
 	}
 	/**
 	 * Add a boolean(BOOL) attribute to the item
-	 * @param name name of the boolean attribute
-	 * @param value value of the boolean attribute
+	 * @param name - name of the boolean attribute
+	 * @param value - value of the boolean attribute
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addBoolean('enabled', true);
+	 * ```
 	 */
 	addBoolean(name: string, value: boolean): this {
 		this.#attributes[name] = NoSQLMarshall.makeBoolean(value);
@@ -139,8 +210,13 @@ export class NoSQLItem {
 
 	/**
 	 * Get value of a list(L) attribute
-	 * @param name name of the list attribute
+	 * @param name - name of the list attribute
 	 * @returns value of the list attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const tags = item.getList('tags');
+	 * ```
 	 */
 	getList(name: string): Array<TNoSQLValues> | undefined {
 		const list = this.#attributes[name]?.L;
@@ -148,9 +224,14 @@ export class NoSQLItem {
 	}
 	/**
 	 * Add a list(L) attribute to the item
-	 * @param name name of the list attribute
-	 * @param value value of the list attribute
+	 * @param name - name of the list attribute
+	 * @param value - value of the list attribute
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addList('tags', ['new', 'paid']);
+	 * ```
 	 */
 	addList(name: string, value: Array<TNoSQLValues>): this {
 		this.#attributes[name] = NoSQLMarshall.makeList(value);
@@ -159,8 +240,13 @@ export class NoSQLItem {
 
 	/**
 	 * Get value of a map(M) attribute
-	 * @param name name of the map attribute
+	 * @param name - name of the map attribute
 	 * @returns value of the map attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const address = item.getMap('address');
+	 * ```
 	 */
 	getMap(name: string): Record<string, TNoSQLValues> | undefined {
 		const map = this.#attributes[name]?.M;
@@ -168,10 +254,15 @@ export class NoSQLItem {
 	}
 	/**
 	 * Add a map(M) attribute to the item
-	 * @param name name of the map attribute
-	 * @param value value of the map attribute
-	 * @param options marshalling options to convert plain js objects to NoSQL attributes
+	 * @param name - name of the map attribute
+	 * @param value - value of the map attribute
+	 * @param options - marshalling options to convert plain js objects to NoSQL attributes
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addMap('address', { city: 'Chennai' });
+	 * ```
 	 */
 	addMap(
 		name: string,
@@ -184,8 +275,13 @@ export class NoSQLItem {
 
 	/**
 	 * Get value of a string set(SS) attribute
-	 * @param name name of the string set attribute
+	 * @param name - name of the string set attribute
 	 * @returns value of the string set attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const labels = item.getStringSet('labels');
+	 * ```
 	 */
 	getStringSet(name: string): NoSQLStringSet | undefined {
 		const strSet = this.#attributes[name]?.SS;
@@ -196,18 +292,39 @@ export class NoSQLItem {
 	}
 	/**
 	 * Add a string set(SS) attribute to the item
-	 * @param name name of the string set attribute
-	 * @param value value of the string set attribute as a set of string
+	 * @param name - name of the string set attribute
+	 * @param value - value of the string set attribute as a set of string
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addStringSet('labels', new Set(['vip']));
+	 * ```
 	 */
 	addStringSet(name: string, value: Set<string>): this;
 	/**
 	 * Add a string set(SS) attribute to the item
-	 * @param name name of the string set attribute
-	 * @param value value of the string set attribute as NoSQLStringSet
+	 * @param name - name of the string set attribute
+	 * @param value - value of the string set attribute as NoSQLStringSet
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addStringSet('labels', new Set(['vip']));
+	 * ```
 	 */
 	addStringSet(name: string, value: NoSQLStringSet): this;
+	/**
+	 * Add a string set(SS) attribute to the item.
+	 * @param name - name of the string set attribute
+	 * @param value - string set value to add
+	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addStringSet('labels', new Set(['vip']));
+	 * ```
+	 */
 	addStringSet(name: string, value: Set<string> | NoSQLStringSet): this {
 		this.#attributes[name] = NoSQLMarshall.makeStringSet(value);
 		return this;
@@ -215,8 +332,13 @@ export class NoSQLItem {
 
 	/**
 	 * Get value of a number set(SN) attribute
-	 * @param name name of the number set attribute
+	 * @param name - name of the number set attribute
 	 * @returns value of the number set attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const scores = item.getNumberSet('scores');
+	 * ```
 	 */
 	getNumberSet(name: string): NoSQLNumberSet | undefined {
 		const numSet = this.#attributes[name]?.SN;
@@ -229,18 +351,39 @@ export class NoSQLItem {
 	}
 	/**
 	 * Add a number set(SN) attribute to the item
-	 * @param name name of the number set attribute
-	 * @param value value of the number set attribute as a set of number or bigint
+	 * @param name - name of the number set attribute
+	 * @param value - value of the number set attribute as a set of number or bigint
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addNumberSet('scores', new Set([10, 20]));
+	 * ```
 	 */
 	addNumberSet(name: string, value: Set<number | bigint>): this;
 	/**
 	 * Add a number set(SN) attribute to the item
-	 * @param name name of the number set attribute
-	 * @param value value of the number set attribute as NoSQLNumberSet
+	 * @param name - name of the number set attribute
+	 * @param value - value of the number set attribute as NoSQLNumberSet
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addNumberSet('scores', new Set([10, 20]));
+	 * ```
 	 */
 	addNumberSet(name: string, value: NoSQLNumberSet): this;
+	/**
+	 * Add a number set(SN) attribute to the item.
+	 * @param name - name of the number set attribute
+	 * @param value - number, bigint, or NoSQLNumberSet value to add
+	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addNumberSet('scores', new Set([10, 20]));
+	 * ```
+	 */
 	addNumberSet(name: string, value: Set<number> | Set<bigint> | NoSQLNumberSet): this {
 		this.#attributes[name] = NoSQLMarshall.makeNumberSet(value);
 		return this;
@@ -248,8 +391,13 @@ export class NoSQLItem {
 
 	/**
 	 * Get value of a byte set(SB) attribute
-	 * @param name name of the byte set attribute
+	 * @param name - name of the byte set attribute
 	 * @returns value of the byte set attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const attachments = item.getByteSet('attachments');
+	 * ```
 	 */
 	getByteSet(name: string): NoSQLByteSet | undefined {
 		const byteSet = this.#attributes[name]?.SB;
@@ -260,32 +408,63 @@ export class NoSQLItem {
 	}
 	/**
 	 * Add a byte set(SB) attribute to the item
-	 * @param name name of the byte set attribute
-	 * @param value value of the byte set attribute as a set of ArrayBuffers mentioned in {@link TNoSQLByte}
+	 * @param name - name of the byte set attribute
+	 * @param value - value of the byte set attribute as a set of `ArrayBuffer`-like values (see `TNoSQLByte`)
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addByteSet('attachments', new Set([Buffer.from('file')]));
+	 * ```
 	 */
 	addByteSet(name: string, value: Set<TNoSQLByte>): this;
 	/**
 	 * Add a byte set(SB) attribute to the item
-	 * @param name name of the byte set attribute
-	 * @param value value of the byte set attribute as a set of NoSQLByte
+	 * @param name - name of the byte set attribute
+	 * @param value - value of the byte set attribute as a set of NoSQLByte
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addByteSet('attachments', new Set([Buffer.from('file')]));
+	 * ```
 	 */
 	addByteSet(name: string, value: Set<NoSQLByte>): this;
 	/**
 	 * Add a byte set(SB) attribute to the item
-	 * @param name name of the byte set attribute
-	 * @param value value of the byte set attribute as a set of base64 encoded string of the buffer
+	 * @param name - name of the byte set attribute
+	 * @param value - value of the byte set attribute as a set of base64 encoded string of the buffer
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addByteSet('attachments', new Set([Buffer.from('file')]));
+	 * ```
 	 */
 	addByteSet(name: string, value: Set<string>): this;
 	/**
 	 * Add a byte set(SB) attribute to the item
-	 * @param name name of the byte set attribute
-	 * @param value value of the byte set attribute as NoSQLByteSet
+	 * @param name - name of the byte set attribute
+	 * @param value - value of the byte set attribute as NoSQLByteSet
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addByteSet('attachments', new Set([Buffer.from('file')]));
+	 * ```
 	 */
 	addByteSet(name: string, value: NoSQLByteSet): this;
+	/**
+	 * Add a byte set(SB) attribute to the item.
+	 * @param name - name of the byte set attribute
+	 * @param value - binary, base64, NoSQLByte, or NoSQLByteSet values to add
+	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addByteSet('attachments', new Set([Buffer.from('file')]));
+	 * ```
+	 */
 	addByteSet(
 		name: string,
 		value: Set<TNoSQLByte> | Set<NoSQLByte> | Set<string> | NoSQLByteSet
@@ -296,10 +475,15 @@ export class NoSQLItem {
 
 	/**
 	 * Add a set of type string or number or TNoSQLByte as an attribute to this item.
-	 * @param name attribute name
-	 * @param value set to be added
-	 * @param options marshalling options
+	 * @param name - attribute name
+	 * @param value - set to be added
+	 * @param options - marshalling options
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addSet('labels', new Set(['vip']), {});
+	 * ```
 	 */
 	addSet(
 		name: string,
@@ -314,10 +498,15 @@ export class NoSQLItem {
 	 * Adds a NoSQL attribute to the item without any validations or marshalling.
 	 *
 	 * Note: Use this function only when it's absolutely necessary. Prefer to user other attribute addition functions over this.
-	 * @param name name of the attribute
-	 * @param type NoSQL type of the attribute
-	 * @param value value of the attribute
+	 * @param name - name of the attribute
+	 * @param type - NoSQL type of the attribute
+	 * @param value - value of the attribute
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().addRaw('status', DataType.S, 'active');
+	 * ```
 	 */
 	addRaw(name: string, type: DataType, value: TNoSQLValues | TNoSQLItem): this {
 		this.#attributes[name] = {
@@ -328,10 +517,15 @@ export class NoSQLItem {
 
 	/**
 	 * Adds a NoSQL attribute to the item with validation and marshalling.
-	 * @param name name of the attribute
-	 * @param value value of the attribute
-	 * @param options options to marshall the value
+	 * @param name - name of the attribute
+	 * @param value - value of the attribute
+	 * @param options - options to marshall the value
 	 * @returns NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = new NoSQLItem().add('profile', { name: 'Maya' }, { removeUndefinedValues: true });
+	 * ```
 	 */
 	add(name: string, value: TNoSQLValues, options: MarshallOptions): this {
 		this.#attributes[name] = NoSQLMarshall.make(value, options);
@@ -340,8 +534,13 @@ export class NoSQLItem {
 
 	/**
 	 * Get a near-native value of the NoSQL attribute
-	 * @param name name of the attribute
+	 * @param name - name of the attribute
 	 * @returns value of the attribute type TNoSQLValues
+	 *
+	 * @example
+	 * ```ts
+	 * const profile = item.get('profile');
+	 * ```
 	 */
 	get(name: string): TNoSQLValues {
 		return NoSQLUnMarshall.makeNative(this.#attributes[name]);
@@ -349,8 +548,13 @@ export class NoSQLItem {
 
 	/**
 	 * Remove an attribute from the item
-	 * @param name name of the attribute to be removed
+	 * @param name - name of the attribute to be removed
 	 * @returns value of the removed attribute
+	 *
+	 * @example
+	 * ```ts
+	 * const removed = item.remove('legacy_field');
+	 * ```
 	 */
 	remove(name: string): TNoSQLAttribute | TNoSQLAttributeResponse | undefined {
 		const item = this.#attributes[name];
@@ -360,8 +564,13 @@ export class NoSQLItem {
 
 	/**
 	 * Check if an attribute exists in the item
-	 * @param name name of the attribute to check
+	 * @param name - name of the attribute to check
 	 * @returns true if the attribute is present
+	 *
+	 * @example
+	 * ```ts
+	 * if (item.has('email')) console.log(item.getString('email'));
+	 * ```
 	 */
 	has(name: string): boolean {
 		return name in this.#attributes;
@@ -370,6 +579,11 @@ export class NoSQLItem {
 	/**
 	 * Get the total number of attributes present
 	 * @returns total number of attributes
+	 *
+	 * @example
+	 * ```ts
+	 * const count = item.numberOfAttributes();
+	 * ```
 	 */
 	numberOfAttributes(): number {
 		return Object.keys(this.#attributes).length;
@@ -386,6 +600,11 @@ export class NoSQLItem {
 	/**
 	 * Returns a near native object representation of the item
 	 * @returns near-native representation of the NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const native = item.to();
+	 * ```
 	 */
 	to(): Record<string, TNoSQLValues> {
 		return NoSQLUnMarshall.makeMap(this.#attributes);
@@ -393,9 +612,14 @@ export class NoSQLItem {
 
 	/**
 	 * Create a NoSQL item from plain java script object
-	 * @param obj to be used to create the item
-	 * @param options marshalling options to convert native js types to NoSQL types
+	 * @param obj - to be used to create the item
+	 * @param options - marshalling options to convert native js types to NoSQL types
 	 * @returns new NoSQLItem
+	 *
+	 * @example
+	 * ```ts
+	 * const item = NoSQLItem.from({ email: 'user@example.com', score: 42 });
+	 * ```
 	 */
 	static from(obj: Record<string, TNoSQLValues>, options?: MarshallOptions): NoSQLItem {
 		const attribute = {} as Record<string, TNoSQLAttribute>;

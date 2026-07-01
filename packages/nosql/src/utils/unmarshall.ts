@@ -11,8 +11,14 @@ import { TNoSQLAttribute, TNoSQLAttributeResponse, TNoSQLValues } from './types'
 export class NoSQLUnMarshall {
 	/**
 	 * Make a native or near-native js object from NoSQL attribute
-	 * @param attr NoSQL attribute to be converted
+	 * @param attr - NoSQL attribute to be converted
 	 * @returns native or near-native js object
+	 * @throws {Error} when the attribute is empty or uses an unsupported NoSQL type.
+	 *
+	 * @example
+	 * ```ts
+	 * const value = NoSQLUnMarshall.makeNative({ S: 'active' });
+	 * ```
 	 */
 	static makeNative(attr: TNoSQLAttribute | TNoSQLAttributeResponse): TNoSQLValues {
 		const [k, v] = Object.entries(attr)[0];
@@ -54,8 +60,13 @@ export class NoSQLUnMarshall {
 
 	/**
 	 * Make a near-native Array from Array of NoSQL List attributes
-	 * @param list Array of NoSQL attributes
+	 * @param list - Array of NoSQL attributes
 	 * @returns Array of near-native js objects
+	 *
+	 * @example
+	 * ```ts
+	 * const values = NoSQLUnMarshall.makeList([{ S: 'vip' }, { N: '42' }]);
+	 * ```
 	 */
 	static makeList(list: Array<TNoSQLAttribute | TNoSQLAttributeResponse>): Array<TNoSQLValues> {
 		return list.map((item) => NoSQLUnMarshall.makeNative(item));
@@ -63,8 +74,13 @@ export class NoSQLUnMarshall {
 
 	/**
 	 * Make a near-native plain js object from NoSQL Map attribute
-	 * @param map NoSQL Map attribute
+	 * @param map - NoSQL Map attribute
 	 * @returns near-native plain js object
+	 *
+	 * @example
+	 * ```ts
+	 * const value = NoSQLUnMarshall.makeMap({ email: { S: 'user@example.com' } });
+	 * ```
 	 */
 	static makeMap(
 		map: Record<string, TNoSQLAttribute | TNoSQLAttributeResponse>
@@ -83,8 +99,13 @@ export class NoSQLUnMarshall {
 
 	/**
 	 * Make a number or bigint value from NoSQL Number attribute
-	 * @param numStr NoSQL Number attribute
+	 * @param numStr - NoSQL Number attribute
 	 * @returns number or bigint value
+	 *
+	 * @example
+	 * ```ts
+	 * const count = NoSQLUnMarshall.makeNumber('42');
+	 * ```
 	 */
 	static makeNumber(numStr: string): number | bigint {
 		const num = Number(numStr);

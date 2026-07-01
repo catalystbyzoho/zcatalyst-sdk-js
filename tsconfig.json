@@ -1,16 +1,10 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "downlevelIteration": true,
     "esModuleInterop": true,
     "incremental": true,
     "lib": ["es2020", "dom"],
     "module": "commonjs",
-    "moduleResolution": "node",
     "noFallthroughCasesInSwitch": true,
-    "paths": {
-      "@zcatalyst/*": ["packages/*/src"]
-    },
     "preserveConstEnums": true,
     "removeComments": true,
     "resolveJsonModule": true,

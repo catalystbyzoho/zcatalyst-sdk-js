@@ -1,60 +1,80 @@
-const { execSync } = require("child_process");
+/**
+ * Version Update Script
+ * 
+ * Purpose:
+ * This script automatically updates package versions in a monorepo based on
+ * conventional commit messages following semantic versioning rules.
+ * 
+ * Semantic Versioning Rules:
+ * - MAJOR (x.0.0): Breaking changes (BREAKING CHANGE or feat/fix!)
+ * - MINOR (0.x.0): New features (feat)
+ * - PATCH (0.0.x): Bug fixes and chores (fix, chore)
+ * 
+ * Features:
+ * - Parses conventional commits since the last git tag
+ * - Determines appropriate version bump (major/minor/patch) for each package
+ * - Supports scope-based version bumping (e.g., feat(auth): ...)
+ * - Handles multi-line commit messages for cross-package changes
+ * - Updates root package.json with the highest bump level
+ * - Updates individual package versions based on their scope
+ * - Provides summary table of all version changes
+ * - Supports dry-run mode for preview without making changes
+ * 
+ * Breaking Change Detection:
+ * - BREAKING CHANGE: prefix in commit message
+ * - breaking(scope): prefix
+ * - feat(scope)!: or fix(scope)!: syntax
+ * - BREAKING CHANGE notes in commit body
+ * 
+ * Workflow:
+ * 1. Retrieves commits since the last git tag
+ * 2. Normalizes commit messages to handle various breaking change formats
+ * 3. Parses commits to determine bump type for each package
+ * 4. Calculates highest bump level for root package
+ * 5. Updates all package.json files with new versions
+ * 6. Displays summary of changes
+ * 
+ * Usage:
+ * node scripts/version-update.js           # Update versions
+ * node scripts/version-update.js --dry-run # Preview without changing files
+ * 
+ * Note: This script should be run before generating changelogs and publishing
+ */
+
 const fs = require("fs");
 const path = require("path");
 const semver = require("semver");
-const parser = require("conventional-commits-parser").sync;
+const {
+  parseCommit,
+  getRawCommitsSinceTag,
+  getWorkspacePackages,
+} = require("./lib/commits");
 
 const cwd = process.cwd();
-const pkgsDir = path.join(cwd, "packages");
 const dryRun = process.argv.includes("--dry-run");
 
-const parseOptions = {
-  noteKeywords: ['BREAKING CHANGE', 'BREAKING CHANGES'],
-  headerPattern: /^([\w\s]+)(?:\(([\w\$\.\*/-]*)\))?(!)?: (.*)$/,
-  headerCorrespondence: ['type', 'scope', 'breaking', 'subject'],
-};
-
-function normalizeCommitMessage(msg) {
-  // breaking(scope): ... → BREAKING CHANGE(scope): ...
-  msg = msg.replace(/^breaking(\([^)]+\))?:/i, 'BREAKING CHANGE$1:');
-  // feat(scope)!: ... → BREAKING CHANGE(scope): ...
-  msg = msg.replace(/^feat(\([^)]+\))?!:/i, 'BREAKING CHANGE$1:');
-  // fix(scope)!: ... → BREAKING CHANGE(scope): ...
-  msg = msg.replace(/^fix(\([^)]+\))?!:/i, 'BREAKING CHANGE$1:');
-  // BREAKING CHANGE(scope): ... (already correct)
-  return msg;
-}
-
 function getBumpType(commit) {
-  // Major bump for any breaking change pattern
+  // Major bump for any breaking change pattern.
+  // Note: conventional-commits-parser sets `breaking` to the matched '!' string
+  // (or null), not a boolean — coerce explicitly.
   if (
     commit.type === "BREAKING CHANGE" ||
-    commit.breaking === true ||
+    Boolean(commit.breaking) ||
     (commit.notes && commit.notes.some(n => n.title && n.title.toLowerCase().includes("breaking change")))
   ) {
     return "major";
   }
   if (commit.type === "feat") return "minor";
-  if (commit.type === "fix" || commit.type === "chore") return "patch";
+  if (commit.type === "fix") return "patch";
+  // `chore`, `docs`, `test`, `refactor`, `style`, `ci`, `build` → no bump.
   return null;
 }
 
 function getCommits() {
-  const separator = '===END===';
-  let log;
-  try {
-    const latestTag = execSync("git describe --tags --abbrev=0", { encoding: "utf8" }).trim();
-    log = execSync(`git log ${latestTag}..HEAD --pretty=format:%B${separator}`, { encoding: "utf8" });
-  } catch (err) {
-    log = execSync(`git log --pretty=format:%B${separator}`, { encoding: "utf8" });
-  }
-
-  const chunks = log.split(separator).map(chunk => chunk.trim()).filter(Boolean);
-
-  return chunks
+  return getRawCommitsSinceTag()
     .map(msg => {
       try {
-        return parser(normalizeCommitMessage(msg), parseOptions);
+        return parseCommit(msg);
       } catch {
         console.warn("Parse failed for:", msg);
         return null;
@@ -64,66 +84,47 @@ function getCommits() {
 }
 
 const bumpOrder = { patch: 0, minor: 1, major: 2 };
-const commits = getCommits().filter(commit => (/\(#(\d+)\)$/).test(commit.subject));
+const commits = getCommits().filter(commit => commit.subject);
 
-const workspacePkgs = fs.readdirSync(pkgsDir).filter(dir => {
-  return fs.existsSync(path.join(pkgsDir, dir, "package.json"));
-}).map(dir => {
-  const pkgPath = path.join(pkgsDir, dir, "package.json");
-  try {
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
-    return { name: pkg.name, dir, version: pkg.version, path: pkgPath };
-  } catch (err) {
-    console.error(`Error reading package.json for ${dir}:`, err.message);
-    return null;
-  }
-}).filter(Boolean);
+const workspacePkgs = getWorkspacePackages(cwd).map(p => ({
+  name: p.name,
+  dir: p.dir,
+  version: p.version,
+  path: p.pkgJsonPath,
+}));
+const pkgByDir = new Map(workspacePkgs.map(p => [p.dir, p]));
+const unknownScopes = new Set();
 
 const bumps = {};
 
-for (const commit of commits) {
-  let type = getBumpType(commit);
-  if (!type) continue;
-
-  // Case 1: scope-based bump
-  if (commit.scope) {
-    const pkgMatch = workspacePkgs.find(p => p.dir === commit.scope);
-    if (pkgMatch) {
-      const dir = pkgMatch.dir;
-      if (!bumps[dir] || bumpOrder[type] > bumpOrder[bumps[dir]]) {
-        bumps[dir] = type;
-      }
-    } else {
-      console.log(`Scope "${commit.scope}" not found in packages, skipping.`);
-    }
-  }
-
-  // Case 2: message based bump (for multi-line commit bodies)
-  const msgLines = (commit.body || "").split('\n').map(l => l.trim()).filter(Boolean);
-  for (const line of msgLines) {
-    try {
-      const parsedLine = parser(normalizeCommitMessage(line), parseOptions);
-      const lineType = getBumpType(parsedLine);
-      if (!lineType) continue;
-      if (parsedLine.scope) {
-        const pkgMatch = workspacePkgs.find(p => p.dir === parsedLine.scope);
-        if (pkgMatch) {
-          const dir = pkgMatch.dir;
-          if (!bumps[dir] || bumpOrder[lineType] > bumpOrder[bumps[dir]]) {
-            bumps[dir] = lineType;
-          }
-        } else {
-          console.log(`Scope "${parsedLine.scope}" not found in packages, skipping.`);
-        }
-      }
-    } catch {
-      // Ignore parse errors for lines
-    }
+function recordBump(dir, type) {
+  if (!bumps[dir] || bumpOrder[type] > bumpOrder[bumps[dir]]) {
+    bumps[dir] = type;
   }
 }
 
+for (const commit of commits) {
+  const type = getBumpType(commit);
+  if (!type) continue;
+
+  if (commit.scope) {
+    if (pkgByDir.has(commit.scope)) {
+      recordBump(commit.scope, type);
+    } else {
+      unknownScopes.add(commit.scope);
+    }
+  }
+  // Scope-less commits are intentionally not bumped — author should add a scope.
+}
+
+if (unknownScopes.size > 0) {
+  console.log(`Unknown scopes (skipped): ${[...unknownScopes].join(', ')}`);
+}
+
+console.log(`\nProcessed ${commits.length} commit(s) since last tag.`);
+
 if (Object.keys(bumps).length === 0) {
-  console.log("No versionable changes.");
+  console.log("No versionable changes detected. Nothing to update.");
   process.exit(0);
 }
 

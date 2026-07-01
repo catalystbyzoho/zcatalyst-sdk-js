@@ -1,5 +1,3 @@
-'use strict';
-
 import { Handler, IRequestConfig, RequestType } from '@zcatalyst/transport';
 import {
 	CatalystService,
@@ -14,6 +12,9 @@ import { CatalystPushNotificationError } from './utils/error';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 
+/**
+ * Sends push notifications to web recipients.
+ */
 export class WebNotification {
 	requester: Handler;
 	constructor(notificationInstance: PushNotification) {
@@ -21,14 +22,14 @@ export class WebNotification {
 	}
 
 	/**
-	 * Sends a push notification to multiple recipients.
-	 * @param message - The notification message to be sent.
-	 * @param recipients - An array of Catalyst User IDs or Email IDs of the recipients.
-	 * @returns {boolean} `true` if the notification was sent successfully, otherwise `false`.
+	 * Sends a push notification using the default notification path.
+	 * @param message - The notification message body.
+	 * @param recipients - The Catalyst user IDs or email addresses that should receive the notification.
+	 * @returns A promise that resolves to boolean.
+	 * @throws {CatalystPushNotificationError} when input validation fails.
 	 * @example
 	 * ```ts
-	 * const success = await notificIns.sendNotification("Hello, users!", ["user1@example.com", "user2@example.com"]);
-	 * console.log(success);
+	 * const sent = await web.sendNotification('Hello', ['user@example.com']);
 	 * ```
 	 */
 	async sendNotification(message: string, recipients: Array<string>): Promise<boolean> {

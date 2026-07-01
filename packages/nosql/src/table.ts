@@ -24,11 +24,13 @@ import {
 
 const { COMPONENT, REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 
+/** Represents a Catalyst NoSQL table and exposes item, query, and index operations. */
 export default class NoSQLTable implements ParsableComponent<INoSQLTable> {
 	#tableDetails?: INoSQLTable;
 	#requester: Handler;
 	#tableId?: string;
 
+	/** Creates a NoSQL table helper bound to a requester and table details or ID. */
 	constructor(
 		requester: Handler,
 		{ tableDetails, tableId }: { tableDetails?: INoSQLTable; tableId?: string }
@@ -40,8 +42,9 @@ export default class NoSQLTable implements ParsableComponent<INoSQLTable> {
 
 	/**
 	 * Insert items to the table
-	 * @param values values to be inserted
+	 * @param values - values to be inserted
 	 * @returns NoSQL Response with create response
+	 * @throws {CatalystNoSQLError} when no insert values are provided.
 	 *
 	 * @example
 	 * ```js
@@ -73,8 +76,9 @@ export default class NoSQLTable implements ParsableComponent<INoSQLTable> {
 
 	/**
 	 * Update items in table
-	 * @param values items to be updated
+	 * @param values - items to be updated
 	 * @returns NoSQL Update with update response
+	 * @throws {CatalystNoSQLError} when no update values are provided.
 	 *
 	 * @example
 	 * ```js
@@ -122,8 +126,9 @@ export default class NoSQLTable implements ParsableComponent<INoSQLTable> {
 
 	/**
 	 * Delete items from the table
-	 * @param values item to be deleted
+	 * @param values - item to be deleted
 	 * @returns NoSQL Response with delete response
+	 * @throws {CatalystNoSQLError} when no delete values are provided.
 	 *
 	 * @example
 	 * ```js
@@ -158,8 +163,9 @@ export default class NoSQLTable implements ParsableComponent<INoSQLTable> {
 
 	/**
 	 * Fetch items from the table
-	 * @param value item to be fetched
+	 * @param value - item to be fetched
 	 * @returns NoSQL Response with read response
+	 * @throws {CatalystNoSQLError} when the fetch input is empty or invalid.
 	 *
 	 * @example
 	 * const { NoSQLItem } = require('zcatalyst-sdk/lib/no-sql');
@@ -196,8 +202,9 @@ export default class NoSQLTable implements ParsableComponent<INoSQLTable> {
 
 	/**
 	 * Query items from the table
-	 * @param query query to be executed
+	 * @param query - query to be executed
 	 * @returns NoSQL Response with read response
+	 * @throws {CatalystNoSQLError} when the query is empty or invalid.
 	 *
 	 * @example
 	 * ```js
@@ -238,9 +245,10 @@ export default class NoSQLTable implements ParsableComponent<INoSQLTable> {
 
 	/**
 	 * Query indexes of the table
-	 * @param indexId Id or Name of the NoSQL table index
-	 * @param query NoSQL Query to be executed
+	 * @param indexId - Id or Name of the NoSQL table index
+	 * @param query - NoSQL Query to be executed
 	 * @returns NoSQL Response with read response
+	 * @throws {CatalystNoSQLError} when the index ID or query is invalid.
 	 *
 	 * @example
 	 * ```js
@@ -280,10 +288,7 @@ export default class NoSQLTable implements ParsableComponent<INoSQLTable> {
 		return new NoSQLResponse(_resp);
 	}
 
-	/**
-	 *
-	 * @throws **CatalystNoSQLError** with code `no_data` if the table details are not present
-	 */
+	/** Converts the table details to a JSON string. */
 	toString(): string {
 		if (!this.#tableDetails) {
 			throw new CatalystNoSQLError(
@@ -294,10 +299,7 @@ export default class NoSQLTable implements ParsableComponent<INoSQLTable> {
 		return JSON.stringify(this.#tableDetails);
 	}
 
-	/**
-	 * Get a json representation of the NoSQL table's details
-	 * @throws **CatalystNoSQLError** with code `no_data` if the table details are not present
-	 */
+	/** Returns a JSON representation of the NoSQL table details. */
 	toJSON(): INoSQLTable {
 		if (!this.#tableDetails) {
 			throw new CatalystNoSQLError(
@@ -308,6 +310,7 @@ export default class NoSQLTable implements ParsableComponent<INoSQLTable> {
 		return this.#tableDetails;
 	}
 
+	/** Retrieves the NoSQL component name. */
 	getComponentName(): string {
 		return COMPONENT.no_sql;
 	}
