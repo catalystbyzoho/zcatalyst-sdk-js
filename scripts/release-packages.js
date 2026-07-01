@@ -21,7 +21,7 @@
  */
 
 const { execSync } = require('child_process');
-const { readFileSync, writeFileSync, existsSync, unlinkSync } = require('fs');
+const { writeFileSync, existsSync, unlinkSync } = require('fs');
 const { join } = require('path');
 const { getWorkspacePackages } = require('./lib/commits');
 
@@ -75,9 +75,8 @@ function publish(pkg, registryConfig) {
     );
     npmrcCreated = true;
 
-    const pkg = JSON.parse(readFileSync(join(path, 'package.json'), 'utf-8'));
     console.log(`Publishing ${pkg.name} (${pkg.version})...`);
-    execSync(`pnpm publish --registry https://${registry} --access=public --no-git-checks`, { cwd: path, stdio: 'inherit' });
+    execSync(`pnpm publish --registry ${url} --access=public --no-git-checks`, { cwd: pkg.path, stdio: 'inherit' });
     console.log(`Published ${pkg.name}@${pkg.version}`);
   } catch (err) {
     throw new Error(`Failed to publish ${pkg.name}: ${err.message}`);
@@ -119,4 +118,3 @@ console.log(`\nPublishing ${toPublish.length} package(s):`);
 for (const pkg of toPublish) {
   publish(pkg, registryConfig);
 }
-
