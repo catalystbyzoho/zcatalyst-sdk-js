@@ -11,8 +11,10 @@ import {
 	CONSTANTS,
 	isNonEmptyObject,
 	isNonEmptyString,
+	isValidType,
 	wrapValidatorsWithPromise
 } from '@zcatalyst/utils';
+import fs from 'fs';
 
 import pkg from '../package.json';
 const { version } = pkg;
@@ -82,10 +84,7 @@ export class QuickML implements Component {
 		const resp = await this.requester.send(request);
 		return resp.data as ICatalystQuickMLResponse;
 	}
-		async documentSearch(
-		endPointKey: string,
-		query: string
-	): Promise<ICatalystQuickMLResponse> {
+	async documentSearch(endPointKey: string, query: string): Promise<ICatalystQuickMLResponse> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(query, 'query', true);
 			isNonEmptyString(endPointKey, 'endpoint key', true);
@@ -109,7 +108,7 @@ export class QuickML implements Component {
 		const resp = await this.requester.send(request);
 		return resp.data as ICatalystQuickMLResponse;
 	}
-		async generateRagResponse(
+	async generateRagResponse(
 		endPointKey: string,
 		query: string
 	): Promise<ICatalystQuickMLResponse> {
@@ -136,10 +135,7 @@ export class QuickML implements Component {
 		const resp = await this.requester.send(request);
 		return resp.data as ICatalystQuickMLResponse;
 	}
-		async chatWithRagAgent(
-		endPointKey: string,
-		query: string
-	): Promise<ICatalystQuickMLResponse> {
+	async chatWithRagAgent(endPointKey: string, query: string): Promise<ICatalystQuickMLResponse> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(query, 'query', true);
 			isNonEmptyString(endPointKey, 'endpoint key', true);
@@ -163,7 +159,7 @@ export class QuickML implements Component {
 		const resp = await this.requester.send(request);
 		return resp.data as ICatalystQuickMLResponse;
 	}
-		async chatWithRagAgentWithHistory(
+	async chatWithRagAgentWithHistory(
 		endPointKey: string,
 		query: string,
 		conversationId = ''
@@ -192,10 +188,7 @@ export class QuickML implements Component {
 		const resp = await this.requester.send(request);
 		return resp.data as ICatalystQuickMLResponse;
 	}
-		async predictLlm(
-		endPointKey: string,
-		prompt: string
-	): Promise<ICatalystQuickMLResponse> {
+	async predictLlm(endPointKey: string, prompt: string): Promise<ICatalystQuickMLResponse> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(prompt, 'prompt', true);
 			isNonEmptyString(endPointKey, 'endpoint key', true);
@@ -219,27 +212,27 @@ export class QuickML implements Component {
 		const resp = await this.requester.send(request);
 		return resp.data as ICatalystQuickMLResponse;
 	}
-		async predictVlm(
+	async predictVlm(
 		endPointKey: string,
-		imageFile: File | Blob,
-		prompt?: string
+		imageFile: fs.ReadStream,
+		prompt: string
 	): Promise<ICatalystQuickMLResponse> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(endPointKey, 'endpoint key', true);
+			isValidType(imageFile, 'object', 'image file', true);
+			isNonEmptyString(prompt, 'prompt', true);
 		}, CatalystQuickMLError);
 
-		const formData = new FormData();
-		formData.append('image_files', imageFile);
-
-		if (prompt) {
-			formData.append('prompt', prompt);
-		}
+		const image_data = {
+			image_files: imageFile,
+			prompt
+		};
 
 		const request: IRequestConfig = {
 			method: REQ_METHOD.post,
 			path: '/genai/endpoints/vlm/generate',
-			data: formData,
-			type: RequestType.FORM_DATA,
+			data: image_data,
+			type: RequestType.FILE,
 			headers: {
 				'X-QUICKML-ENDPOINT-KEY': endPointKey
 			},
