@@ -70,9 +70,26 @@ describe('testing quick ml', () => {
 			data: responses['/genai/endpoints/rag/agent/chat'].POST.data.data
 		});
 
-		await expect(quickml.chatWithRagAgentWithHistory('', 'Hello')).rejects.toThrowError();
+		await expect(
+			quickml.chatWithRagAgentWithHistory('', 'Hello', 'conv123')
+		).rejects.toThrowError();
 
-		await expect(quickml.chatWithRagAgentWithHistory('1234abcd', '')).rejects.toThrowError();
+		await expect(
+			quickml.chatWithRagAgentWithHistory('1234abcd', '', 'conv123')
+		).rejects.toThrowError();
+
+		await expect(
+			quickml.chatWithRagAgentWithHistory('1234abcd', 'Hello', '')
+		).resolves.toStrictEqual({
+			data: responses['/genai/endpoints/rag/agent/chat'].POST.data.data
+		});
+	});
+	it('chat with rag agent without conversation id', async () => {
+		await expect(
+			quickml.chatWithRagAgentWithHistory('1234abcd', 'Hello')
+		).resolves.toStrictEqual({
+			data: responses['/genai/endpoints/rag/agent/chat'].POST.data.data
+		});
 	});
 	it('predict llm', async () => {
 		await expect(quickml.predictLlm('1234abcd', 'Explain AI')).resolves.toStrictEqual({
