@@ -162,12 +162,15 @@ export class QuickML implements Component {
 	async chatWithRagAgentWithHistory(
 		endPointKey: string,
 		query: string,
-		conversationId = ''
+		conversationId = '-1'
 	): Promise<ICatalystQuickMLResponse> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(query, 'query', true);
 			isNonEmptyString(endPointKey, 'endpoint key', true);
 		}, CatalystQuickMLError);
+		if (conversationId === '') {
+			conversationId = '-1';
+		}
 
 		const request: IRequestConfig = {
 			method: REQ_METHOD.post,
