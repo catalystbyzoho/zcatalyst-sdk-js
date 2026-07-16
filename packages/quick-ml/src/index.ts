@@ -191,7 +191,7 @@ export class QuickML implements Component {
 		const resp = await this.requester.send(request);
 		return resp.data as ICatalystQuickMLResponse;
 	}
-	async predictLlm(endPointKey: string, prompt: string): Promise<ICatalystQuickMLResponse> {
+	async chatWithLlm(endPointKey: string, prompt: string): Promise<ICatalystQuickMLResponse> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(prompt, 'prompt', true);
 			isNonEmptyString(endPointKey, 'endpoint key', true);
@@ -215,7 +215,7 @@ export class QuickML implements Component {
 		const resp = await this.requester.send(request);
 		return resp.data as ICatalystQuickMLResponse;
 	}
-	async predictVlm(
+	async analyzeImage(
 		endPointKey: string,
 		imageFile: fs.ReadStream,
 		prompt: string

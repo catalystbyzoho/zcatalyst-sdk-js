@@ -92,17 +92,17 @@ describe('testing quick ml', () => {
 		});
 	});
 	it('predict llm', async () => {
-		await expect(quickml.predictLlm('1234abcd', 'Explain AI')).resolves.toStrictEqual({
+		await expect(quickml.chatWithLlm('1234abcd', 'Explain AI')).resolves.toStrictEqual({
 			data: responses['/genai/endpoints/glm-flash-47/generate'].POST.data.data
 		});
 
-		await expect(quickml.predictLlm('', 'Explain AI')).rejects.toThrowError();
+		await expect(quickml.chatWithLlm('', 'Explain AI')).rejects.toThrowError();
 
-		await expect(quickml.predictLlm('1234abcd', '')).rejects.toThrowError();
+		await expect(quickml.chatWithLlm('1234abcd', '')).rejects.toThrowError();
 	});
-	it('predict vlm', async () => {
+	it('analyze image', async () => {
 		await expect(
-			quickml.predictVlm(
+			quickml.analyzeImage(
 				'1234abcd',
 				createReadStream('./tests/img1.jpeg'),
 				'Describe this image'
@@ -112,15 +112,15 @@ describe('testing quick ml', () => {
 		});
 
 		await expect(
-			quickml.predictVlm('', createReadStream('./tests/img1.jpeg'), 'Describe this image')
+			quickml.analyzeImage('', createReadStream('./tests/img1.jpeg'), 'Describe this image')
 		).rejects.toThrowError();
 
 		await expect(
-			quickml.predictVlm('1234abcd', createReadStream('./tests/img1.jpeg'), '')
+			quickml.analyzeImage('1234abcd', createReadStream('./tests/img1.jpeg'), '')
 		).rejects.toThrowError();
 
 		await expect(
-			quickml.predictVlm('1234abcd', undefined as any, 'Describe this image')
+			quickml.analyzeImage('1234abcd', undefined as any, 'Describe this image')
 		).rejects.toThrowError();
 	});
 });
