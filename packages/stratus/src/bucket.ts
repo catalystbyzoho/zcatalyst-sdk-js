@@ -38,6 +38,7 @@ import {
 import { JWTAuthHandler } from './utils/jwt-auth-handler';
 import { Util } from './utils/signature-auth-handler';
 import { StratusObjectRequest } from './utils/types';
+import { assertValidBucketName, assertValidBucketUrl } from './utils/validator';
 
 const { REQ_METHOD, CREDENTIAL_USER, STRATUS_SUFFIX, IS_LOCAL } = CONSTANTS;
 
@@ -53,15 +54,18 @@ export class Bucket {
 		this._requester = requester;
 		this.#jwtAuth = new JWTAuthHandler(this);
 		if (typeof bucket === 'string') {
+			assertValidBucketName(bucket);
 			const suffix =
 				typeof window === 'undefined'
 					? `${(this._requester.app?.config?.environment as string).toLowerCase()}${STRATUS_SUFFIX}`
 					: (window.__catalyst?.environment as string)?.toLowerCase() +
 						'' +
 						window.__catalyst?.stratus_suffix;
+			const bucketUrl = `https://${bucket}-${suffix}`;
+			assertValidBucketUrl(bucketUrl, bucket, suffix);
 			this._bucketDetails = {
 				bucket_name: bucket,
-				bucket_url: `https://${bucket}-${suffix}`
+				bucket_url: bucketUrl
 			};
 		} else {
 			this._bucketDetails = bucket;

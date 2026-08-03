@@ -32,4 +32,17 @@ describe('stratus', () => {
 		);
 		await expect(stratus.headBucket('')).rejects.toThrowError();
 	});
+
+	it('rejects bucket names that could redirect requests to another origin', () => {
+		expect(() => stratus.bucket('capture.example/#')).toThrowError();
+		expect(() => stratus.bucket('capture.example#')).toThrowError();
+		expect(() => stratus.bucket('capture.example@attacker.test')).toThrowError();
+		expect(() => stratus.bucket('capture.example:4443')).toThrowError();
+		expect(() => stratus.bucket('capture.example%2f')).toThrowError();
+		expect(() => stratus.bucket(' capture.example')).toThrowError();
+	});
+
+	it('accepts a legitimate bucket name', () => {
+		expect(() => stratus.bucket('sample')).not.toThrow();
+	});
 });

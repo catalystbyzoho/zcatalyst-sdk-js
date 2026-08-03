@@ -5,19 +5,13 @@ import {
 	RequestType,
 	ResponseType
 } from '@zcatalyst/transport';
-import {
-	CatalystService,
-	Component,
-	CONSTANTS,
-	isNonEmptyString,
-	wrapValidatorsWithPromise
-} from '@zcatalyst/utils';
+import { CatalystService, Component, CONSTANTS } from '@zcatalyst/utils';
 
 import pkg from '../package.json';
 const { version } = pkg;
 import { Bucket, BucketAdmin } from './bucket';
-import { CatalystStratusError } from './utils/error';
 import { IStratusBucket } from './utils/interface';
+import { assertValidBucketName } from './utils/validator';
 
 const { COMPONENT, REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 
@@ -55,13 +49,7 @@ export class Stratus implements Component {
 	 * ```
 	 */
 	bucket(bucketName: string): Bucket {
-		if (!isNonEmptyString(bucketName)) {
-			throw new CatalystStratusError(
-				'invalid-argument',
-				'Value provided for bucket_name must be a non empty String.',
-				bucketName
-			);
-		}
+		assertValidBucketName(bucketName);
 		return new Bucket(this.requester, bucketName);
 	}
 }
@@ -113,9 +101,7 @@ export class StratusAdmin extends Stratus {
 	 * ```
 	 */
 	async headBucket(bucketName: string, throwErr?: boolean): Promise<boolean> {
-		await wrapValidatorsWithPromise(() => {
-			isNonEmptyString(bucketName, 'bucket_name', true);
-		}, CatalystStratusError);
+		assertValidBucketName(bucketName);
 		try {
 			const request: IRequestConfig = {
 				method: REQ_METHOD.head,
@@ -150,13 +136,7 @@ export class StratusAdmin extends Stratus {
 	 * ```
 	 */
 	bucket(bucketName: string): BucketAdmin {
-		if (!isNonEmptyString(bucketName)) {
-			throw new CatalystStratusError(
-				'invalid-argument',
-				'Value provided for bucket_name must be a non empty String.',
-				bucketName
-			);
-		}
+		assertValidBucketName(bucketName);
 		return new BucketAdmin(this.requester, bucketName);
 	}
 }
