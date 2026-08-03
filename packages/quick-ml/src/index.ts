@@ -61,7 +61,7 @@ export class QuickML implements Component {
 	 * const result = await quickML.predict('endpoint-key', { feature: 'value' });
 	 * ```
 	 */
-	async predict(
+	async runInference(
 		endPointKey: string,
 		inputData: Record<string, string>
 	): Promise<ICatalystQuickMLResponse> {
@@ -84,7 +84,7 @@ export class QuickML implements Component {
 		const resp = await this.requester.send(request);
 		return resp.data as ICatalystQuickMLResponse;
 	}
-	async documentSearch(endPointKey: string, query: string): Promise<ICatalystQuickMLResponse> {
+	async searchDocuments(endPointKey: string, query: string): Promise<ICatalystQuickMLResponse> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(query, 'query', true);
 			isNonEmptyString(endPointKey, 'endpoint key', true);
@@ -135,7 +135,7 @@ export class QuickML implements Component {
 		const resp = await this.requester.send(request);
 		return resp.data as ICatalystQuickMLResponse;
 	}
-	async chatWithRagAgent(endPointKey: string, query: string): Promise<ICatalystQuickMLResponse> {
+	async askRagAgent(endPointKey: string, query: string): Promise<ICatalystQuickMLResponse> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(query, 'query', true);
 			isNonEmptyString(endPointKey, 'endpoint key', true);
@@ -159,7 +159,7 @@ export class QuickML implements Component {
 		const resp = await this.requester.send(request);
 		return resp.data as ICatalystQuickMLResponse;
 	}
-	async chatWithRagAgentWithHistory(
+	async converseWithRagAgent(
 		endPointKey: string,
 		query: string,
 		conversationId = '-1'
@@ -191,7 +191,38 @@ export class QuickML implements Component {
 		const resp = await this.requester.send(request);
 		return resp.data as ICatalystQuickMLResponse;
 	}
-	async chatWithLlm(endPointKey: string, prompt: string): Promise<ICatalystQuickMLResponse> {
+	async converseWithLlm(
+		endPointKey: string,
+		prompt: string,
+		conversationId = '-1'
+	): Promise<ICatalystQuickMLResponse> {
+		await wrapValidatorsWithPromise(() => {
+			isNonEmptyString(prompt, 'prompt', true);
+			isNonEmptyString(endPointKey, 'endpoint key', true);
+		}, CatalystQuickMLError);
+		if (conversationId === '') {
+			conversationId = '-1';
+		}
+		const request: IRequestConfig = {
+			method: REQ_METHOD.post,
+			path: '/genai/endpoints/glm-flash-47/chat',
+			data: {
+				prompt,
+				conversationId
+			},
+			type: RequestType.JSON,
+			headers: {
+				'X-QUICKML-ENDPOINT-KEY': endPointKey
+			},
+			service: CatalystService.QUICKML,
+			track: true,
+			user: CREDENTIAL_USER.admin
+		};
+
+		const resp = await this.requester.send(request);
+		return resp.data as ICatalystQuickMLResponse;
+	}
+	async askLlm(endPointKey: string, prompt: string): Promise<ICatalystQuickMLResponse> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(prompt, 'prompt', true);
 			isNonEmptyString(endPointKey, 'endpoint key', true);

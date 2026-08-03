@@ -932,6 +932,17 @@ exports.responses = {
 			}
 		}
 	},
+	'/genai/endpoints/glm-flash-47/chat': {
+		POST: {
+			statusCode: 200,
+			data: {
+				data: {
+					status: 'success',
+					response: '[" prediction results "]'
+				}
+			}
+		}
+	},
 
 	// Chat with RAG Agent with History
 	'/genai/endpoints/rag/agent/chat': {
