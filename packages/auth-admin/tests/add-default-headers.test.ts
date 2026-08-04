@@ -16,7 +16,7 @@ describe('addDefaultAppHeaders', () => {
 	};
 
 	afterEach(() => {
-		delete process.env.X_ZOHO_CATALYST_ORG_ID;
+		delete process.env.ZC_CATALYST_ORG_ID;
 	});
 
 	it('should set PROJECT_ID, X-Catalyst-Environment and Environment headers from config', () => {
@@ -28,14 +28,14 @@ describe('addDefaultAppHeaders', () => {
 		expect(result['Environment']).toBe('development');
 	});
 
-	it('should add CATALYST-ORG header when X_ZOHO_CATALYST_ORG_ID env var is set', () => {
-		process.env.X_ZOHO_CATALYST_ORG_ID = 'org-123';
+	it('should add CATALYST-ORG header when ZC_CATALYST_ORG_ID env var is set', () => {
+		process.env.ZC_CATALYST_ORG_ID = 'org-123';
 		const result = addDefaultAppHeaders({}, baseConfig as any);
 
 		expect(result['CATALYST-ORG']).toBe('org-123');
 	});
 
-	it('should not add CATALYST-ORG header when X_ZOHO_CATALYST_ORG_ID env var is unset', () => {
+	it('should not add CATALYST-ORG header when ZC_CATALYST_ORG_ID env var is unset', () => {
 		const result = addDefaultAppHeaders({}, baseConfig as any);
 
 		expect(result['CATALYST-ORG']).toBeUndefined();
