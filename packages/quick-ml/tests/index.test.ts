@@ -63,6 +63,29 @@ describe('testing quick ml', () => {
 
 		await expect(quickml.askRagAgent('1234abcd', '')).rejects.toThrowError();
 	});
+	it('deprecated predict method', async () => {
+		await expect(
+			quickml.predict('1234abcd', {
+				sepal_length: '6.4',
+				sepal_width: '3.2',
+				petal_length: '4.5',
+				petal_width: '1.5'
+			})
+		).resolves.toStrictEqual({
+			data: responses['/endpoints/predict'].POST.data.data
+		});
+
+		await expect(
+			quickml.predict('', {
+				sepal_length: '6.4',
+				sepal_width: '3.2',
+				petal_length: '4.5',
+				petal_width: '1.5'
+			})
+		).rejects.toThrowError();
+
+		await expect(quickml.predict('1234abcd', {})).rejects.toThrowError();
+	});
 	it('chat with rag agent with history', async () => {
 		await expect(
 			quickml.converseWithRagAgent('1234abcd', 'Hello', 'conv123')

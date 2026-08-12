@@ -61,6 +61,15 @@ export class QuickML implements Component {
 	 * const result = await quickML.predict('endpoint-key', { feature: 'value' });
 	 * ```
 	 */
+	/**
+	 * @deprecated Use {@link runInference} instead.
+	 */
+	async predict(
+		endPointKey: string,
+		inputData: Record<string, string>
+	): Promise<ICatalystQuickMLResponse> {
+		return this.runInference(endPointKey, inputData);
+	}
 	async runInference(
 		endPointKey: string,
 		inputData: Record<string, string>
