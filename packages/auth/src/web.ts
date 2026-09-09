@@ -295,11 +295,6 @@ class Authentication implements Component {
 		const authProtocol = ConfigStore.get('AUTH_PROTOCOL') as unknown as Auth_Protocol;
 		this.authProtocol = authProtocol;
 
-		if (detectIframeContext()) {
-			await this.#popupManager.signOutViaPopup(redirectURL);
-			return;
-		}
-
 		// JWT — clear its own cookies with past expiry, reset config, redirect.
 		if (authProtocol === Auth_Protocol.JwtTokenProtocol) {
 			document.cookie = `${JWT_COOKIE_PREFIX}=; path=/; expires=${new Date(0).toUTCString()};`;
@@ -307,6 +302,11 @@ class Authentication implements Component {
 			clearStratusJwt();
 			setDefaultProjectConfig();
 			window.location.replace(redirectURL);
+			return;
+		}
+
+		if (detectIframeContext()) {
+			await this.#popupManager.signOutViaPopup(redirectURL);
 			return;
 		}
 
