@@ -214,10 +214,10 @@ class Authentication implements Component {
 			if (isValidUser) {
 				window.location.href = this.#constructRedirectUrl(redirectTarget);
 			} else {
-				await this.#notSignedIn(id, config);
+				await this.#notSignedIn(id, { ...config, redirectUrl: redirectTarget });
 			}
 		} catch {
-			await this.#notSignedIn(id, config);
+			await this.#notSignedIn(id, { ...config, redirectUrl: redirectTarget });
 		}
 	}
 
