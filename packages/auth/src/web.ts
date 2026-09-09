@@ -18,8 +18,8 @@ import {
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { IframeSignInManager, PopupManager, TokenManager } from './internal';
-import { isIframeContext as detectIframeContext } from './utils/browser';
+import { IframeSignInManager, PopupManager, TokenManager } from './internal/index.js';
+import { isIframeContext as detectIframeContext } from './utils/browser.js';
 import {
 	CURRENT_CLIENT_PAGE_HOST,
 	CURRENT_CLIENT_PAGE_PORT,
@@ -47,12 +47,12 @@ import {
 	ICatalystSignUpConfig,
 	TokenResponse,
 	UserDetails
-} from './utils/interface';
+} from './utils/interface.js';
 import {
 	deliverAuthTokenToParent as postAuthTokenToParent,
 	deliverSignOutDoneToParent as postSignOutDoneToParent
-} from './utils/popup-auth';
-import { hasSuffInfo } from './utils/validators';
+} from './utils/popup-auth.js';
+import { hasSuffInfo } from './utils/validators.js';
 
 const { CREDENTIAL_USER, REQ_METHOD, COMPONENT } = CONSTANTS;
 

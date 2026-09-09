@@ -1,7 +1,7 @@
-import { AUTH_ERROR_MSG, AUTH_STATIC_FILES } from '../utils/constants';
-import { CatalystAuthenticationError } from '../utils/error';
-import { ICatalystSignInConfig } from '../utils/interface';
-import { applyQueryString } from '../utils/validators';
+import { AUTH_ERROR_MSG, AUTH_STATIC_FILES } from '../utils/constants.js';
+import { CatalystAuthenticationError } from '../utils/error.js';
+import { ICatalystSignInConfig } from '../utils/interface.js';
+import { applyQueryString } from '../utils/validators.js';
 
 /**
  * Manages the embedded IAM iframe sign-in flow.

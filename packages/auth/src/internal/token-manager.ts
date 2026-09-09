@@ -2,8 +2,8 @@ import { clearOAuthTokenFromIDB, ConfigStore, setOAuthTokenInIDB } from '@zcatal
 import { Handler, IRequestConfig, RequestType } from '@zcatalyst/transport';
 import { CatalystService, CONSTANTS } from '@zcatalyst/utils';
 
-import { CatalystAuthenticationError } from '../utils/error';
-import { ICatalystCustomTokenResponse, TokenResponse } from '../utils/interface';
+import { CatalystAuthenticationError } from '../utils/error.js';
+import { ICatalystCustomTokenResponse, TokenResponse } from '../utils/interface.js';
 
 const { CREDENTIAL_USER, REQ_METHOD } = CONSTANTS;
 

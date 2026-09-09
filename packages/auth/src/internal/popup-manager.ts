@@ -8,16 +8,16 @@ import {
 	POPUP_MSG_AUTH_TOKEN,
 	POPUP_MSG_SIGNOUT_DONE,
 	POPUP_POLL_INTERVAL_MS
-} from '../utils/constants';
-import { Auth_Protocol } from '../utils/enums';
-import { CatalystAuthenticationError } from '../utils/error';
+} from '../utils/constants.js';
+import { Auth_Protocol } from '../utils/enums.js';
+import { CatalystAuthenticationError } from '../utils/error.js';
 import {
 	ICatalystPopupSignInConfig,
 	ICatalystPopupSignInResult,
 	IPopupAuthOperation
-} from '../utils/interface';
-import { buildPopupLoginUrl, buildPopupLogoutUrl, openPopupWindow } from '../utils/popup-auth';
-import { TokenManager } from './token-manager';
+} from '../utils/interface.js';
+import { buildPopupLoginUrl, buildPopupLogoutUrl, openPopupWindow } from '../utils/popup-auth.js';
+import { TokenManager } from './token-manager.js';
 
 /**
  * Manages the popup-based sign-in and sign-out flows.

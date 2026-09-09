@@ -272,7 +272,7 @@ export {
 	clearOAuthTokenFromIDB,
 	getOAuthTokenFromIDB,
 	setOAuthTokenInIDB
-} from './utils/idb-token';
+} from './utils/idb-token.js';
 export {
 	clearStratusJwt,
 	getStratusJwtExpiry,

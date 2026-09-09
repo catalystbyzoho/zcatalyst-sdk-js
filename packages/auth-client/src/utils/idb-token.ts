@@ -1,4 +1,4 @@
-import { IDB_DB_NAME, IDB_TOKEN_KEY } from './constants';
+import { IDB_DB_NAME, IDB_TOKEN_KEY } from './constants.js';
 
 export interface IDBTokenValue {
 	token: string;

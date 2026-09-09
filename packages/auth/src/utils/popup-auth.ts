@@ -5,8 +5,8 @@ import {
 	POPUP_LOGOUT_PATH,
 	POPUP_MSG_AUTH_TOKEN,
 	POPUP_MSG_SIGNOUT_DONE
-} from './constants';
-import { CatalystAuthenticationError } from './error';
+} from './constants.js';
+import { CatalystAuthenticationError } from './error.js';
 
 export interface PopupWindowOptions {
 	width?: number;

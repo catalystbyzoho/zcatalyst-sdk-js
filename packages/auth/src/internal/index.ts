@@ -1,3 +1,3 @@
-export { IframeSignInManager } from './iframe-signin';
-export { PopupManager } from './popup-manager';
-export { TokenManager } from './token-manager';
+export { IframeSignInManager } from './iframe-signin.js';
+export { PopupManager } from './popup-manager.js';
+export { TokenManager } from './token-manager.js';
