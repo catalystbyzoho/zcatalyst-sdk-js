@@ -1,4 +1,4 @@
-import { ConfigStore, setOAuthTokenInIDB } from '@zcatalyst/auth-client';
+import { Auth_Protocol, ConfigStore, setOAuthTokenInIDB } from '@zcatalyst/auth-client';
 
 import { zcAuth } from '../src/index.browser';
 import {
@@ -437,6 +437,23 @@ describe('Authentication (Browser)', () => {
 			} as unknown as MessageEvent);
 			await signOutPromise;
 			expect(window.location.replace).toHaveBeenCalledWith('/goodbye');
+		});
+
+		it('should reset AUTH_PROTOCOL after popup sign-out when there is no redirect', async () => {
+			ConfigStore.set('AUTH_PROTOCOL', Auth_Protocol.OAuthTokenProtocol);
+			const fakePopup = makeFakePopup();
+			jest.spyOn(window, 'open').mockReturnValue(fakePopup);
+			const signOutPromise = zcAuth.signOutViaPopup('');
+			await Promise.resolve();
+			const listener = getMessageListener();
+			listener({
+				origin: window.location.origin,
+				source: fakePopup,
+				data: { type: POPUP_MSG_SIGNOUT_DONE }
+			} as unknown as MessageEvent);
+			await signOutPromise;
+			expect(window.location.replace).not.toHaveBeenCalled();
+			expect(ConfigStore.get('AUTH_PROTOCOL')).toBe(Auth_Protocol.ZcrfTokenProtocol);
 		});
 
 		it('should ignore SIGNOUT_DONE from a wrong source (forged message)', async () => {

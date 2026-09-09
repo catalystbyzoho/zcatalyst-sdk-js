@@ -307,6 +307,7 @@ class Authentication implements Component {
 
 		if (detectIframeContext()) {
 			await this.#popupManager.signOutViaPopup(redirectURL);
+			setDefaultProjectConfig();
 			return;
 		}
 

@@ -1,3 +1,5 @@
+import { setDefaultProjectConfig } from '@zcatalyst/auth-client';
+
 import {
 	POPUP_DEFAULT_HEIGHT,
 	POPUP_DEFAULT_IS_HOSTED,
@@ -333,6 +335,7 @@ export class PopupManager {
 				}
 				try {
 					await this.#tokenManager.clearTokenStorage();
+					setDefaultProjectConfig();
 					if (redirectUrl) {
 						window.location.replace(redirectUrl);
 					}
