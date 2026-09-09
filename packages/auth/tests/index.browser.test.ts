@@ -113,6 +113,12 @@ describe('Authentication (Browser)', () => {
 
 	afterEach(() => {
 		document.body.innerHTML = '';
+		// Cancel the private refresh timer on the shared zcAuth singleton so
+		// later tests (especially init rehydration) are not blocked by the
+		// scheduleTokenRefresh guard.
+		zcAuth.cancelTokenRefresh();
+		idbStore.clear();
+		jest.clearAllTimers();
 		jest.useRealTimers();
 	});
 

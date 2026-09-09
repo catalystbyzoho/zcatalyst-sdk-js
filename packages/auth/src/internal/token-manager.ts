@@ -16,6 +16,8 @@ const { CREDENTIAL_USER, REQ_METHOD } = CONSTANTS;
 export class TokenManager {
 	#requester: Handler;
 	#tokenRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+	/** Incremented on sign-out so in-flight refresh results are discarded. */
+	#refreshEpoch = 0;
 	/** Called whenever the token refresh cycle needs to change the auth protocol. */
 	#onProtocolChange: (protocol: string) => void;
 
@@ -104,15 +106,31 @@ export class TokenManager {
 	 * @returns The absolute expiry timestamp (milliseconds since epoch).
 	 */
 	async setTokenStorage(accessToken: string, expiresInSec: number): Promise<number> {
+		const epoch = this.#refreshEpoch;
 		const expiresAt = Date.now() + expiresInSec * 1000;
 		await setOAuthTokenInIDB(accessToken, expiresAt);
-		// Clear any existing timer before scheduling a new one.
+		if (epoch !== this.#refreshEpoch) {
+			// Sign-out overlapped this write — drop the token we just persisted.
+			await clearOAuthTokenFromIDB();
+			return expiresAt;
+		}
+		this.cancelTokenRefresh();
+		if (epoch !== this.#refreshEpoch) {
+			await clearOAuthTokenFromIDB();
+			return expiresAt;
+		}
+		this.scheduleTokenRefresh(expiresAt);
+		return expiresAt;
+	}
+
+	/**
+	 * Cancels any pending refresh timer without touching IndexedDB.
+	 */
+	cancelTokenRefresh(): void {
 		if (this.#tokenRefreshTimer !== null) {
 			clearTimeout(this.#tokenRefreshTimer);
 			this.#tokenRefreshTimer = null;
 		}
-		this.scheduleTokenRefresh(expiresAt);
-		return expiresAt;
 	}
 
 	/**
@@ -120,10 +138,8 @@ export class TokenManager {
 	 * pending refresh timer.
 	 */
 	async clearTokenStorage(): Promise<void> {
-		if (this.#tokenRefreshTimer !== null) {
-			clearTimeout(this.#tokenRefreshTimer);
-			this.#tokenRefreshTimer = null;
-		}
+		this.#refreshEpoch++;
+		this.cancelTokenRefresh();
 		await clearOAuthTokenFromIDB();
 	}
 
@@ -146,8 +162,14 @@ export class TokenManager {
 			// Clear the handle before async work begins so the guard is
 			// released — allowing setTokenStorage() to schedule the next cycle.
 			this.#tokenRefreshTimer = null;
+			const epoch = this.#refreshEpoch;
 			this.generateAuthToken('functions')
-				.then((token) => this.setTokenStorage(token.access_token, token.expires_in_sec))
+				.then((token) => {
+					if (epoch !== this.#refreshEpoch) {
+						return;
+					}
+					return this.setTokenStorage(token.access_token, token.expires_in_sec);
+				})
 				.catch(() => {
 					// Refresh failed — the next auth call will re-trigger the popup flow.
 				});

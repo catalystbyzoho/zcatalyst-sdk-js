@@ -1,8 +1,15 @@
-import { IDB_DB_NAME, IDB_TOKEN_KEY } from './constants.js';
+import { ConfigStore } from '../config-store.js';
+import { IDB_DB_NAME, IDB_TOKEN_KEY, PROJECT_ID } from './constants.js';
 
 export interface IDBTokenValue {
 	token: string;
 	exp: number;
+}
+
+/** `zcatalyst_client_token` or `zcatalyst_client_token_{projectId}` when a project is set. */
+function currentTokenKey(): string {
+	const projectId = ConfigStore.get(PROJECT_ID) as string | undefined;
+	return projectId ? `${IDB_TOKEN_KEY}_${projectId}` : IDB_TOKEN_KEY;
 }
 
 function openTokenDatabase(): Promise<IDBDatabase> {
@@ -56,11 +63,12 @@ function withStore<T>(
 }
 
 export async function setOAuthTokenInIDB(token: string, exp: number): Promise<void> {
-	await withStore('readwrite', (store) => store.put({ token, exp }, IDB_TOKEN_KEY));
+	const key = currentTokenKey();
+	await withStore('readwrite', (store) => store.put({ token, exp }, key));
 }
 
 export async function getOAuthTokenFromIDB(): Promise<IDBTokenValue | null> {
-	const stored = (await withStore('readonly', (store) => store.get(IDB_TOKEN_KEY))) as
+	const stored = (await withStore('readonly', (store) => store.get(currentTokenKey()))) as
 		IDBTokenValue | undefined;
 	if (!stored || typeof stored.token !== 'string' || typeof stored.exp !== 'number') {
 		return null;
@@ -69,5 +77,5 @@ export async function getOAuthTokenFromIDB(): Promise<IDBTokenValue | null> {
 }
 
 export async function clearOAuthTokenFromIDB(): Promise<void> {
-	await withStore('readwrite', (store) => store.delete(IDB_TOKEN_KEY));
+	await withStore('readwrite', (store) => store.delete(currentTokenKey()));
 }

@@ -47,7 +47,15 @@ export class PopupManager {
 	// Internal helpers
 	// ---------------------------------------------------------------------------
 
-	#clearPopupOperation(status: IPopupAuthOperation['status'] = 'cancelled'): void {
+	#clearPopupOperation(
+		status: IPopupAuthOperation['status'] = 'cancelled',
+		operation: IPopupAuthOperation | null = this.#popupAuthOperation
+	): void {
+		// Ignore cleanup for a stale operation so an in-flight IDB write cannot
+		// close/clear a popup that started after it.
+		if (operation && this.#popupAuthOperation !== operation) {
+			return;
+		}
 		if (this.#popupAuthOperation) {
 			this.#popupAuthOperation.status = status;
 			try {
@@ -92,7 +100,7 @@ export class PopupManager {
 	async signInViaPopup(
 		config: ICatalystPopupSignInConfig = {}
 	): Promise<ICatalystPopupSignInResult> {
-		if (this.#popupAuthOperation && this.#popupAuthOperation.status === 'waiting') {
+		if (this.#popupAuthOperation) {
 			throw new CatalystAuthenticationError(
 				'POPUP_ALREADY_OPEN',
 				'A sign-in popup is already open.'
@@ -106,6 +114,7 @@ export class PopupManager {
 		const eventId = this.#createEventId();
 
 		return new Promise<ICatalystPopupSignInResult>((resolve, reject) => {
+			let tokenPersistStarted = false;
 			const onMessage = async (event: MessageEvent): Promise<void> => {
 				if (!this.#popupAuthOperation || this.#popupAuthOperation.status !== 'waiting') {
 					return;
@@ -159,13 +168,21 @@ export class PopupManager {
 							? event.data.expires_in_sec
 							: 3600;
 
-					this.#popupAuthOperation.status = 'completed';
+					if (tokenPersistStarted) {
+						return;
+					}
+					tokenPersistStarted = true;
+
+					const operation = this.#popupAuthOperation;
 					const expiresAt = await this.#tokenManager.setTokenStorage(
 						accessToken,
 						expiresInSec
 					);
+					if (this.#popupAuthOperation !== operation) {
+						return;
+					}
 					this.#onProtocolChange(Auth_Protocol.OAuthTokenProtocol);
-					this.#clearPopupOperation('completed');
+					this.#clearPopupOperation('completed', operation);
 					resolve({
 						access_token: accessToken,
 						expires_at: expiresAt,
@@ -216,7 +233,10 @@ export class PopupManager {
 			// Poll to detect the popup being manually closed before auth completes.
 			this.#popupPollInterval = setInterval(() => {
 				if (!this.#popupAuthOperation || this.#popupAuthOperation.status !== 'waiting') {
-					this.#clearPopupOperation('cancelled');
+					if (this.#popupPollInterval !== null) {
+						clearInterval(this.#popupPollInterval);
+						this.#popupPollInterval = null;
+					}
 					return;
 				}
 				if (this.#popupAuthOperation.popup?.closed) {

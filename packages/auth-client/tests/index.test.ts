@@ -218,6 +218,17 @@ describe('auth-client index', () => {
 			});
 		});
 
+		it('should isolate tokens per project id', async () => {
+			ConfigStore.set(PROJECT_ID, 'project-a');
+			await setOAuthTokenInIDB('token-a', Date.now() + 60_000);
+
+			ConfigStore.set(PROJECT_ID, 'project-b');
+			await expect(getOAuthTokenFromIDB()).resolves.toBeNull();
+
+			ConfigStore.set(PROJECT_ID, 'project-a');
+			await expect(getOAuthTokenFromIDB()).resolves.toMatchObject({ token: 'token-a' });
+		});
+
 		it('should clear the OAuth token from IndexedDB', async () => {
 			await setOAuthTokenInIDB('oauth-token', 12345);
 			await clearOAuthTokenFromIDB();

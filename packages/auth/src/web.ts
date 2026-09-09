@@ -141,7 +141,7 @@ class Authentication implements Component {
 		// Sync updated values into the iframe manager.
 		this.#iframeSignIn.updateConfig(this.zaid, this.projectId);
 
-		// Only inside the iframe getOAuthTokenFromIDB will return data.
+		// Restores OAuth from the IDB record keyed by this project id.
 		const storedToken = await getOAuthTokenFromIDB().catch(() => null);
 		if (storedToken && storedToken.exp > Date.now()) {
 			this.#setAuthProtocol(Auth_Protocol.OAuthTokenProtocol);
@@ -505,6 +505,13 @@ class Authentication implements Component {
 	}
 
 	/**
+	 * Cancels any pending OAuth refresh timer on this instance.
+	 */
+	cancelTokenRefresh(): void {
+		this.#tokenManager.cancelTokenRefresh();
+	}
+
+	/**
 	 * Sends the OAuth access token from the popup window to the opener via postMessage.
 	 * Intended for the popup login page at `/__catalyst/auth/login/popup/{eventId}`.
 	 *
@@ -669,8 +676,9 @@ class Authentication implements Component {
 					timeoutMs: config.popupTimeoutMs,
 					isHosted: config.isHosted
 				});
-				// Redirect after successful popup auth.
-				window.location.href = redirectTarget;
+				// Redirect after successful popup auth via the Catalyst
+				// callback so javascript: / data: targets cannot execute here.
+				window.location.href = this.#constructRedirectUrl(redirectTarget);
 			} catch {
 				// Re-enable the button so the user can try again.
 				btn.disabled = false;
