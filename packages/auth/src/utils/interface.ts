@@ -91,6 +91,20 @@ export interface ICatalystSignInConfig {
 	popupHeight?: number;
 	popupTimeoutMs?: number;
 	isHosted?: boolean;
+	/**
+	 * Label text displayed on the sign-in button rendered inside an iframe context.
+	 * When `zcAuth.signIn()` is called inside an iframe, the browser blocks any
+	 * programmatic `window.open()` call that isn't triggered by a direct user gesture.
+	 * To work around this, the SDK renders a button in the target container; clicking
+	 * it opens the popup. Defaults to `'Sign In'`.
+	 */
+	iframeSignInButtonLabel?: string;
+	/**
+	 * Inline styles applied to the sign-in button rendered inside an iframe context.
+	 * Use this to match the button to your application theme. Merged on top of the
+	 * SDK default styles (blue background, white text, full-width, rounded corners).
+	 */
+	iframeSignInButtonStyle?: Partial<CSSStyleDeclaration>;
 }
 
 export interface ICatalystPopupSignInConfig {

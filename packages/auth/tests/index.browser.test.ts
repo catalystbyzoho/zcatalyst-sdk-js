@@ -321,6 +321,102 @@ describe('Authentication (Browser)', () => {
 		});
 	});
 
+	describe('signIn — iframe context (button rendering)', () => {
+		/** Simulates running inside an iframe (window.self !== window.top). */
+		function mockIframeContext(active: boolean) {
+			const top = active ? ({} as Window) : window;
+			Object.defineProperty(window, 'self', { value: window, configurable: true });
+			Object.defineProperty(window, 'top', { value: top, configurable: true });
+		}
+
+		beforeEach(() => {
+			// Restore the real getElementById so querySelector can find elements in
+			// the actual DOM (the global setup.ts mock returns detached elements).
+			document.getElementById = HTMLDocument.prototype.getElementById.bind(document);
+
+			// Ensure the target container is present in the real DOM.
+			if (!document.getElementById('signin-container')) {
+				const container = document.createElement('div');
+				container.id = 'signin-container';
+				document.body.appendChild(container);
+			}
+		});
+
+		afterEach(() => {
+			// Restore self/top so other tests are not affected.
+			Object.defineProperty(window, 'self', { value: window, configurable: true });
+			Object.defineProperty(window, 'top', { value: window, configurable: true });
+			// Re-apply the global mock so the rest of the suite is unaffected.
+			document.getElementById = jest.fn((id: string) => {
+				const elem = document.createElement('div');
+				elem.id = id;
+				return elem;
+			});
+		});
+
+		it('should render a Sign In button in the target container when inside iframe', async () => {
+			mockIframeContext(true);
+			await zcAuth.signIn('signin-container');
+			const btn = document.querySelector('#signin-container button') as HTMLButtonElement;
+			expect(btn).not.toBeNull();
+			expect(btn.textContent).toBe('Sign In');
+		});
+
+		it('should use iframeSignInButtonLabel from config', async () => {
+			mockIframeContext(true);
+			await zcAuth.signIn('signin-container', { iframeSignInButtonLabel: 'NEXT' });
+			const btn = document.querySelector('#signin-container button') as HTMLButtonElement;
+			expect(btn.textContent).toBe('NEXT');
+		});
+
+		it('should have blue background by default', async () => {
+			mockIframeContext(true);
+			await zcAuth.signIn('signin-container');
+			const btn = document.querySelector('#signin-container button') as HTMLButtonElement;
+			// jsdom normalises hex colours to rgb(), so match either representation.
+			expect(btn.style.backgroundColor).toMatch(/#4A90D9|rgb\(74,\s*144,\s*217\)/i);
+		});
+
+		it('should open popup and redirect when the button is clicked (trusted gesture)', async () => {
+			mockIframeContext(true);
+			const fakePopup = makeFakePopup();
+
+			await zcAuth.signIn('signin-container', { redirectUrl: '/dashboard' });
+			const btn = document.querySelector('#signin-container button') as HTMLButtonElement;
+			expect(btn).not.toBeNull();
+
+			// Simulate click → must open popup (window.open called).
+			const clickPromise = new Promise<void>((resolve) => {
+				// Resolve immediately after the click so we can assert synchronously.
+				jest.spyOn(window, 'open').mockImplementation(() => {
+					resolve();
+					return fakePopup;
+				});
+				btn.click();
+			});
+			await clickPromise;
+			expect(window.open).toHaveBeenCalled();
+		});
+
+		it('should re-enable the button if the popup flow throws', async () => {
+			mockIframeContext(true);
+			jest.spyOn(window, 'open').mockReturnValue(null as unknown as Window);
+			await zcAuth.signIn('signin-container');
+			const btn = document.querySelector('#signin-container button') as HTMLButtonElement;
+			btn.click();
+			// Let the click handler's async chain settle.
+			await new Promise<void>((res) => setTimeout(res, 50));
+			expect(btn.disabled).toBe(false);
+		});
+
+		it('should throw AUTHENTICATION_ERROR when target element is not found', async () => {
+			mockIframeContext(true);
+			await expect(zcAuth.signIn('nonexistent-id')).rejects.toThrow(
+				'Unable to get element with id: nonexistent-id'
+			);
+		});
+	});
+
 	describe('signOutViaPopup', () => {
 		it('should redirect after popup sends SIGNOUT_DONE', async () => {
 			const fakePopup = makeFakePopup();

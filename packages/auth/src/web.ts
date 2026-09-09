@@ -199,14 +199,14 @@ class Authentication implements Component {
 			window.location.pathname + window.location.search;
 
 		if (detectIframeContext()) {
-			await this.#popupManager.signInViaPopup({
-				width: config.popupWidth,
-				height: config.popupHeight,
-				timeoutMs: config.popupTimeoutMs,
-				isHosted: config.isHosted
-			});
-			// After popup auth completes, redirect to the intended path.
-			window.location.href = redirectTarget;
+			// -----------------------------------------------------------------------
+			// Popup-block guard — when zcAuth.signIn() is called inside an iframe
+			// without a direct user gesture (e.g. on page-load), browsers will
+			// silently block window.open(). We therefore render a themed "Sign In"
+			// button inside the target container. The popup is only opened when the
+			// user *clicks* the button, which counts as a trusted user gesture.
+			// -----------------------------------------------------------------------
+			this.#renderIframeSignInButton(id, config, redirectTarget);
 			return;
 		}
 		try {
@@ -597,6 +597,89 @@ class Authentication implements Component {
 		const publicSignupResp: ICatalystAuthResponse = await this.publicSignup();
 		const isPublicSignupEnabled = publicSignupResp.data?.public_signup as boolean;
 		return this.#iframeSignIn.renderSignInIframe(id, config, isPublicSignupEnabled);
+	}
+
+	/**
+	 * Renders a themed "Sign In" button inside the target container when the SDK
+	 * is running inside an iframe. Browsers block `window.open()` calls that are
+	 * not initiated by a direct user gesture (e.g. a programmatic call on page
+	 * load). By deferring the popup open to a click event on this button we
+	 * satisfy the browser's trusted-gesture requirement and avoid the popup being
+	 * silently blocked.
+	 *
+	 * The button inherits the blue Zoho Catalyst theme by default and can be
+	 * customised via `config.iframeSignInButtonLabel` and
+	 * `config.iframeSignInButtonStyle`.
+	 *
+	 * @param id - DOM element ID where the button should be mounted.
+	 * @param config - Sign-in config forwarded from {@link signIn}.
+	 * @param redirectTarget - URL to navigate to after a successful sign-in.
+	 */
+	#renderIframeSignInButton(
+		id: string,
+		config: ICatalystSignInConfig,
+		redirectTarget: string
+	): void {
+		const container = document.getElementById(id);
+		if (!container) {
+			throw new CatalystAuthenticationError(
+				'AUTHENTICATION_ERROR',
+				`Unable to get element with id: ${id}`
+			);
+		}
+
+		// Build the button with Catalyst-themed default styles.
+		const btn = document.createElement('button');
+		btn.type = 'button';
+		btn.textContent = config.iframeSignInButtonLabel ?? 'Sign In';
+
+		// Default styles — match the design shown in the spec (blue, white text,
+		// full-width, rounded corners, bold uppercase label).
+		const defaultStyle: Partial<CSSStyleDeclaration> = {
+			display: 'block',
+			width: '100%',
+			padding: '14px 24px',
+			backgroundColor: '#4A90D9',
+			color: '#ffffff',
+			border: 'none',
+			borderRadius: '8px',
+			fontSize: '14px',
+			fontWeight: 'bold',
+			letterSpacing: '1px',
+			textTransform: 'uppercase',
+			cursor: 'pointer',
+			boxSizing: 'border-box'
+		};
+
+		// Merge caller overrides on top of the defaults.
+		const mergedStyle = {
+			...defaultStyle,
+			...(config.iframeSignInButtonStyle ?? {})
+		};
+		Object.assign(btn.style, mergedStyle);
+
+		// Clicking the button is a trusted user gesture — window.open() will
+		// NOT be blocked by the browser here.
+		btn.addEventListener('click', async () => {
+			btn.disabled = true;
+			try {
+				await this.#popupManager.signInViaPopup({
+					width: config.popupWidth,
+					height: config.popupHeight,
+					timeoutMs: config.popupTimeoutMs,
+					isHosted: config.isHosted
+				});
+				// Redirect after successful popup auth.
+				window.location.href = redirectTarget;
+			} catch {
+				// Re-enable the button so the user can try again.
+				btn.disabled = false;
+			}
+		});
+
+		// Mount — clear any previous content and insert the button.
+		container.innerHTML = '';
+		container.appendChild(btn);
 	}
 }
 
