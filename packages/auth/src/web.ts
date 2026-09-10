@@ -19,7 +19,6 @@ import {
 import pkg from '../package.json';
 const { version } = pkg;
 import { IframeSignInManager, PopupManager, TokenManager } from './internal/index.js';
-import { isIframeContext as detectIframeContext } from './utils/browser.js';
 import {
 	CURRENT_CLIENT_PAGE_HOST,
 	CURRENT_CLIENT_PAGE_PORT,
@@ -37,10 +36,9 @@ import {
 import { Auth_Protocol } from './utils/enums.js';
 import { CatalystAuthenticationError } from './utils/error.js';
 import { wrapCheck } from './utils/functions.js';
+import { isIframeContext as detectIframeContext } from './utils/iframe-context.js';
 import {
 	ICatalystAuthResponse,
-	ICatalystDeliverAuthTokenConfig,
-	ICatalystDeliverSignOutDoneConfig,
 	ICatalystPopupSignInConfig,
 	ICatalystPopupSignInResult,
 	ICatalystSignInConfig,
@@ -48,10 +46,6 @@ import {
 	TokenResponse,
 	UserDetails
 } from './utils/interface.js';
-import {
-	deliverAuthTokenToParent as postAuthTokenToParent,
-	deliverSignOutDoneToParent as postSignOutDoneToParent
-} from './utils/popup-auth.js';
 import { hasSuffInfo } from './utils/validators.js';
 
 const { CREDENTIAL_USER, REQ_METHOD, COMPONENT } = CONSTANTS;
@@ -170,6 +164,16 @@ class Authentication implements Component {
 	 *
 	 * @param id - DOM element ID where the login iframe should be mounted.
 	 * @param config - Sign-in configuration.
+	 *   - `redirectUrl`: URL to open after successful sign-in.
+	 *   - `serviceUrl`: Service URL used as the post-login destination.
+	 *   - `cssUrl`: Custom CSS URL for the sign-in page.
+	 *   - `signInProvidersOnly`: Whether to show only configured federated sign-in providers.
+	 *   - `forgotPasswordId`: DOM element ID where the forgot-password iframe should be mounted.
+	 *   - `forgotPasswordCssUrl`: Custom CSS URL for the forgot-password page.
+	 *   - `popupWidth` / `popupHeight` / `popupTimeoutMs`: Popup window options when `signIn` runs inside an iframe.
+	 *   - `isHosted`: Whether the iframe popup uses hosted login.
+	 *   - `iframeSignInButtonLabel`: Label for the iframe Sign In button.
+	 *   - `iframeSignInButtonStyle`: Inline styles for the iframe Sign In button.
 	 * @returns A promise that resolves after the sign-in iframe flow is prepared or a redirect is triggered.
 	 * @throws {CatalystAuthenticationError} when the target DOM element cannot be found.
 	 *
@@ -307,7 +311,6 @@ class Authentication implements Component {
 
 		if (detectIframeContext()) {
 			await this.#popupManager.signOutViaPopup(redirectURL);
-			setDefaultProjectConfig();
 			return;
 		}
 
@@ -497,7 +500,7 @@ class Authentication implements Component {
 
 	/**
 	 * Generates an OAuth access token via the Catalyst custom-token / remote-auth flow.
-	 * Exposed here for popup login pages and token-delivery helpers.
+	 * Exposed here for popup login pages.
 	 *
 	 * @param feature - Catalyst feature to scope the token to.
 	 */
@@ -510,54 +513,6 @@ class Authentication implements Component {
 	 */
 	cancelTokenRefresh(): void {
 		this.#tokenManager.cancelTokenRefresh();
-	}
-
-	/**
-	 * Sends the OAuth access token from the popup window to the opener via postMessage.
-	 * Intended for the popup login page at `/__catalyst/auth/login/popup/{eventId}`.
-	 *
-	 * @param config - Token delivery configuration.
-	 * @returns A promise that resolves after the token is posted to the parent window.
-	 *
-	 * @example
-	 * ```ts
-	 * await zcAuth.init();
-	 * await zcAuth.deliverAuthTokenToParent({ targetOrigin: window.location.origin });
-	 * ```
-	 */
-	async deliverAuthTokenToParent(config: ICatalystDeliverAuthTokenConfig = {}): Promise<void> {
-		let accessToken = config.access_token;
-		let expiresInSec = config.expires_in_sec;
-
-		if (!accessToken || !expiresInSec) {
-			const token: TokenResponse = await this.#tokenManager.generateAuthToken(
-				config.feature ?? 'functions'
-			);
-			accessToken = token.access_token;
-			expiresInSec = token.expires_in_sec;
-		}
-
-		postAuthTokenToParent({
-			access_token: accessToken,
-			expires_in_sec: expiresInSec,
-			eventId: config.eventId,
-			targetOrigin: config.targetOrigin
-		});
-	}
-
-	/**
-	 * Notifies the opener that popup sign-out completed.
-	 * Intended for the popup logout page at `/__catalyst/auth/logout/popup`.
-	 *
-	 * @param config - Optional target origin for postMessage.
-	 *
-	 * @example
-	 * ```ts
-	 * zcAuth.deliverSignOutDoneToParent({ targetOrigin: window.location.origin });
-	 * ```
-	 */
-	deliverSignOutDoneToParent(config: ICatalystDeliverSignOutDoneConfig = {}): void {
-		postSignOutDoneToParent(config.targetOrigin);
 	}
 
 	// ---------------------------------------------------------------------------
@@ -693,8 +648,8 @@ class Authentication implements Component {
 }
 
 export { UserManagement } from './user-management.js';
-export { isIframeContext } from './utils/browser.js';
 export * from './utils/constants.js';
+export { isIframeContext } from './utils/iframe-context.js';
 
 export const zcAuth = new Authentication();
 

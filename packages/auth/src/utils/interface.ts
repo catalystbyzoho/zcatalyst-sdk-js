@@ -120,18 +120,6 @@ export interface ICatalystPopupSignInResult {
 	event_id: string;
 }
 
-export interface ICatalystDeliverAuthTokenConfig {
-	access_token?: string;
-	expires_in_sec?: number;
-	eventId?: string;
-	targetOrigin?: string;
-	feature?: 'functions' | 'stratus';
-}
-
-export interface ICatalystDeliverSignOutDoneConfig {
-	targetOrigin?: string;
-}
-
 export interface IPopupAuthOperation {
 	eventId: string;
 	status: 'waiting' | 'completed' | 'cancelled' | 'expired';
