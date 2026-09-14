@@ -18,7 +18,12 @@ import {
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { IframeSignInManager, PopupManager, TokenManager } from './internal/index.js';
+import {
+	IframeSignInManager,
+	PopupManager,
+	showIframeConfirmModal,
+	TokenManager
+} from './internal/index.js';
 import {
 	CURRENT_CLIENT_PAGE_HOST,
 	CURRENT_CLIENT_PAGE_PORT,
@@ -172,10 +177,9 @@ class Authentication implements Component {
 	 *   - `forgotPasswordCssUrl`: Custom CSS URL for the forgot-password page.
 	 *   - `popupWidth` / `popupHeight` / `popupTimeoutMs`: Popup window options when `signIn` runs inside an iframe.
 	 *   - `isHosted`: Whether the iframe popup uses hosted login.
-	 *   - `iframeSignInButtonLabel`: Label for the iframe Sign In button.
-	 *   - `iframeSignInButtonStyle`: Inline styles for the iframe Sign In button.
 	 * @returns A promise that resolves after the sign-in iframe flow is prepared or a redirect is triggered.
-	 * @throws {CatalystAuthenticationError} when the target DOM element cannot be found.
+	 * @throws {CatalystAuthenticationError} when the target DOM element cannot be found, or when
+	 *   an iframe confirm modal is cancelled / fails / is already open.
 	 *
 	 * @example
 	 * ```ts
@@ -206,12 +210,23 @@ class Authentication implements Component {
 			// -----------------------------------------------------------------------
 			// Popup-block guard — when zcAuth.signIn() is called inside an iframe
 			// without a direct user gesture (e.g. on page-load), browsers will
-			// silently block window.open(). We therefore render a themed "Sign In"
-			// button inside the target container. The popup is only opened when the
-			// user *clicks* the button, which counts as a trusted user gesture.
+			// silently block window.open(). We therefore show a centered confirmation
+			// modal overlay. The popup is only opened when the user clicks "Yes",
+			// which counts as a trusted user gesture and won't be blocked.
 			// -----------------------------------------------------------------------
-			this.#renderIframeSignInButton(id, config, redirectTarget);
-			return;
+			return this.#showIframeConfirmModal('signin', async () => {
+				await this.#popupManager.signInViaPopup({
+					isHosted: config.isHosted,
+					cssUrl: config.cssUrl,
+					signInProvidersOnly: config.signInProvidersOnly,
+					forgotPasswordCssUrl: config.forgotPasswordCssUrl,
+					forgotPasswordId: config.forgotPasswordId,
+					is_customize_forgot_password: config.is_customize_forgot_password,
+					redirectUrl: config.redirectUrl,
+					serviceUrl: config.serviceUrl
+				});
+				window.location.href = this.#constructRedirectUrl(redirectTarget);
+			});
 		}
 		try {
 			const isValidUser = await this.#isValidUser();
@@ -310,8 +325,9 @@ class Authentication implements Component {
 		}
 
 		if (detectIframeContext()) {
-			await this.#popupManager.signOutViaPopup(redirectURL);
-			return;
+			return this.#showIframeConfirmModal('signout', async () => {
+				await this.#popupManager.signOutViaPopup(redirectURL);
+			});
 		}
 
 		// OAuth — only clear IDB token, reset config, redirect.
@@ -563,87 +579,14 @@ class Authentication implements Component {
 	}
 
 	/**
-	 * Renders a themed "Sign In" button inside the target container when the SDK
-	 * is running inside an iframe. Browsers block `window.open()` calls that are
-	 * not initiated by a direct user gesture (e.g. a programmatic call on page
-	 * load). By deferring the popup open to a click event on this button we
-	 * satisfy the browser's trusted-gesture requirement and avoid the popup being
-	 * silently blocked.
-	 *
-	 * The button inherits the blue Zoho Catalyst theme by default and can be
-	 * customised via `config.iframeSignInButtonLabel` and
-	 * `config.iframeSignInButtonStyle`.
-	 *
-	 * @param id - DOM element ID where the button should be mounted.
-	 * @param config - Sign-in config forwarded from {@link signIn}.
-	 * @param redirectTarget - URL to navigate to after a successful sign-in.
+	 * Delegates to {showIframeConfirmModal} in `internal/iframe-confirm-modal.ts`.
+	 * Kept as a private method so signIn/signOut call sites are unchanged.
 	 */
-	#renderIframeSignInButton(
-		id: string,
-		config: ICatalystSignInConfig,
-		redirectTarget: string
-	): void {
-		const container = document.getElementById(id);
-		if (!container) {
-			throw new CatalystAuthenticationError(
-				'AUTHENTICATION_ERROR',
-				`Unable to get element with id: ${id}`
-			);
-		}
-
-		// Build the button with Catalyst-themed default styles.
-		const btn = document.createElement('button');
-		btn.type = 'button';
-		btn.textContent = config.iframeSignInButtonLabel ?? 'Sign In';
-
-		// Default styles — match the design shown in the spec (blue, white text,
-		// full-width, rounded corners, bold uppercase label).
-		const defaultStyle: Partial<CSSStyleDeclaration> = {
-			display: 'block',
-			width: '100%',
-			padding: '14px 24px',
-			backgroundColor: '#4A90D9',
-			color: '#ffffff',
-			border: 'none',
-			borderRadius: '8px',
-			fontSize: '14px',
-			fontWeight: 'bold',
-			letterSpacing: '1px',
-			textTransform: 'uppercase',
-			cursor: 'pointer',
-			boxSizing: 'border-box'
-		};
-
-		// Merge caller overrides on top of the defaults.
-		const mergedStyle = {
-			...defaultStyle,
-			...(config.iframeSignInButtonStyle ?? {})
-		};
-		Object.assign(btn.style, mergedStyle);
-
-		// Clicking the button is a trusted user gesture — window.open() will
-		// NOT be blocked by the browser here.
-		btn.addEventListener('click', async () => {
-			btn.disabled = true;
-			try {
-				await this.#popupManager.signInViaPopup({
-					width: config.popupWidth,
-					height: config.popupHeight,
-					timeoutMs: config.popupTimeoutMs,
-					isHosted: config.isHosted
-				});
-				// Redirect after successful popup auth via the Catalyst
-				// callback so javascript: / data: targets cannot execute here.
-				window.location.href = this.#constructRedirectUrl(redirectTarget);
-			} catch {
-				// Re-enable the button so the user can try again.
-				btn.disabled = false;
-			}
-		});
-
-		// Mount — clear any previous content and insert the button.
-		container.innerHTML = '';
-		container.appendChild(btn);
+	#showIframeConfirmModal(
+		action: 'signin' | 'signout',
+		onConfirm: () => Promise<void>
+	): Promise<void> {
+		return showIframeConfirmModal(action, onConfirm);
 	}
 }
 

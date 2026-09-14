@@ -207,7 +207,16 @@ export class PopupManager {
 			let popup: Window;
 			try {
 				popup = openPopupWindow({
-					url: buildPopupLoginUrl(window.location.origin, eventId, isHosted),
+					url: buildPopupLoginUrl(window.location.origin, eventId, {
+						isHosted,
+						cssUrl: config.cssUrl,
+						signInProvidersOnly: config.signInProvidersOnly,
+						forgotPasswordCssUrl: config.forgotPasswordCssUrl,
+						forgotPasswordId: config.forgotPasswordId,
+						is_customize_forgot_password: config.is_customize_forgot_password,
+						redirectUrl: config.redirectUrl,
+						serviceUrl: config.serviceUrl
+					}),
 					name: 'catalystSignIn',
 					width,
 					height
