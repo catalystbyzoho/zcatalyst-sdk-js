@@ -190,6 +190,15 @@ export class Connector {
 	}
 
 	/**
+	 * The pre-hash cache key format used by SDK versions up to and including v0.0.4
+	 * (published, no config hash suffix). Kept as a one-time migration fallback so that
+	 * upgrading doesn't strand every already-cached token: see #migrateLegacyTokenOrRefresh().
+	 */
+	private get _legacyCacheKey(): string {
+		return 'ZC_CONN_' + this.connectorName;
+	}
+
+	/**
 	 * Validates that a configured OAuth endpoint is a well-formed, HTTPS URL.
 	 * Plain HTTP is only permitted for loopback addresses, to allow local development
 	 * against a locally hosted OAuth provider.
@@ -249,40 +258,98 @@ export class Connector {
 		const generation = this._configGeneration;
 		const cachedTokenObj = await (new Cache(this.app) as any).segment().get(this._cacheKey);
 		if (generation !== this._configGeneration) {
+			// Configuration changed while the cache read was in flight. Retry this helper
+			// directly rather than going through getAccessToken() — at this point
+			// _pendingToken still points at the promise this call is producing, so routing
+			// back through the public gate would return that same (not-yet-settled) promise
+			// and create a self-referential cycle: the outer promise would wait on the
+			// pending-token promise, which itself waits on the outer promise settling.
 			return this.#fetchAndCacheToken();
 		}
-		try {
-			const value = JSON.parse(cachedTokenObj.cache_value);
-			if (!value?.access_token) {
-				return await this.refreshAndPersistToken();
-			}
-			const expiryTime = value.expires_at;
-			if (expiryTime < Date.now()) {
-				return await this.refreshAndPersistToken();
-			}
-			this.expiresAt = expiryTime;
-			if (this.#isEncrypted(value.access_token)) {
-				if (!this.secretKey) {
-					throw new CatalystConnectorError(
-						'SECRET_KEY_MISSING',
-						'The cached access token is encrypted. Please provide a valid secret key to decrypt it.'
-					);
-				}
-				try {
-					this.accessToken = this.#decrypt(value.access_token, this.secretKey as string);
-				} catch {
-					// Decryption failed (wrong secret key or corrupted ciphertext) —
-					// discard the stale cache entry and fetch a fresh token.
-					return await this.refreshAndPersistToken();
-				}
-			} else {
-				this.accessToken = value.access_token;
-			}
-			return this.accessToken as string;
-		} catch (err) {
-			if (err instanceof SyntaxError) return await this.refreshAndPersistToken();
-			throw err;
+		const token = this.#tryApplyCachedValue(cachedTokenObj?.cache_value);
+		if (token !== null) {
+			return token;
 		}
+		return await this.#migrateLegacyTokenOrRefresh();
+	}
+
+	/**
+	 * Parses a raw cache_value string and, if it holds a still-valid access token,
+	 * applies it to this.accessToken/this.expiresAt and returns it. Returns null for
+	 * any "no usable token here" outcome (missing/malformed entry, expired, or a
+	 * corrupted/mismatched-key decryption failure) so callers can fall back to another
+	 * source. A missing secretKey for an encrypted entry is a hard configuration error
+	 * and throws rather than falling back, matching the behavior for the primary key.
+	 */
+	#tryApplyCachedValue(rawCacheValue: string | undefined): string | null {
+		if (!rawCacheValue) return null;
+		let value: { access_token?: string | null; expires_at?: number | null };
+		try {
+			value = JSON.parse(rawCacheValue);
+		} catch {
+			return null;
+		}
+		if (!value?.access_token) {
+			return null;
+		}
+		const expiryTime = value.expires_at;
+		if (expiryTime === undefined || expiryTime === null || expiryTime < Date.now()) {
+			return null;
+		}
+		if (this.#isEncrypted(value.access_token)) {
+			if (!this.secretKey) {
+				throw new CatalystConnectorError(
+					'SECRET_KEY_MISSING',
+					'The cached access token is encrypted. Please provide a valid secret key to decrypt it.'
+				);
+			}
+			try {
+				this.accessToken = this.#decrypt(value.access_token, this.secretKey);
+			} catch {
+				// Decryption failed (wrong secret key or corrupted ciphertext) — treat this
+				// entry as unusable rather than as a hard error.
+				return null;
+			}
+		} else {
+			this.accessToken = value.access_token;
+		}
+		this.expiresAt = expiryTime;
+		return this.accessToken;
+	}
+
+	/**
+	 * One-time migration fallback for SDK versions up to v0.0.4, which cached tokens
+	 * under a plain 'ZC_CONN_<name>' key with no config hash. Without this, every
+	 * connector across every deployment would lose its cached token on upgrade (the new
+	 * code only ever reads the hashed key) and refresh simultaneously — a deployment-wide
+	 * refresh storm, and an outright failure for any connector that can't refresh right
+	 * then. If a valid legacy entry is found, adopt it and persist it forward under the
+	 * new hashed key so subsequent reads hit it directly; otherwise fall back to a normal
+	 * refresh. The legacy key is intentionally left in place (not deleted) so that other
+	 * instances still running an older SDK version during a rolling deployment keep
+	 * working against it until they themselves refresh or upgrade.
+	 */
+	async #migrateLegacyTokenOrRefresh(): Promise<string> {
+		const generation = this._configGeneration;
+		const legacyCacheObj = await (new Cache(this.app) as any)
+			.segment()
+			.get(this._legacyCacheKey)
+			.catch(() => null);
+		if (generation !== this._configGeneration) {
+			return this.#fetchAndCacheToken();
+		}
+		const legacyToken = legacyCacheObj
+			? this.#tryApplyCachedValue(legacyCacheObj.cache_value)
+			: null;
+		if (legacyToken === null) {
+			return await this.refreshAndPersistToken();
+		}
+		// Captured in this same synchronous turn as #tryApplyCachedValue()'s assignments —
+		// immune to a config change racing the write below.
+		const cacheKey = this._cacheKey;
+		const expiresAt = this.expiresAt;
+		await this.#persistAccessToken(cacheKey, legacyToken, this.expiresIn, expiresAt);
+		return legacyToken;
 	}
 
 	/**
