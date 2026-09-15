@@ -249,7 +249,7 @@ export class Connector {
 		const generation = this._configGeneration;
 		const cachedTokenObj = await (new Cache(this.app) as any).segment().get(this._cacheKey);
 		if (generation !== this._configGeneration) {
-			return this.getAccessToken();
+			return this.#fetchAndCacheToken();
 		}
 		try {
 			const value = JSON.parse(cachedTokenObj.cache_value);
