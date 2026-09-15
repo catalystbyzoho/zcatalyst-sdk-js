@@ -16,8 +16,8 @@ import {
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { Segment } from './segment';
-import { CatalystCacheError } from './utils/error';
+import { Segment } from './segment.js';
+import { CatalystCacheError } from './utils/error.js';
 
 const { REQ_METHOD, COMPONENT, CREDENTIAL_USER } = CONSTANTS;
 
@@ -116,4 +116,4 @@ export class Cache implements Component {
 	}
 }
 
-export * from './utils/interface';
+export * from './utils/interface.js';

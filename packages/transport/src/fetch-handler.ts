@@ -16,16 +16,16 @@ import {
 	HTTP_HEADER_MAP,
 	X_ZCSRF_TOKEN,
 	ZD_CSRPARAM
-} from './utils/constants';
-import { RequestType, ResponseType } from './utils/enums';
-import { CatalystAPIError } from './utils/errors';
+} from './utils/constants.js';
+import { RequestType, ResponseType } from './utils/enums.js';
+import { CatalystAPIError } from './utils/errors.js';
 import {
 	CoreType,
 	IRequestConfig,
 	jwtAccessTokenResponse,
 	RequestHandlerOptions
-} from './utils/interfaces';
-import { requestTimeout } from './utils/request-timeout';
+} from './utils/interfaces.js';
+import { requestTimeout } from './utils/request-timeout.js';
 
 const { REQ_METHOD } = CONSTANTS;
 

@@ -13,7 +13,7 @@ import {
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { CatalystUserManagementError } from './utils/error';
+import { CatalystUserManagementError } from './utils/error.js';
 import {
 	ICatalystCustomTokenDetails,
 	ICatalystCustomTokenResponse,
@@ -21,7 +21,7 @@ import {
 	ICatalystSignupUserConfig,
 	ICatalystSignupValidationReq,
 	ICatalystUser
-} from './utils/interface';
+} from './utils/interface.js';
 
 type ICatalystNewUser = ICatalystSignupConfig & { user_details: ICatalystUser };
 

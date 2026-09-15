@@ -1,4 +1,4 @@
-import { CatalystAppError, CatalystError } from './errors';
+import { CatalystAppError, CatalystError } from './errors.js';
 
 /**
  * Validates that a value is a byte buffer.

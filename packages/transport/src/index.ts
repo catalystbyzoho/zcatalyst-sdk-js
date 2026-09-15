@@ -7,9 +7,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { CatalystApp, ZCAuth } from '@zcatalyst/auth-admin';
 
-import { AuthorizedHttpClient, DefaultHttpResponse } from './http-handler';
-import FormData from './utils/form-data';
-import { Component, IRequestConfig } from './utils/interfaces';
+import { AuthorizedHttpClient, DefaultHttpResponse } from './http-handler.js';
+import FormData from './utils/form-data.js';
+import { Component, IRequestConfig } from './utils/interfaces.js';
 
 // Re-export commonly needed utilities from utils to reduce coupling
 export { CatalystService, Component, CONSTANTS } from '@zcatalyst/utils';
@@ -55,6 +55,6 @@ export class Handler {
 	}
 }
 
-export { RequestType, ResponseType } from './utils/enums';
-export { CatalystAPIError } from './utils/errors';
+export { RequestType, ResponseType } from './utils/enums.js';
+export { CatalystAPIError } from './utils/errors.js';
 export { FormData, IRequestConfig };

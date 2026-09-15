@@ -1,4 +1,4 @@
-import { CatalystStratusError } from './error';
+import { CatalystStratusError } from './error.js';
 
 /**
  * Allowed bucket name pattern. Only alphanumeric characters and hyphens are

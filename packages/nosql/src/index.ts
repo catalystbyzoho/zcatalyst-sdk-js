@@ -16,16 +16,16 @@ import {
 
 import pkg from '../package.json';
 const { version } = pkg;
-import NoSQLTable from './table';
-import { NoSQLByte } from './utils/byte';
-import * as NoSQLEnum from './utils/enum';
-import { NoSQLReturnValue, NoSQLUpdateOperationType } from './utils/enum';
-import { CatalystNoSQLError } from './utils/error';
-import { NoSQLItem } from './utils/item';
-import { NoSQLMarshall } from './utils/marshall';
-import { NoSQLByteSet, NoSQLNumberSet, NoSQLStringSet } from './utils/set';
-import { INoSQLTable } from './utils/types';
-import { NoSQLUnMarshall } from './utils/unmarshall';
+import NoSQLTable from './table.js';
+import { NoSQLByte } from './utils/byte.js';
+import * as NoSQLEnum from './utils/enum.js';
+import { NoSQLReturnValue, NoSQLUpdateOperationType } from './utils/enum.js';
+import { CatalystNoSQLError } from './utils/error.js';
+import { NoSQLItem } from './utils/item.js';
+import { NoSQLMarshall } from './utils/marshall.js';
+import { NoSQLByteSet, NoSQLNumberSet, NoSQLStringSet } from './utils/set.js';
+import { INoSQLTable } from './utils/types.js';
+import { NoSQLUnMarshall } from './utils/unmarshall.js';
 
 const { COMPONENT, CREDENTIAL_USER, REQ_METHOD } = CONSTANTS;
 

@@ -9,9 +9,9 @@ import { Component, CONSTANTS, isValidInputString, wrapValidators } from '@zcata
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { MobileNotification } from './mobile-notification';
-import { CatalystPushNotificationError } from './utils/error';
-import { WebNotification } from './web-notification';
+import { MobileNotification } from './mobile-notification.js';
+import { CatalystPushNotificationError } from './utils/error.js';
+import { WebNotification } from './web-notification.js';
 
 const { COMPONENT } = CONSTANTS;
 

@@ -6,8 +6,8 @@ import {
 	wrapValidatorsWithPromise
 } from '@zcatalyst/utils';
 
-import { CatalystSmartbrowzError } from './utils/error';
-import { IBrowserGridDetails, IBrowserGridNode } from './utils/interfaces';
+import { CatalystSmartbrowzError } from './utils/error.js';
+import { IBrowserGridDetails, IBrowserGridNode } from './utils/interfaces.js';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 

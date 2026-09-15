@@ -18,15 +18,15 @@ import { Readable } from 'stream';
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { BrowserGrid } from './browser-grid';
-import { Dataverse } from './dataverse';
-import { CatalystSmartbrowzError } from './utils/error';
+import { BrowserGrid } from './browser-grid.js';
+import { Dataverse } from './dataverse.js';
+import { CatalystSmartbrowzError } from './utils/error.js';
 import {
 	ICatalystSmartbrowzPdf,
 	ICatalystSmartbrowzReq,
 	ICatalystSmartbrowzScrShot,
 	ICatalystSmartbrowzTemplate
-} from './utils/interfaces';
+} from './utils/interfaces.js';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 

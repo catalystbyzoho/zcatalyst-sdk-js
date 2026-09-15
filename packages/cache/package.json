@@ -13,7 +13,7 @@
   "scripts": {
     "build": "pnpm clean && concurrently 'pnpm:build:cjs' 'pnpm:build:es' 'pnpm:build:types && pnpm build:types:downlevel'",
     "build:cjs": "pnpm tsc -p tsconfig.cjs.json",
-    "build:es": "pnpm tsc -p tsconfig.es.json",
+    "build:es": "pnpm tsc -p tsconfig.es.json && node ../../scripts/fix-esm-json-imports.js dist-es",
     "build:types": "pnpm tsc -p tsconfig.types.json",
     "build:types:downlevel": "rimraf dist-types/ts3.4 && downlevel-dts dist-types dist-types/ts3.4",
     "clean": "rimraf ./dist-* && rimraf *.tsbuildinfo || exit 0",
@@ -28,7 +28,7 @@
     "@zcatalyst/utils": "workspace:^"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "files": [
     "dist-*/**"

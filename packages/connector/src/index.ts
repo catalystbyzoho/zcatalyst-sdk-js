@@ -9,9 +9,9 @@ import { Component, CONSTANTS, isNonNullObject, ObjectHasProperties } from '@zca
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { Connector } from './connection';
-import { CatalystConnectorError } from './utils/error';
-import { getConnectorJson } from './utils/validators';
+import { Connector } from './connection.js';
+import { CatalystConnectorError } from './utils/error.js';
+import { getConnectorJson } from './utils/validators.js';
 
 const { CLIENT_ID, CLIENT_SECRET, AUTH_URL, REFRESH_URL, CONNECTOR_NAME, COMPONENT } = CONSTANTS;
 

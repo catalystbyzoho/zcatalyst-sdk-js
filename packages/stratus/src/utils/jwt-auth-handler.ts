@@ -1,8 +1,8 @@
 import { Handler, IRequestConfig } from '@zcatalyst/transport';
 import { CatalystService, CONSTANTS } from '@zcatalyst/utils';
 
-import { Bucket } from '../bucket';
-import { IJWTResponse } from './interface';
+import { Bucket } from '../bucket.js';
+import { IJWTResponse } from './interface.js';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 

@@ -14,8 +14,8 @@ import {
 } from '@zcatalyst/utils';
 import crypto from 'crypto';
 
-import { Connection } from '.';
-import { CatalystConnectorError } from './utils/error';
+import { Connection } from './index.js';
+import { CatalystConnectorError } from './utils/error.js';
 
 type ICatalystCacheRes = ICatalystCache &
 	Omit<ICatalystGResponse, 'created_time' | 'created_by' | 'modified_time' | 'modified_by'>;

@@ -4,4 +4,4 @@
  * @packageDocumentation
  */
 
-export * from './node';
+export * from './node.js';

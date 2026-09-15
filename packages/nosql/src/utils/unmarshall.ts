@@ -1,8 +1,8 @@
 import { isValidNumber } from '@zcatalyst/utils';
 
-import { NoSQLByte } from './byte';
-import { NoSQLByteSet, NoSQLNumberSet, NoSQLStringSet } from './set';
-import { TNoSQLAttribute, TNoSQLAttributeResponse, TNoSQLValues } from './types';
+import { NoSQLByte } from './byte.js';
+import { NoSQLByteSet, NoSQLNumberSet, NoSQLStringSet } from './set.js';
+import { TNoSQLAttribute, TNoSQLAttributeResponse, TNoSQLValues } from './types.js';
 
 /**
  * Class that contains the un-marshalling utils

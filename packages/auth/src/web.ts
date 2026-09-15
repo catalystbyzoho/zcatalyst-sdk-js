@@ -26,17 +26,18 @@ import {
 	FETCH_DETAILS_CALLBACK_FN,
 	UM_URL_DIVIDER,
 	URL_DIVIDER
-} from './utils/constants';
-import { Auth_Protocol } from './utils/enums';
-import { CatalystAuthenticationError } from './utils/error';
-import { wrapCheck } from './utils/functions';
+} from './utils/constants.js';
+import { Auth_Protocol } from './utils/enums.js';
+import { CatalystAuthenticationError } from './utils/error.js';
+import { wrapCheck } from './utils/functions.js';
 import {
 	ICatalystAuthResponse,
+	ICatalystCustomTokenResponse,
 	ICatalystSignInConfig,
 	ICatalystSignUpConfig,
 	UserDetails
-} from './utils/interface';
-import { applyQueryString, hasSuffInfo } from './utils/validators';
+} from './utils/interface.js';
+import { applyQueryString, hasSuffInfo } from './utils/validators.js';
 
 const { CREDENTIAL_USER, REQ_METHOD, COMPONENT } = CONSTANTS;
 
@@ -655,9 +656,109 @@ class Authentication implements Component {
 		const resp = await this.requester.send(request);
 		return resp.data as unknown as string;
 	}
+
+	/**
+	 * Generates an OAuth access token for the currently authenticated browser user, scoped to
+	 * the given feature.
+	 *
+	 * Internally, a short-lived custom JWT is requested from Catalyst and then exchanged for an
+	 * OAuth access token via the IAM remote-auth endpoint.
+	 *
+	 * @param feature - The feature the generated token should be scoped for.
+	 * @returns A promise that resolves to the OAuth access token and its expiry (in seconds).
+	 * @throws {CatalystAuthenticationError} when `feature` is invalid, the custom token cannot be
+	 * fetched, or the JWT-to-OAuth token exchange fails.
+	 *
+	 * @example
+	 * ```ts
+	 * const { access_token, expires_in_sec } = await zcAuth.generateAuthToken('functions');
+	 * ```
+	 */
+	async generateAuthToken(feature: 'functions' | 'stratus'): Promise<{
+		access_token: string;
+		expires_in_sec: number;
+	}> {
+		await wrapValidatorsWithPromise(() => {
+			isNonEmptyString(feature, 'feature', true);
+			if (feature !== 'functions' && feature !== 'stratus') {
+				throw new CatalystAuthenticationError(
+					'INVALID_ARGUMENT',
+					"'feature' must be either 'functions' or 'stratus'"
+				);
+			}
+		}, CatalystAuthenticationError);
+
+		const customTokenRequest: IRequestConfig = {
+			method: REQ_METHOD.get,
+			path: '/authentication/custom-token',
+			type: RequestType.JSON,
+			service: CatalystService.BAAS,
+			user: CREDENTIAL_USER.user,
+			qs: {
+				feature
+			}
+		};
+		let customTokenData: ICatalystCustomTokenResponse;
+		try {
+			const customTokenResp = await this.requester.send(customTokenRequest);
+			customTokenData = customTokenResp.data.data as ICatalystCustomTokenResponse;
+		} catch (err) {
+			throw new CatalystAuthenticationError(
+				'AUTHENTICATION_ERROR',
+				'Unable to generate a custom token for the requested feature.',
+				err
+			);
+		}
+
+		const remoteAuthRequest: IRequestConfig = {
+			method: REQ_METHOD.post,
+			service: CatalystService.EXTERNAL,
+			path: `/clientoauth/v2/${this.zaid}/remote/auth`,
+			origin: ConfigStore.get('IAM_DOMAIN') as string,
+			auth: false,
+			qs: {
+				response_type: 'remote_token',
+				scope: customTokenData.scopes.join(' '),
+				client_id: customTokenData.client_id,
+				jwt_token: customTokenData.jwt_token
+			}
+		};
+
+		let remoteAuthData: { access_token?: string; expires_in_sec?: number; expires_in?: number };
+		try {
+			const remoteAuthResp = await this.requester.send(remoteAuthRequest);
+			remoteAuthData = remoteAuthResp.data as typeof remoteAuthData;
+		} catch (err) {
+			throw new CatalystAuthenticationError(
+				'AUTHENTICATION_ERROR',
+				'Unable to exchange the custom JWT token for an OAuth access token.',
+				err
+			);
+		}
+
+		const accessToken = remoteAuthData.access_token;
+		if (!accessToken) {
+			throw new CatalystAuthenticationError(
+				'AUTHENTICATION_ERROR',
+				'Unable to exchange JWT token for an OAuth access token.'
+			);
+		}
+
+		const expiresInSec =
+			typeof remoteAuthData.expires_in_sec === 'number'
+				? remoteAuthData.expires_in_sec
+				: typeof remoteAuthData.expires_in === 'number'
+					? remoteAuthData.expires_in
+					: 3600;
+		return {
+			access_token: accessToken,
+			expires_in_sec: expiresInSec
+		};
+	}
 }
-export { UserManagement } from './user-management';
-export * from './utils/constants';
+
+export { UserManagement } from './user-management.js';
+export * from './utils/constants.js';
 
 export const zcAuth = new Authentication();
 
