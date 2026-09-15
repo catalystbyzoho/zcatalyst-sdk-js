@@ -2,6 +2,7 @@
   "extends": [
     "../../typedoc.base.json"
   ],
+  "name": "Catalyst Circuit",
   "entryPoints": [
     "src/**/*"
   ],
