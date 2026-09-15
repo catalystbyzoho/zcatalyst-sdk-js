@@ -24,7 +24,10 @@ export type ICatalystZCQLResult = { [tableName: string]: { [x: string]: any } };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ICatalystSearchResults = { [tableName: string]: Array<{ [columnName: string]: any }> };
 
-/** Provides user-scoped Catalyst Datastore operations for tables, ZCQL, and search. */
+/**
+ * Provides user-scoped Catalyst Datastore operations for tables, ZCQL, and search.
+ * @category Datastore
+ */
 export class Datastore implements Component {
 	requester: Handler;
 	/** Creates a datastore client for the provided Catalyst app. */
@@ -178,7 +181,10 @@ export class Datastore implements Component {
 	}
 }
 
-/** Provides admin-scoped Catalyst Datastore operations for table metadata. */
+/**
+ * Provides admin-scoped Catalyst Datastore operations for table metadata.
+ * @category Datastore
+ */
 export class DatastoreAdmin extends Datastore {
 	/** Creates an admin datastore client for the provided Catalyst app. */
 	constructor(app?: unknown) {

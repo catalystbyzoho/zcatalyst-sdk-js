@@ -6,12 +6,12 @@
 	"hideGenerator": false,
 	"searchInComments": true,
 	"excludeReferences": true,
-	"categorizeByGroup": true,
+	"categorizeByGroup": false,
 	"defaultCategory": "Other",
 	"categoryOrder": ["Component Info", "*", "Other"],
 	"navigation": {
 		"includeGroups": true,
-		"includeCategories": false,
+		"includeCategories": true,
 		"compactFolders": true
 	},
 	"sort": ["static-first", "alphabetical"],

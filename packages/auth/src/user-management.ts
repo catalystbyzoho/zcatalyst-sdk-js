@@ -33,7 +33,10 @@ export enum USER_STATUS {
 	DISABLE = 'disable'
 }
 
-/** Provides user-scoped Catalyst user management operations such as current-user lookup and password reset. */
+/**
+ * Provides user-scoped Catalyst user management operations such as current-user lookup and password reset.
+ * @category User Management
+ */
 export class UserManagement implements Component {
 	requester: Handler;
 	/** Creates a user management client for the provided Catalyst app. */
@@ -114,7 +117,10 @@ export class UserManagement implements Component {
 	}
 }
 
-/** Provides admin-scoped Catalyst user management operations for project users and organizations. */
+/**
+ * Provides admin-scoped Catalyst user management operations for project users and organizations.
+ * @category User Management
+ */
 export class UserManagementAdmin extends UserManagement {
 	/** Creates an admin user management client for the provided Catalyst app. */
 	constructor(app?: unknown) {

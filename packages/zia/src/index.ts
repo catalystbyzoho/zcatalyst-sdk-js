@@ -44,6 +44,7 @@ const { REQ_METHOD, COMPONENT, CREDENTIAL_USER } = CONSTANTS;
 
 /**
  * Provides Catalyst Zia AI and ML service operations.
+ * @category Zia AI
  */
 export class Zia implements Component {
 	requester: Handler;

@@ -36,6 +36,7 @@ type ICatalystSmartbrowzTemplateOptions = ICatalystSmartbrowzTemplate &
 
 /**
  * Runs SmartBrowz browser automation and Dataverse lookups.
+ * @category SmartBrowz
  */
 export class Smartbrowz implements Component {
 	readonly requester: Handler;
