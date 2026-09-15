@@ -101,8 +101,18 @@ export class Connector {
 	 * refreshToken, then instance B changes clientId using its own stale refreshToken —
 	 * a full-object write from B would erase A's rotation). Merging into the current
 	 * connectionJson entry keeps every independently-synced field intact.
+	 *
+	 * CONNECTOR_NAME is intentionally never persisted here: connectionJson is keyed by
+	 * the lookup name (connectionLookupKey), and Connection.getConnector() always
+	 * derives connectorDetails[CONNECTOR_NAME] from that lookup key, not from the entry's
+	 * own fields. Storing a renamed connector_name inside the entry wouldn't rename the
+	 * map key — it would instead override the lookup key when the entry is next read by
+	 * Object.assign() in getConnector(), so a later getConnector(oldName) would silently
+	 * hand back a connector claiming to be newName (wrong cache key), while
+	 * getConnector(newName) would still fail to find the entry.
 	 */
 	#syncConfigField(key: string, value: string | undefined): void {
+		if (key === CONNECTOR_NAME) return;
 		const connectionJson = this.connectionInstance.connectionJson;
 		if (!connectionJson) return;
 		const existingEntry = connectionJson[this.connectionLookupKey];
@@ -119,7 +129,8 @@ export class Connector {
 
 	set connectorName(value: string) {
 		this._connectorName = value;
-		this.#invalidateCache(CONNECTOR_NAME, value);
+		// Not synced to connectionJson — see #syncConfigField()'s CONNECTOR_NAME note.
+		this.#invalidateCache();
 	}
 
 	get authUrl(): string {
