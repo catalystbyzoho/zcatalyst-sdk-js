@@ -56,6 +56,7 @@ export class Connector {
 	private _redirectUrl: string;
 	private _connectionName: string | null; // lazy init of connector cache key based on config hash
 	private _configGeneration: number; // bumped on every config change to detect changes across in-flight async work
+	private _pendingToken: Promise<string> | null; // in-flight getAccessToken() result, shared by concurrent callers
 	private app: unknown;
 	private requester: Handler;
 	constructor(connectionInstance: Connection, connectorDetails: { [x: string]: string }) {
@@ -73,6 +74,7 @@ export class Connector {
 		this.expiresAt = null;
 		this._connectionName = null;
 		this._configGeneration = 0;
+		this._pendingToken = null;
 		this.app = connectionInstance.app;
 		this.requester = connectionInstance.requester;
 	}
@@ -235,6 +237,15 @@ export class Connector {
 		if (this.accessToken && this.expiresAt && this.expiresAt > Date.now()) {
 			return this.accessToken;
 		}
+		if (!this._pendingToken) {
+			this._pendingToken = this.#fetchAndCacheToken().finally(() => {
+				this._pendingToken = null;
+			});
+		}
+		return this._pendingToken;
+	}
+
+	async #fetchAndCacheToken(): Promise<string> {
 		const generation = this._configGeneration;
 		const cachedTokenObj = await (new Cache(this.app) as any).segment().get(this._cacheKey);
 		if (generation !== this._configGeneration) {
@@ -322,12 +333,16 @@ export class Connector {
 			);
 		}
 		this.refreshToken = tokenObj[REFRESH_TOKEN] as string;
-		this.accessToken = tokenObj[ACCESS_TOKEN] as string;
-		this.expiresIn = parseInt(tokenObj[EXPIRES_IN] as string);
-		const expires = Date.now() + (this.expiresIn * 1000 - 900000); // Convert expiryIn seconds to milliseconds and subtract 15 minutes
-		this.expiresAt = this.refreshIn ? Date.now() + this.refreshIn : expires;
-		await this.putAccessTokenInCache();
-		return this.accessToken;
+		const accessToken = tokenObj[ACCESS_TOKEN] as string;
+		const expiresIn = parseInt(tokenObj[EXPIRES_IN] as string);
+		const expires = Date.now() + (expiresIn * 1000 - 900000); // Convert expiryIn seconds to milliseconds and subtract 15 minutes
+		const expiresAt = this.refreshIn ? Date.now() + this.refreshIn : expires;
+		this.accessToken = accessToken;
+		this.expiresIn = expiresIn;
+		this.expiresAt = expiresAt;
+		const cacheKey = this._cacheKey;
+		await this.#persistAccessToken(cacheKey, accessToken, expiresIn, expiresAt);
+		return accessToken;
 	}
 
 	/**
@@ -339,9 +354,10 @@ export class Connector {
 	 * ```
 	 */
 	async refreshAndPersistToken(): Promise<string> {
-		await this.refreshAccessToken();
-		await this.putAccessTokenInCache();
-		return this.accessToken as string;
+		const { cacheKey, accessToken, expiresIn, expiresAt } =
+			await this.#refreshAccessTokenValue();
+		await this.#persistAccessToken(cacheKey, accessToken, expiresIn, expiresAt);
+		return accessToken;
 	}
 
 	/**
@@ -354,6 +370,22 @@ export class Connector {
 	 * ```
 	 */
 	async refreshAccessToken(): Promise<void> {
+		await this.#refreshAccessTokenValue();
+	}
+
+	/**
+	 * Performs the refresh-token network exchange and applies the result, guarding
+	 * against a configuration change that happened while the request was in flight.
+	 * Returns the cache key and token values snapshotted in the same synchronous turn
+	 * they were applied, so callers can persist them without re-reading mutable state
+	 * across another await.
+	 */
+	async #refreshAccessTokenValue(): Promise<{
+		cacheKey: string;
+		accessToken: string;
+		expiresIn: number;
+		expiresAt: number;
+	}> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(this.refreshToken, 'refresh_token', true);
 			isNonEmptyString(this.refreshUrl, 'refresh_url', true);
@@ -382,12 +414,19 @@ export class Connector {
 			// Configuration changed while this refresh was in flight; the response was
 			// issued for the previous credentials, so discard it and retry under the
 			// current configuration instead of applying a stale token.
-			return this.refreshAccessToken();
+			return this.#refreshAccessTokenValue();
 		}
-		this.accessToken = tokenObject[ACCESS_TOKEN] as string;
-		this.expiresIn = parseInt(tokenObject[EXPIRES_IN] as string);
-		const expires = Date.now() + (this.expiresIn * 1000 - 900000);
-		this.expiresAt = this.refreshIn ? Date.now() + this.refreshIn : expires;
+		const accessToken = tokenObject[ACCESS_TOKEN] as string;
+		const expiresIn = parseInt(tokenObject[EXPIRES_IN] as string);
+		const expires = Date.now() + (expiresIn * 1000 - 900000);
+		const expiresAt = this.refreshIn ? Date.now() + this.refreshIn : expires;
+		this.accessToken = accessToken;
+		this.expiresIn = expiresIn;
+		this.expiresAt = expiresAt;
+		// Snapshotted in this same synchronous turn as the assignments above — immune to
+		// any config change that happens after this method returns.
+		const cacheKey = this._cacheKey;
+		return { cacheKey, accessToken, expiresIn, expiresAt };
 	}
 
 	/**
@@ -460,17 +499,35 @@ export class Connector {
 	 * ```
 	 */
 	async putAccessTokenInCache(): Promise<ICatalystCacheRes> {
+		return this.#persistAccessToken(
+			this._cacheKey,
+			this.accessToken,
+			this.expiresIn,
+			this.expiresAt
+		);
+	}
+
+	/**
+	 * Writes the given cache key/token snapshot to Catalyst Cache as-is, with no
+	 * further reads of mutable connector state — the caller is responsible for
+	 * capturing a consistent (cacheKey, accessToken, expiresIn, expiresAt) snapshot
+	 * beforehand so that a config change can't desynchronize the key from the value.
+	 */
+	async #persistAccessToken(
+		cacheKey: string,
+		accessToken: string | null,
+		expiresIn: number,
+		expiresAt: number | null
+	): Promise<ICatalystCacheRes> {
 		const tokenObj = {
-			access_token: this.accessToken,
-			expiry_in_seconds: this.expiresIn,
-			expires_at: this.expiresAt
+			access_token: accessToken,
+			expiry_in_seconds: expiresIn,
+			expires_at: expiresAt
 		};
-		if (this.secretKey && this.accessToken) {
-			tokenObj.access_token = this.#encrypt(this.accessToken, this.secretKey);
+		if (this.secretKey && accessToken) {
+			tokenObj.access_token = this.#encrypt(accessToken, this.secretKey);
 		}
 		const tokenStr: string = JSON.stringify(tokenObj);
-		return new Cache(this.app)
-			.segment()
-			.put(this._cacheKey, tokenStr, Math.ceil(this.expiresIn / 3600));
+		return new Cache(this.app).segment().put(cacheKey, tokenStr, Math.ceil(expiresIn / 3600));
 	}
 }
