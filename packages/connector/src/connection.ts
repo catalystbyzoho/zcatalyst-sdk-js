@@ -59,6 +59,15 @@ export class Connector {
 	private _pendingToken: Promise<string> | null; // in-flight getAccessToken() result, shared by concurrent callers
 	private app: unknown;
 	private requester: Handler;
+	// Connection.getConnector() builds a brand-new Connector from Connection.connectionJson
+	// on every call, so without this, a config rotation made through one instance (e.g. a
+	// refreshed refresh_token) would be invisible to the next getConnector() call: the fresh
+	// instance would rebuild its config/hash from the stale connectionJson entry and could
+	// wrongly treat itself as "unrotated" (_configGeneration === 0), including for legacy
+	// cache-key migration. Keeping a reference to the owning Connection and the entry's
+	// lookup key lets every config change be mirrored back into connectionJson immediately.
+	private readonly connectionInstance: Connection;
+	private readonly connectionLookupKey: string;
 	constructor(connectionInstance: Connection, connectorDetails: { [x: string]: string }) {
 		this._connectorName = connectorDetails[CONNECTOR_NAME];
 		this._authUrl = connectorDetails[AUTH_URL];
@@ -77,6 +86,32 @@ export class Connector {
 		this._pendingToken = null;
 		this.app = connectionInstance.app;
 		this.requester = connectionInstance.requester;
+		this.connectionInstance = connectionInstance;
+		this.connectionLookupKey = this._connectorName;
+	}
+
+	/**
+	 * Mirrors this connector's current live configuration back into the owning
+	 * Connection's connectionJson entry, keyed by the name this connector was originally
+	 * looked up under. Called on every config mutation so that a subsequent
+	 * Connection.getConnector() call constructs its fresh Connector from up-to-date
+	 * values instead of the original, now-stale, connectorDetails.
+	 */
+	#syncConfigToConnection(): void {
+		const connectionJson = this.connectionInstance.connectionJson;
+		if (!connectionJson) return;
+		connectionJson[this.connectionLookupKey] = {
+			[CONNECTOR_NAME]: this._connectorName,
+			[AUTH_URL]: this._authUrl,
+			[REFRESH_URL]: this._refreshUrl,
+			[REFRESH_TOKEN]: this._refreshToken,
+			[CLIENT_ID]: this._clientId,
+			[CLIENT_SECRET]: this._clientSecret,
+			[EXPIRES_IN]: String(this.expiresIn),
+			[REFRESH_IN]: String(this.refreshIn / 1000),
+			[REDIRECT_URL]: this._redirectUrl,
+			[SECRET_KEY]: this.secretKey
+		};
 	}
 
 	get connectorName(): string {
@@ -153,6 +188,7 @@ export class Connector {
 		this.accessToken = null;
 		this.expiresAt = null;
 		this._configGeneration++;
+		this.#syncConfigToConnection();
 	}
 
 	/**
