@@ -55,6 +55,7 @@ export class Connector {
 	private _clientSecret: string;
 	private _redirectUrl: string;
 	private _connectionName: string | null; // lazy init of connector cache key based on config hash
+	private _configGeneration: number; // bumped on every config change to detect changes across in-flight async work
 	private app: unknown;
 	private requester: Handler;
 	constructor(connectionInstance: Connection, connectorDetails: { [x: string]: string }) {
@@ -71,6 +72,7 @@ export class Connector {
 		this.accessToken = null;
 		this.expiresAt = null;
 		this._connectionName = null;
+		this._configGeneration = 0;
 		this.app = connectionInstance.app;
 		this.requester = connectionInstance.requester;
 	}
@@ -148,6 +150,7 @@ export class Connector {
 		this._connectionName = null;
 		this.accessToken = null;
 		this.expiresAt = null;
+		this._configGeneration++;
 	}
 
 	/**
@@ -232,7 +235,11 @@ export class Connector {
 		if (this.accessToken && this.expiresAt && this.expiresAt > Date.now()) {
 			return this.accessToken;
 		}
+		const generation = this._configGeneration;
 		const cachedTokenObj = await (new Cache(this.app) as any).segment().get(this._cacheKey);
+		if (generation !== this._configGeneration) {
+			return this.getAccessToken();
+		}
 		try {
 			const value = JSON.parse(cachedTokenObj.cache_value);
 			if (!value?.access_token) {
@@ -283,6 +290,7 @@ export class Connector {
 			isNonEmptyString(this.redirectUrl, REDIRECT_URL, true);
 		}, CatalystConnectorError);
 		this.#validateOAuthUrl(this.authUrl, AUTH_URL);
+		const generation = this._configGeneration;
 		const request: IRequestConfig = {
 			method: REQ_METHOD.post,
 			url: this.authUrl,
@@ -307,6 +315,12 @@ export class Connector {
 				true
 			);
 		}, CatalystConnectorError);
+		if (generation !== this._configGeneration) {
+			throw new CatalystConnectorError(
+				'CONNECTOR_CONFIG_CHANGED',
+				'The connector configuration changed while generating the access token. The exchanged token was discarded; please retry the authorization flow.'
+			);
+		}
 		this.refreshToken = tokenObj[REFRESH_TOKEN] as string;
 		this.accessToken = tokenObj[ACCESS_TOKEN] as string;
 		this.expiresIn = parseInt(tokenObj[EXPIRES_IN] as string);
@@ -345,6 +359,7 @@ export class Connector {
 			isNonEmptyString(this.refreshUrl, 'refresh_url', true);
 		}, CatalystConnectorError);
 		this.#validateOAuthUrl(this.refreshUrl, REFRESH_URL);
+		const generation = this._configGeneration;
 		const request: IRequestConfig = {
 			method: REQ_METHOD.post,
 			url: this.refreshUrl,
@@ -363,6 +378,12 @@ export class Connector {
 			isNonNullObject(tokenObject, 'auth_response', true);
 			ObjectHasProperties(tokenObject, [ACCESS_TOKEN, EXPIRES_IN], 'auth_response', true);
 		}, CatalystConnectorError);
+		if (generation !== this._configGeneration) {
+			// Configuration changed while this refresh was in flight; the response was
+			// issued for the previous credentials, so discard it and retry under the
+			// current configuration instead of applying a stale token.
+			return this.refreshAccessToken();
+		}
 		this.accessToken = tokenObject[ACCESS_TOKEN] as string;
 		this.expiresIn = parseInt(tokenObject[EXPIRES_IN] as string);
 		const expires = Date.now() + (this.expiresIn * 1000 - 900000);
