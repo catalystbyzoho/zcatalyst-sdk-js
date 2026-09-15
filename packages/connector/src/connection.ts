@@ -42,12 +42,12 @@ const SECRET_KEY = 'secret_key';
  * Manages OAuth access tokens for a configured Catalyst connector.
  */
 export class Connector {
-	connectorName: string;
 	expiresIn: number;
 	expiresAt: number | null;
 	refreshIn: number;
 	accessToken: null | string;
 	secretKey?: string;
+	private _connectorName: string;
 	private _authUrl: string;
 	private _refreshUrl: string;
 	private _refreshToken: string;
@@ -55,11 +55,10 @@ export class Connector {
 	private _clientSecret: string;
 	private _redirectUrl: string;
 	private _connectionName: string | null; // lazy init of connector cache key based on config hash
-	private _cachedConnectorName: string | null; // connectorName used when _connectionName was last computed
 	private app: unknown;
 	private requester: Handler;
 	constructor(connectionInstance: Connection, connectorDetails: { [x: string]: string }) {
-		this.connectorName = connectorDetails[CONNECTOR_NAME];
+		this._connectorName = connectorDetails[CONNECTOR_NAME];
 		this._authUrl = connectorDetails[AUTH_URL];
 		this._refreshUrl = connectorDetails[REFRESH_URL];
 		this._refreshToken = connectorDetails[REFRESH_TOKEN];
@@ -72,9 +71,17 @@ export class Connector {
 		this.accessToken = null;
 		this.expiresAt = null;
 		this._connectionName = null;
-		this._cachedConnectorName = null;
 		this.app = connectionInstance.app;
 		this.requester = connectionInstance.requester;
+	}
+
+	get connectorName(): string {
+		return this._connectorName;
+	}
+
+	set connectorName(value: string) {
+		this._connectorName = value;
+		this.#invalidateCache();
 	}
 
 	get authUrl(): string {
@@ -170,10 +177,9 @@ export class Connector {
 		return masked.toString(16).padStart(5, '0').toLowerCase();
 	}
 
-	private get _connectorName(): string {
-		if (this._connectionName === null || this._cachedConnectorName !== this.connectorName) {
+	private get _cacheKey(): string {
+		if (this._connectionName === null) {
 			this._connectionName = 'ZC_CONN_' + this.connectorName + ':' + this.getConnectorHash();
-			this._cachedConnectorName = this.connectorName;
 		}
 		return this._connectionName;
 	}
@@ -226,9 +232,7 @@ export class Connector {
 		if (this.accessToken && this.expiresAt && this.expiresAt > Date.now()) {
 			return this.accessToken;
 		}
-		const cachedTokenObj = await (new Cache(this.app) as any)
-			.segment()
-			.get(this._connectorName);
+		const cachedTokenObj = await (new Cache(this.app) as any).segment().get(this._cacheKey);
 		try {
 			const value = JSON.parse(cachedTokenObj.cache_value);
 			if (!value?.access_token) {
@@ -446,6 +450,6 @@ export class Connector {
 		const tokenStr: string = JSON.stringify(tokenObj);
 		return new Cache(this.app)
 			.segment()
-			.put(this._connectorName, tokenStr, Math.ceil(this.expiresIn / 3600));
+			.put(this._cacheKey, tokenStr, Math.ceil(this.expiresIn / 3600));
 	}
 }
