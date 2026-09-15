@@ -327,7 +327,7 @@ describe('Authentication (Browser)', () => {
 		});
 	});
 
-	describe('signIn — iframe context (confirm modal)', () => {
+	describe('signIn — iframe context (button rendering)', () => {
 		/** Simulates running inside an iframe (window.self !== window.top). */
 		function mockIframeContext(active: boolean) {
 			const top = active ? ({} as Window) : window;
@@ -336,14 +336,13 @@ describe('Authentication (Browser)', () => {
 		}
 
 		beforeEach(() => {
-			// Restore the real getElementById so querySelector can find elements in
-			// the actual DOM (the global setup.ts mock returns detached elements).
+			// Restore real getElementById so the DOM elements are found correctly.
 			document.getElementById = HTMLDocument.prototype.getElementById.bind(document);
-			document.getElementById('__catalyst-modal-backdrop')?.remove();
+			document.getElementById('__catalyst-iframe-btn')?.remove();
 		});
 
 		afterEach(() => {
-			document.getElementById('__catalyst-modal-backdrop')?.remove();
+			document.getElementById('__catalyst-iframe-btn')?.remove();
 			// Restore self/top so other tests are not affected.
 			Object.defineProperty(window, 'self', { value: window, configurable: true });
 			Object.defineProperty(window, 'top', { value: window, configurable: true });
@@ -355,58 +354,59 @@ describe('Authentication (Browser)', () => {
 			});
 		});
 
-		it('should show a confirmation modal when inside iframe', () => {
+		it('should render a Sign In button inside the container when inside iframe', () => {
 			mockIframeContext(true);
 			void zcAuth.signIn('signin-container');
-			expect(document.getElementById('__catalyst-modal-backdrop')).not.toBeNull();
-			expect(document.getElementById('__catalyst-modal-confirm')).not.toBeNull();
-			expect(document.getElementById('__catalyst-modal-title')?.textContent).toBe(
-				'Sign In Required'
-			);
+			const btn = document.getElementById('__catalyst-iframe-btn') as HTMLButtonElement;
+			expect(btn).not.toBeNull();
+			expect(btn.textContent).toBe('Sign In');
 		});
 
-		it('should reject with USER_CANCELLED when the modal is cancelled', async () => {
+		it('should use iframeButtonLabel from config', () => {
 			mockIframeContext(true);
-			const signInPromise = zcAuth.signIn('signin-container');
-			document.getElementById('__catalyst-modal-cancel')!.click();
-			await expect(signInPromise).rejects.toThrow('User cancelled the sign-in popup.');
-			expect(document.getElementById('__catalyst-modal-backdrop')).toBeNull();
+			void zcAuth.signIn('signin-container', { iframeButtonLabel: 'Log In' });
+			const btn = document.getElementById('__catalyst-iframe-btn') as HTMLButtonElement;
+			expect(btn.textContent).toBe('Log In');
 		});
 
-		it('should reject and close the modal when confirm fails (no hang)', async () => {
+		it('should reject and re-enable the button when confirm fails', async () => {
 			mockIframeContext(true);
 			jest.spyOn(window, 'open').mockReturnValue(null as unknown as Window);
 			const signInPromise = zcAuth.signIn('signin-container');
-			document.getElementById('__catalyst-modal-confirm')!.click();
+			const btn = document.getElementById('__catalyst-iframe-btn') as HTMLButtonElement;
+			btn.click();
 			await expect(signInPromise).rejects.toMatchObject({
 				code: 'app/POPUP_BLOCKED'
 			});
-			expect(document.getElementById('__catalyst-modal-backdrop')).toBeNull();
+			expect(btn.disabled).toBe(false);
 		});
 
-		it('should reject concurrent signIn while modal is open with POPUP_ALREADY_OPEN', async () => {
+		it('should reject concurrent signIn while button is open with POPUP_ALREADY_OPEN', async () => {
 			mockIframeContext(true);
 			const first = zcAuth.signIn('signin-container');
 			await expect(zcAuth.signIn('signin-container')).rejects.toMatchObject({
 				code: 'app/POPUP_ALREADY_OPEN'
 			});
-			expect(document.querySelectorAll('#__catalyst-modal-backdrop')).toHaveLength(1);
-			document.getElementById('__catalyst-modal-cancel')!.click();
-			await expect(first).rejects.toThrow('User cancelled the sign-in popup.');
+			expect(document.querySelectorAll('#__catalyst-iframe-btn')).toHaveLength(1);
+			// Reject first by simulating blocked popup
+			jest.spyOn(window, 'open').mockReturnValue(null as unknown as Window);
+			(document.getElementById('__catalyst-iframe-btn') as HTMLButtonElement).click();
+			await expect(first).rejects.toMatchObject({ code: 'app/POPUP_BLOCKED' });
 		});
 
-		it('should open popup when the user confirms (trusted gesture)', async () => {
+		it('should open popup when the user clicks the button (trusted gesture)', async () => {
 			mockIframeContext(true);
 			const fakePopup = makeFakePopup();
 			const openSpy = jest.spyOn(window, 'open').mockReturnValue(fakePopup);
 			const signInPromise = zcAuth.signIn('signin-container', { redirectUrl: '/dashboard' });
-			document.getElementById('__catalyst-modal-confirm')!.click();
+			const btn = document.getElementById('__catalyst-iframe-btn') as HTMLButtonElement;
+			expect(btn).not.toBeNull();
+			btn.click();
 			await Promise.resolve();
 			expect(openSpy).toHaveBeenCalled();
-			// Close the popup so the poll settles the promise and cleans up.
+			// Close the popup so the poll settles the promise.
 			(fakePopup as { closed: boolean }).closed = true;
 			await expect(signInPromise).rejects.toThrow('Popup closed before auth completed.');
-			expect(document.getElementById('__catalyst-modal-backdrop')).toBeNull();
 		});
 	});
 

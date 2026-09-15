@@ -207,26 +207,25 @@ class Authentication implements Component {
 			window.location.pathname + window.location.search;
 
 		if (detectIframeContext()) {
-			// -----------------------------------------------------------------------
-			// Popup-block guard — when zcAuth.signIn() is called inside an iframe
-			// without a direct user gesture (e.g. on page-load), browsers will
-			// silently block window.open(). We therefore show a centered confirmation
-			// modal overlay. The popup is only opened when the user clicks "Yes",
-			// which counts as a trusted user gesture and won't be blocked.
-			// -----------------------------------------------------------------------
-			return this.#showIframeConfirmModal('signin', async () => {
-				await this.#popupManager.signInViaPopup({
-					isHosted: config.isHosted,
-					cssUrl: config.cssUrl,
-					signInProvidersOnly: config.signInProvidersOnly,
-					forgotPasswordCssUrl: config.forgotPasswordCssUrl,
-					forgotPasswordId: config.forgotPasswordId,
-					is_customize_forgot_password: config.is_customize_forgot_password,
-					redirectUrl: config.redirectUrl,
-					serviceUrl: config.serviceUrl
-				});
-				window.location.href = this.#constructRedirectUrl(redirectTarget);
-			});
+			return showIframeConfirmModal(
+				'signin',
+				async () => {
+					await this.#popupManager.signInViaPopup({
+						isHosted: config.isHosted,
+						cssUrl: config.cssUrl,
+						signInProvidersOnly: config.signInProvidersOnly,
+						forgotPasswordCssUrl: config.forgotPasswordCssUrl,
+						forgotPasswordId: config.forgotPasswordId,
+						is_customize_forgot_password: config.is_customize_forgot_password,
+						redirectUrl: config.redirectUrl,
+						serviceUrl: config.serviceUrl
+					});
+					window.location.href = this.#constructRedirectUrl(redirectTarget);
+				},
+				id,
+				config.iframeButtonLabel,
+				config.iframeButtonStyle
+			);
 		}
 		try {
 			const isValidUser = await this.#isValidUser();
@@ -310,7 +309,11 @@ class Authentication implements Component {
 	 * await zcAuth.signOut('/signed-out');
 	 * ```
 	 */
-	async signOut(redirectURL = '/'): Promise<void> {
+	async signOut(
+		redirectURL = '/',
+		id?: string,
+		config: Pick<ICatalystSignInConfig, 'iframeButtonLabel' | 'iframeButtonStyle'> = {}
+	): Promise<void> {
 		const authProtocol = ConfigStore.get('AUTH_PROTOCOL') as unknown as Auth_Protocol;
 		this.authProtocol = authProtocol;
 
@@ -325,9 +328,15 @@ class Authentication implements Component {
 		}
 
 		if (detectIframeContext()) {
-			return this.#showIframeConfirmModal('signout', async () => {
-				await this.#popupManager.signOutViaPopup(redirectURL);
-			});
+			return showIframeConfirmModal(
+				'signout',
+				async () => {
+					await this.#popupManager.signOutViaPopup(redirectURL);
+				},
+				id,
+				config.iframeButtonLabel,
+				config.iframeButtonStyle
+			);
 		}
 
 		// OAuth — only clear IDB token, reset config, redirect.
@@ -576,17 +585,6 @@ class Authentication implements Component {
 		const publicSignupResp: ICatalystAuthResponse = await this.publicSignup();
 		const isPublicSignupEnabled = publicSignupResp.data?.public_signup as boolean;
 		return this.#iframeSignIn.renderSignInIframe(id, config, isPublicSignupEnabled);
-	}
-
-	/**
-	 * Delegates to {showIframeConfirmModal} in `internal/iframe-confirm-modal.ts`.
-	 * Kept as a private method so signIn/signOut call sites are unchanged.
-	 */
-	#showIframeConfirmModal(
-		action: 'signin' | 'signout',
-		onConfirm: () => Promise<void>
-	): Promise<void> {
-		return showIframeConfirmModal(action, onConfirm);
 	}
 }
 

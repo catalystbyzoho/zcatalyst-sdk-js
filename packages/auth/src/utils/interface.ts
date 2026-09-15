@@ -88,6 +88,16 @@ export interface ICatalystSignInConfig {
 	serviceUrl?: string;
 	redirectUrl?: string;
 	isHosted?: boolean;
+	/**
+	 * Label text for the sign-in / sign-out button rendered inside an iframe.
+	 * Defaults to 'Sign In' or 'Sign Out' based on the action.
+	 */
+	iframeButtonLabel?: string;
+	/**
+	 * Inline style overrides for the iframe button. Merged on top of the
+	 * default shadcn-inspired styles.
+	 */
+	iframeButtonStyle?: Partial<CSSStyleDeclaration>;
 }
 
 export interface ICatalystPopupSignInConfig {
