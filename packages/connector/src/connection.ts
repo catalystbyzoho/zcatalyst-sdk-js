@@ -328,9 +328,19 @@ export class Connector {
 	 * refresh. The legacy key is intentionally left in place (not deleted) so that other
 	 * instances still running an older SDK version during a rolling deployment keep
 	 * working against it until they themselves refresh or upgrade.
+	 *
+	 * The legacy entry carries no config fingerprint, so it can only be trusted while
+	 * this connector's configuration still matches what it was constructed with
+	 * (_configGeneration === 0, i.e. no setter has run yet). Once a setter has rotated
+	 * the refresh token/credentials/URLs, a legacy entry may hold a token minted under
+	 * the old configuration; adopting it would resurrect a stale credential under the
+	 * new hash, so we skip straight to a normal refresh instead.
 	 */
 	async #migrateLegacyTokenOrRefresh(): Promise<string> {
 		const generation = this._configGeneration;
+		if (generation !== 0) {
+			return await this.refreshAndPersistToken();
+		}
 		const legacyCacheObj = await (new Cache(this.app) as any)
 			.segment()
 			.get(this._legacyCacheKey)
@@ -348,7 +358,20 @@ export class Connector {
 		// immune to a config change racing the write below.
 		const cacheKey = this._cacheKey;
 		const expiresAt = this.expiresAt;
-		await this.#persistAccessToken(cacheKey, legacyToken, this.expiresIn, expiresAt);
+		// this.expiresIn comes from the connector's own config and is optional; a newly
+		// constructed connector without it would produce NaN here, which #persistAccessToken
+		// treats as a falsy TTL (no expiration set). Fall back to the remaining lifetime of
+		// the legacy token itself so the migrated cache entry keeps a finite expiry.
+		const expiresInSeconds = Number.isFinite(this.expiresIn)
+			? this.expiresIn
+			: Math.max(1, Math.ceil(((expiresAt ?? Date.now()) - Date.now()) / 1000));
+		await this.#persistAccessToken(cacheKey, legacyToken, expiresInSeconds, expiresAt);
+		if (generation !== this._configGeneration) {
+			// Configuration changed while persisting the migrated token; discard it and
+			// re-run the lookup under the current configuration instead of returning a
+			// token that was just invalidated by #invalidateCache().
+			return this.#fetchAndCacheToken();
+		}
 		return legacyToken;
 	}
 
@@ -407,8 +430,22 @@ export class Connector {
 		this.accessToken = accessToken;
 		this.expiresIn = expiresIn;
 		this.expiresAt = expiresAt;
+		// The `refreshToken` assignment above legitimately bumps _configGeneration via
+		// #invalidateCache(); snapshot the generation *after* it so the post-persist check
+		// below only catches an *external* config change racing the persist await, not
+		// this method's own update.
+		const postAssignGeneration = this._configGeneration;
 		const cacheKey = this._cacheKey;
 		await this.#persistAccessToken(cacheKey, accessToken, expiresIn, expiresAt);
+		if (postAssignGeneration !== this._configGeneration) {
+			// Configuration changed while persisting; #invalidateCache() already cleared
+			// this.accessToken for the new configuration, so discard the exchanged token
+			// here too instead of returning it to the caller.
+			throw new CatalystConnectorError(
+				'CONNECTOR_CONFIG_CHANGED',
+				'The connector configuration changed while generating the access token. The exchanged token was discarded; please retry the authorization flow.'
+			);
+		}
 		return accessToken;
 	}
 
@@ -423,7 +460,17 @@ export class Connector {
 	async refreshAndPersistToken(): Promise<string> {
 		const { cacheKey, accessToken, expiresIn, expiresAt } =
 			await this.#refreshAccessTokenValue();
+		// Snapshotted immediately after the (already generation-checked) refresh settles —
+		// immune to a config change that only races the persistence await below.
+		const generation = this._configGeneration;
 		await this.#persistAccessToken(cacheKey, accessToken, expiresIn, expiresAt);
+		if (generation !== this._configGeneration) {
+			// Configuration changed while persisting; the token was minted for the
+			// previous configuration and #invalidateCache() has already cleared it from
+			// this.accessToken, so retry under the current configuration instead of
+			// returning it.
+			return this.refreshAndPersistToken();
+		}
 		return accessToken;
 	}
 
