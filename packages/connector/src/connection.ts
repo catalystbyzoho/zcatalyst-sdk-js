@@ -91,27 +91,26 @@ export class Connector {
 	}
 
 	/**
-	 * Mirrors this connector's current live configuration back into the owning
-	 * Connection's connectionJson entry, keyed by the name this connector was originally
-	 * looked up under. Called on every config mutation so that a subsequent
-	 * Connection.getConnector() call constructs its fresh Connector from up-to-date
-	 * values instead of the original, now-stale, connectorDetails.
+	 * Patches a single field of this connector's entry in the owning Connection's
+	 * connectionJson, merging into whatever is currently stored there rather than
+	 * replacing the whole entry. Connection.getConnector() constructs a fresh Connector
+	 * snapshot on every call, so multiple instances for the same connector can be live at
+	 * once, each holding a different (possibly stale) copy of the other fields. Writing a
+	 * full snapshot from this instance's in-memory state would silently revert whatever
+	 * the other instances have already synchronized (e.g. instance A rotates
+	 * refreshToken, then instance B changes clientId using its own stale refreshToken —
+	 * a full-object write from B would erase A's rotation). Merging into the current
+	 * connectionJson entry keeps every independently-synced field intact.
 	 */
-	#syncConfigToConnection(): void {
+	#syncConfigField(key: string, value: string | undefined): void {
 		const connectionJson = this.connectionInstance.connectionJson;
 		if (!connectionJson) return;
-		connectionJson[this.connectionLookupKey] = {
-			[CONNECTOR_NAME]: this._connectorName,
-			[AUTH_URL]: this._authUrl,
-			[REFRESH_URL]: this._refreshUrl,
-			[REFRESH_TOKEN]: this._refreshToken,
-			[CLIENT_ID]: this._clientId,
-			[CLIENT_SECRET]: this._clientSecret,
-			[EXPIRES_IN]: String(this.expiresIn),
-			[REFRESH_IN]: String(this.refreshIn / 1000),
-			[REDIRECT_URL]: this._redirectUrl,
-			[SECRET_KEY]: this.secretKey
-		};
+		const existingEntry = connectionJson[this.connectionLookupKey];
+		const baseEntry =
+			existingEntry && typeof existingEntry === 'object'
+				? (existingEntry as { [x: string]: unknown })
+				: {};
+		connectionJson[this.connectionLookupKey] = { ...baseEntry, [key]: value };
 	}
 
 	get connectorName(): string {
@@ -120,7 +119,7 @@ export class Connector {
 
 	set connectorName(value: string) {
 		this._connectorName = value;
-		this.#invalidateCache();
+		this.#invalidateCache(CONNECTOR_NAME, value);
 	}
 
 	get authUrl(): string {
@@ -129,7 +128,7 @@ export class Connector {
 
 	set authUrl(value: string) {
 		this._authUrl = value;
-		this.#invalidateCache();
+		this.#invalidateCache(AUTH_URL, value);
 	}
 
 	get refreshUrl(): string {
@@ -138,7 +137,7 @@ export class Connector {
 
 	set refreshUrl(value: string) {
 		this._refreshUrl = value;
-		this.#invalidateCache();
+		this.#invalidateCache(REFRESH_URL, value);
 	}
 
 	get refreshToken(): string {
@@ -147,7 +146,7 @@ export class Connector {
 
 	set refreshToken(value: string) {
 		this._refreshToken = value;
-		this.#invalidateCache();
+		this.#invalidateCache(REFRESH_TOKEN, value);
 	}
 
 	get clientId(): string {
@@ -156,7 +155,7 @@ export class Connector {
 
 	set clientId(value: string) {
 		this._clientId = value;
-		this.#invalidateCache();
+		this.#invalidateCache(CLIENT_ID, value);
 	}
 
 	get clientSecret(): string {
@@ -165,7 +164,7 @@ export class Connector {
 
 	set clientSecret(value: string) {
 		this._clientSecret = value;
-		this.#invalidateCache();
+		this.#invalidateCache(CLIENT_SECRET, value);
 	}
 
 	get redirectUrl(): string {
@@ -174,21 +173,25 @@ export class Connector {
 
 	set redirectUrl(value: string) {
 		this._redirectUrl = value;
-		this.#invalidateCache();
+		this.#invalidateCache(REDIRECT_URL, value);
 	}
 
 	/**
-	 * Invalidates the memoized cache key and any in-memory access token state.
+	 * Invalidates the memoized cache key and any in-memory access token state, and
+	 * — when a specific config field changed — patches that single field back into the
+	 * owning Connection's connectionJson entry (see #syncConfigField()).
 	 * Called whenever a configuration property changes so that a stale token
 	 * (issued under the previous configuration) is never served after the change,
 	 * forcing the next getAccessToken() call to re-check the cache/refresh.
 	 */
-	#invalidateCache(): void {
+	#invalidateCache(configKey?: string, configValue?: string): void {
 		this._connectionName = null;
 		this.accessToken = null;
 		this.expiresAt = null;
 		this._configGeneration++;
-		this.#syncConfigToConnection();
+		if (configKey !== undefined) {
+			this.#syncConfigField(configKey, configValue);
+		}
 	}
 
 	/**
