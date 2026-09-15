@@ -54,18 +54,11 @@ export class Connector {
 	private _clientId: string;
 	private _clientSecret: string;
 	private _redirectUrl: string;
-	private _connectionName: string | null; // lazy init of connector cache key based on config hash
-	private _configGeneration: number; // bumped on every config change to detect changes across in-flight async work
-	private _pendingToken: Promise<string> | null; // in-flight getAccessToken() result, shared by concurrent callers
+	private _connectionName: string | null;
+	private _configGeneration: number;
+	private _pendingToken: Promise<string> | null;
 	private app: unknown;
 	private requester: Handler;
-	// Connection.getConnector() builds a brand-new Connector from Connection.connectionJson
-	// on every call, so without this, a config rotation made through one instance (e.g. a
-	// refreshed refresh_token) would be invisible to the next getConnector() call: the fresh
-	// instance would rebuild its config/hash from the stale connectionJson entry and could
-	// wrongly treat itself as "unrotated" (_configGeneration === 0), including for legacy
-	// cache-key migration. Keeping a reference to the owning Connection and the entry's
-	// lookup key lets every config change be mirrored back into connectionJson immediately.
 	private readonly connectionInstance: Connection;
 	private readonly connectionLookupKey: string;
 	constructor(connectionInstance: Connection, connectorDetails: { [x: string]: string }) {
@@ -92,24 +85,11 @@ export class Connector {
 
 	/**
 	 * Patches a single field of this connector's entry in the owning Connection's
-	 * connectionJson, merging into whatever is currently stored there rather than
-	 * replacing the whole entry. Connection.getConnector() constructs a fresh Connector
-	 * snapshot on every call, so multiple instances for the same connector can be live at
-	 * once, each holding a different (possibly stale) copy of the other fields. Writing a
-	 * full snapshot from this instance's in-memory state would silently revert whatever
-	 * the other instances have already synchronized (e.g. instance A rotates
-	 * refreshToken, then instance B changes clientId using its own stale refreshToken —
-	 * a full-object write from B would erase A's rotation). Merging into the current
-	 * connectionJson entry keeps every independently-synced field intact.
-	 *
-	 * CONNECTOR_NAME is intentionally never persisted here: connectionJson is keyed by
-	 * the lookup name (connectionLookupKey), and Connection.getConnector() always
-	 * derives connectorDetails[CONNECTOR_NAME] from that lookup key, not from the entry's
-	 * own fields. Storing a renamed connector_name inside the entry wouldn't rename the
-	 * map key — it would instead override the lookup key when the entry is next read by
-	 * Object.assign() in getConnector(), so a later getConnector(oldName) would silently
-	 * hand back a connector claiming to be newName (wrong cache key), while
-	 * getConnector(newName) would still fail to find the entry.
+	 * connectionJson, merging with whatever is currently stored there instead of
+	 * replacing the whole entry (multiple Connector instances for the same connector
+	 * can be live at once). CONNECTOR_NAME is never persisted here, since connectionJson
+	 * is keyed by the lookup name and Connection.getConnector() always derives that key
+	 * itself rather than reading it from the entry.
 	 */
 	#syncConfigField(key: string, value: string | undefined): void {
 		if (key === CONNECTOR_NAME) return;
@@ -129,7 +109,6 @@ export class Connector {
 
 	set connectorName(value: string) {
 		this._connectorName = value;
-		// Not synced to connectionJson — see #syncConfigField()'s CONNECTOR_NAME note.
 		this.#invalidateCache();
 	}
 
@@ -188,12 +167,9 @@ export class Connector {
 	}
 
 	/**
-	 * Invalidates the memoized cache key and any in-memory access token state, and
-	 * — when a specific config field changed — patches that single field back into the
-	 * owning Connection's connectionJson entry (see #syncConfigField()).
-	 * Called whenever a configuration property changes so that a stale token
-	 * (issued under the previous configuration) is never served after the change,
-	 * forcing the next getAccessToken() call to re-check the cache/refresh.
+	 * Invalidates the memoized cache key and any in-memory access token state, so a
+	 * stale token is never served after a config change. Optionally patches the
+	 * corresponding field back into the owning Connection's connectionJson entry.
 	 */
 	#invalidateCache(configKey?: string, configValue?: string): void {
 		this._connectionName = null;
@@ -308,12 +284,6 @@ export class Connector {
 		const generation = this._configGeneration;
 		const cachedTokenObj = await (new Cache(this.app) as any).segment().get(this._cacheKey);
 		if (generation !== this._configGeneration) {
-			// Configuration changed while the cache read was in flight. Retry this helper
-			// directly rather than going through getAccessToken() — at this point
-			// _pendingToken still points at the promise this call is producing, so routing
-			// back through the public gate would return that same (not-yet-settled) promise
-			// and create a self-referential cycle: the outer promise would wait on the
-			// pending-token promise, which itself waits on the outer promise settling.
 			return this.#fetchAndCacheToken();
 		}
 		const token = this.#tryApplyCachedValue(cachedTokenObj?.cache_value);
@@ -356,8 +326,6 @@ export class Connector {
 			try {
 				this.accessToken = this.#decrypt(value.access_token, this.secretKey);
 			} catch {
-				// Decryption failed (wrong secret key or corrupted ciphertext) — treat this
-				// entry as unusable rather than as a hard error.
 				return null;
 			}
 		} else {
@@ -369,22 +337,11 @@ export class Connector {
 
 	/**
 	 * One-time migration fallback for SDK versions up to v0.0.4, which cached tokens
-	 * under a plain 'ZC_CONN_<name>' key with no config hash. Without this, every
-	 * connector across every deployment would lose its cached token on upgrade (the new
-	 * code only ever reads the hashed key) and refresh simultaneously — a deployment-wide
-	 * refresh storm, and an outright failure for any connector that can't refresh right
-	 * then. If a valid legacy entry is found, adopt it and persist it forward under the
-	 * new hashed key so subsequent reads hit it directly; otherwise fall back to a normal
-	 * refresh. The legacy key is intentionally left in place (not deleted) so that other
-	 * instances still running an older SDK version during a rolling deployment keep
-	 * working against it until they themselves refresh or upgrade.
-	 *
-	 * The legacy entry carries no config fingerprint, so it can only be trusted while
-	 * this connector's configuration still matches what it was constructed with
-	 * (_configGeneration === 0, i.e. no setter has run yet). Once a setter has rotated
-	 * the refresh token/credentials/URLs, a legacy entry may hold a token minted under
-	 * the old configuration; adopting it would resurrect a stale credential under the
-	 * new hash, so we skip straight to a normal refresh instead.
+	 * under a plain 'ZC_CONN_<name>' key with no config hash. Adopts a still-valid
+	 * legacy token and persists it forward under the new hashed key; falls back to a
+	 * normal refresh otherwise. Only trusted while _configGeneration === 0, since the
+	 * legacy entry carries no config fingerprint and can't be verified against a
+	 * rotated configuration.
 	 */
 	async #migrateLegacyTokenOrRefresh(): Promise<string> {
 		const generation = this._configGeneration;
@@ -404,22 +361,13 @@ export class Connector {
 		if (legacyToken === null) {
 			return await this.refreshAndPersistToken();
 		}
-		// Captured in this same synchronous turn as #tryApplyCachedValue()'s assignments —
-		// immune to a config change racing the write below.
 		const cacheKey = this._cacheKey;
 		const expiresAt = this.expiresAt;
-		// this.expiresIn comes from the connector's own config and is optional; a newly
-		// constructed connector without it would produce NaN here, which #persistAccessToken
-		// treats as a falsy TTL (no expiration set). Fall back to the remaining lifetime of
-		// the legacy token itself so the migrated cache entry keeps a finite expiry.
 		const expiresInSeconds = Number.isFinite(this.expiresIn)
 			? this.expiresIn
 			: Math.max(1, Math.ceil(((expiresAt ?? Date.now()) - Date.now()) / 1000));
 		await this.#persistAccessToken(cacheKey, legacyToken, expiresInSeconds, expiresAt);
 		if (generation !== this._configGeneration) {
-			// Configuration changed while persisting the migrated token; discard it and
-			// re-run the lookup under the current configuration instead of returning a
-			// token that was just invalidated by #invalidateCache().
 			return this.#fetchAndCacheToken();
 		}
 		return legacyToken;
@@ -480,17 +428,10 @@ export class Connector {
 		this.accessToken = accessToken;
 		this.expiresIn = expiresIn;
 		this.expiresAt = expiresAt;
-		// The `refreshToken` assignment above legitimately bumps _configGeneration via
-		// #invalidateCache(); snapshot the generation *after* it so the post-persist check
-		// below only catches an *external* config change racing the persist await, not
-		// this method's own update.
 		const postAssignGeneration = this._configGeneration;
 		const cacheKey = this._cacheKey;
 		await this.#persistAccessToken(cacheKey, accessToken, expiresIn, expiresAt);
 		if (postAssignGeneration !== this._configGeneration) {
-			// Configuration changed while persisting; #invalidateCache() already cleared
-			// this.accessToken for the new configuration, so discard the exchanged token
-			// here too instead of returning it to the caller.
 			throw new CatalystConnectorError(
 				'CONNECTOR_CONFIG_CHANGED',
 				'The connector configuration changed while generating the access token. The exchanged token was discarded; please retry the authorization flow.'
@@ -510,15 +451,9 @@ export class Connector {
 	async refreshAndPersistToken(): Promise<string> {
 		const { cacheKey, accessToken, expiresIn, expiresAt } =
 			await this.#refreshAccessTokenValue();
-		// Snapshotted immediately after the (already generation-checked) refresh settles —
-		// immune to a config change that only races the persistence await below.
 		const generation = this._configGeneration;
 		await this.#persistAccessToken(cacheKey, accessToken, expiresIn, expiresAt);
 		if (generation !== this._configGeneration) {
-			// Configuration changed while persisting; the token was minted for the
-			// previous configuration and #invalidateCache() has already cleared it from
-			// this.accessToken, so retry under the current configuration instead of
-			// returning it.
 			return this.refreshAndPersistToken();
 		}
 		return accessToken;
@@ -540,9 +475,6 @@ export class Connector {
 	/**
 	 * Performs the refresh-token network exchange and applies the result, guarding
 	 * against a configuration change that happened while the request was in flight.
-	 * Returns the cache key and token values snapshotted in the same synchronous turn
-	 * they were applied, so callers can persist them without re-reading mutable state
-	 * across another await.
 	 */
 	async #refreshAccessTokenValue(): Promise<{
 		cacheKey: string;
@@ -575,9 +507,6 @@ export class Connector {
 			ObjectHasProperties(tokenObject, [ACCESS_TOKEN, EXPIRES_IN], 'auth_response', true);
 		}, CatalystConnectorError);
 		if (generation !== this._configGeneration) {
-			// Configuration changed while this refresh was in flight; the response was
-			// issued for the previous credentials, so discard it and retry under the
-			// current configuration instead of applying a stale token.
 			return this.#refreshAccessTokenValue();
 		}
 		const accessToken = tokenObject[ACCESS_TOKEN] as string;
@@ -587,8 +516,6 @@ export class Connector {
 		this.accessToken = accessToken;
 		this.expiresIn = expiresIn;
 		this.expiresAt = expiresAt;
-		// Snapshotted in this same synchronous turn as the assignments above — immune to
-		// any config change that happens after this method returns.
 		const cacheKey = this._cacheKey;
 		return { cacheKey, accessToken, expiresIn, expiresAt };
 	}
@@ -672,10 +599,7 @@ export class Connector {
 	}
 
 	/**
-	 * Writes the given cache key/token snapshot to Catalyst Cache as-is, with no
-	 * further reads of mutable connector state — the caller is responsible for
-	 * capturing a consistent (cacheKey, accessToken, expiresIn, expiresAt) snapshot
-	 * beforehand so that a config change can't desynchronize the key from the value.
+	 * Writes the given cache key/token snapshot to Catalyst Cache as-is.
 	 */
 	async #persistAccessToken(
 		cacheKey: string,
