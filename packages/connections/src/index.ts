@@ -1,3 +1,10 @@
+/**
+ * Catalyst Connections — invoke pre-configured third-party connection endpoints from your Catalyst app.
+ *
+ * @module @zcatalyst/connections
+ * @packageDocumentation
+ */
+
 'use strict';
 
 import { Handler, IRequestConfig, RequestType, ResponseType } from '@zcatalyst/transport';

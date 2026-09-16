@@ -1,5 +1,13 @@
 {
-  "entryPoints": ["src/**/*"],
-  "exclude": ["src/__mocks__/**/*"],
-  "out": "../../docs/cache"
+  "extends": [
+    "../../typedoc.base.json"
+  ],
+  "name": "Catalyst Circuit",
+  "entryPoints": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "src/__mocks__/**/*"
+  ],
+  "out": "../../docs/circuit"
 }

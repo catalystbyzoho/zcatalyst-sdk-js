@@ -1,6 +1,7 @@
 /**
  * Catalyst Job Scheduling — submit, schedule and manage cron and one-off jobs.
  *
+ * @module @zcatalyst/job-scheduling
  * @packageDocumentation
  */
 

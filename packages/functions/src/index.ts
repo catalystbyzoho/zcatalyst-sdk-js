@@ -1,6 +1,7 @@
 /**
  * Catalyst Functions — invoke deployed serverless functions by ID or name.
  *
+ * @module @zcatalyst/functions
  * @packageDocumentation
  */
 

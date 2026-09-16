@@ -1,6 +1,7 @@
 /**
  * Internal HTTP / fetch transport layer used by every Catalyst component package.
  *
+ * @module @zcatalyst/transport
  * @packageDocumentation
  */
 

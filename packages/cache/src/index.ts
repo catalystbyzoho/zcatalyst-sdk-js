@@ -1,6 +1,7 @@
 /**
  * Catalyst Cache — in-memory key/value storage organised into segments for fast, low-latency reads.
  *
+ * @module @zcatalyst/cache
  * @packageDocumentation
  */
 

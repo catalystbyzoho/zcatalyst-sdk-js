@@ -1,6 +1,7 @@
 /**
  * Catalyst Authentication for browsers — sign-in flows, token storage and session management.
  *
+ * @module @zcatalyst/auth-client
  * @packageDocumentation
  */
 

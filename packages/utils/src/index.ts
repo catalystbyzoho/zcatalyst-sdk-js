@@ -1,6 +1,7 @@
 /**
  * Shared utilities — constants, validators, error types and helpers used across the SDK.
  *
+ * @module @zcatalyst/utils
  * @packageDocumentation
  */
 

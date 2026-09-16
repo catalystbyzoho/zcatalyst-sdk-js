@@ -1,6 +1,7 @@
 /**
  * Catalyst Circuit — orchestrate workflows that span multiple Catalyst components.
  *
+ * @module @zcatalyst/circuit
  * @packageDocumentation
  */
 

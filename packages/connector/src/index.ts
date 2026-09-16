@@ -1,6 +1,7 @@
 /**
  * Catalyst Connector — securely store and reuse third-party credentials and configuration.
  *
+ * @module @zcatalyst/connector
  * @packageDocumentation
  */
 

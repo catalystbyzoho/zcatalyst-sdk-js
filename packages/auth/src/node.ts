@@ -1,7 +1,7 @@
 import { ICatalystAppConfig, ICatalystCredentials } from './utils/interface.js';
 
 /** Provides the Node.js authentication facade exported as `zcAuth`. */
-class Authentication {
+export class Authentication {
 	private authInstance: unknown;
 	/** Creates an authentication facade that loads the Node implementation on demand. */
 	constructor() {

@@ -8,7 +8,9 @@
     "tsconfig.browser.json",
     ".prettierrc.js",
     "eslint.config.mjs",
-    "scripts/**"
+    "scripts/**",
+    "typedoc.base.json",
+    "typedoc-theme.css"
   ],
   "tasks": {
     "build": {

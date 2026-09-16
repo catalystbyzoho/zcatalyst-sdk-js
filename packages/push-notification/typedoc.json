@@ -1,5 +1,13 @@
 {
-  "entryPoints": ["src/**/*"],
-  "exclude": ["src/__mocks__/**/*"],
+  "extends": [
+    "../../typedoc.base.json"
+  ],
+  "name": "Catalyst Push Notification",
+  "entryPoints": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "src/__mocks__/**/*"
+  ],
   "out": "../../docs/push-notification"
 }
