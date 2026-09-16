@@ -42,38 +42,185 @@ const SECRET_KEY = 'secret_key';
  * Manages OAuth access tokens for a configured Catalyst connector.
  */
 export class Connector {
-	connectorName: string;
-	authUrl: string;
-	refreshUrl: string;
-	refreshToken: string;
-	clientId: string;
-	clientSecret: string;
 	expiresIn: number;
 	expiresAt: number | null;
-	redirectUrl: string;
 	refreshIn: number;
 	accessToken: null | string;
 	secretKey?: string;
+	private _connectorName: string;
+	private _authUrl: string;
+	private _refreshUrl: string;
+	private _refreshToken: string;
+	private _clientId: string;
+	private _clientSecret: string;
+	private _redirectUrl: string;
+	private _connectionName: string | null;
+	private _configGeneration: number;
+	private _pendingToken: Promise<string> | null;
 	private app: unknown;
 	private requester: Handler;
+	private readonly connectionInstance: Connection;
+	private readonly connectionLookupKey: string;
 	constructor(connectionInstance: Connection, connectorDetails: { [x: string]: string }) {
-		this.connectorName = connectorDetails[CONNECTOR_NAME];
-		this.authUrl = connectorDetails[AUTH_URL];
-		this.refreshUrl = connectorDetails[REFRESH_URL];
-		this.refreshToken = connectorDetails[REFRESH_TOKEN];
-		this.clientId = connectorDetails[CLIENT_ID];
-		this.clientSecret = connectorDetails[CLIENT_SECRET];
+		this._connectorName = connectorDetails[CONNECTOR_NAME];
+		this._authUrl = connectorDetails[AUTH_URL];
+		this._refreshUrl = connectorDetails[REFRESH_URL];
+		this._refreshToken = connectorDetails[REFRESH_TOKEN];
+		this._clientId = connectorDetails[CLIENT_ID];
+		this._clientSecret = connectorDetails[CLIENT_SECRET];
 		this.expiresIn = parseInt(connectorDetails[EXPIRES_IN]);
 		this.refreshIn = parseInt(connectorDetails[REFRESH_IN]) * 1000;
-		this.redirectUrl = connectorDetails[REDIRECT_URL];
+		this._redirectUrl = connectorDetails[REDIRECT_URL];
 		this.secretKey = connectorDetails[SECRET_KEY];
 		this.accessToken = null;
 		this.expiresAt = null;
+		this._connectionName = null;
+		this._configGeneration = 0;
+		this._pendingToken = null;
 		this.app = connectionInstance.app;
 		this.requester = connectionInstance.requester;
+		this.connectionInstance = connectionInstance;
+		this.connectionLookupKey = this._connectorName;
 	}
 
-	private get _connectorName(): string {
+	/**
+	 * Patches a single field of this connector's entry in the owning Connection's
+	 * connectionJson, merging with whatever is currently stored there instead of
+	 * replacing the whole entry (multiple Connector instances for the same connector
+	 * can be live at once). CONNECTOR_NAME is never persisted here, since connectionJson
+	 * is keyed by the lookup name and Connection.getConnector() always derives that key
+	 * itself rather than reading it from the entry.
+	 */
+	#syncConfigField(key: string, value: string | undefined): void {
+		if (key === CONNECTOR_NAME) return;
+		const connectionJson = this.connectionInstance.connectionJson;
+		if (!connectionJson) return;
+		const existingEntry = connectionJson[this.connectionLookupKey];
+		const baseEntry =
+			existingEntry && typeof existingEntry === 'object'
+				? (existingEntry as { [x: string]: unknown })
+				: {};
+		connectionJson[this.connectionLookupKey] = { ...baseEntry, [key]: value };
+	}
+
+	get connectorName(): string {
+		return this._connectorName;
+	}
+
+	set connectorName(value: string) {
+		this._connectorName = value;
+		this.#invalidateCache();
+	}
+
+	get authUrl(): string {
+		return this._authUrl;
+	}
+
+	set authUrl(value: string) {
+		this._authUrl = value;
+		this.#invalidateCache(AUTH_URL, value);
+	}
+
+	get refreshUrl(): string {
+		return this._refreshUrl;
+	}
+
+	set refreshUrl(value: string) {
+		this._refreshUrl = value;
+		this.#invalidateCache(REFRESH_URL, value);
+	}
+
+	get refreshToken(): string {
+		return this._refreshToken;
+	}
+
+	set refreshToken(value: string) {
+		this._refreshToken = value;
+		this.#invalidateCache(REFRESH_TOKEN, value);
+	}
+
+	get clientId(): string {
+		return this._clientId;
+	}
+
+	set clientId(value: string) {
+		this._clientId = value;
+		this.#invalidateCache(CLIENT_ID, value);
+	}
+
+	get clientSecret(): string {
+		return this._clientSecret;
+	}
+
+	set clientSecret(value: string) {
+		this._clientSecret = value;
+		this.#invalidateCache(CLIENT_SECRET, value);
+	}
+
+	get redirectUrl(): string {
+		return this._redirectUrl;
+	}
+
+	set redirectUrl(value: string) {
+		this._redirectUrl = value;
+		this.#invalidateCache(REDIRECT_URL, value);
+	}
+
+	/**
+	 * Invalidates the memoized cache key and any in-memory access token state, so a
+	 * stale token is never served after a config change. Optionally patches the
+	 * corresponding field back into the owning Connection's connectionJson entry.
+	 */
+	#invalidateCache(configKey?: string, configValue?: string): void {
+		this._connectionName = null;
+		this.accessToken = null;
+		this.expiresAt = null;
+		this._configGeneration++;
+		if (configKey !== undefined) {
+			this.#syncConfigField(configKey, configValue);
+		}
+	}
+
+	/**
+	 * Calculates a hash based on all connector configuration parameters.
+	 * This ensures that any change in refresh token, client credentials, or URLs
+	 * results in a new cache key, preventing stale access tokens from being served.
+	 * Uses polynomial rolling hash (base 31) to generate a deterministic hash converted to
+	 * a 5-digit hexadecimal string. This provides a good balance between uniqueness and brevity for cache keys.
+	 */
+	private getConnectorHash(): string {
+		const configStr = [
+			this.refreshToken,
+			this.clientId,
+			this.clientSecret,
+			this.authUrl,
+			this.refreshUrl,
+			this.redirectUrl
+		]
+			.filter((config) => config)
+			.join(':');
+		let strHash = 0;
+		for (let i = 0; i < configStr.length; i++) {
+			strHash = (strHash * 31 + configStr.charCodeAt(i)) | 0;
+		}
+		const hash = (31 + strHash) | 0;
+		const masked = (hash >>> 0) & 0xfffff; // 20-bit or 5-digit hex
+		return masked.toString(16).padStart(5, '0').toLowerCase();
+	}
+
+	private get _cacheKey(): string {
+		if (this._connectionName === null) {
+			this._connectionName = 'ZC_CONN_' + this.connectorName + ':' + this.getConnectorHash();
+		}
+		return this._connectionName;
+	}
+
+	/**
+	 * The pre-hash cache key format used by SDK versions up to and including v0.0.4
+	 * (published, no config hash suffix). Kept as a one-time migration fallback so that
+	 * upgrading doesn't strand every already-cached token: see #migrateLegacyTokenOrRefresh().
+	 */
+	private get _legacyCacheKey(): string {
 		return 'ZC_CONN_' + this.connectorName;
 	}
 
@@ -125,41 +272,105 @@ export class Connector {
 		if (this.accessToken && this.expiresAt && this.expiresAt > Date.now()) {
 			return this.accessToken;
 		}
-		const cachedTokenObj = await (new Cache(this.app) as any)
-			.segment()
-			.get(this._connectorName);
-		try {
-			const value = JSON.parse(cachedTokenObj.cache_value);
-			if (!value?.access_token) {
-				return await this.refreshAndPersistToken();
-			}
-			const expiryTime = value.expires_at;
-			if (expiryTime < Date.now()) {
-				return await this.refreshAndPersistToken();
-			}
-			this.expiresAt = expiryTime;
-			if (this.#isEncrypted(value.access_token)) {
-				if (!this.secretKey) {
-					throw new CatalystConnectorError(
-						'SECRET_KEY_MISSING',
-						'The cached access token is encrypted. Please provide a valid secret key to decrypt it.'
-					);
-				}
-				try {
-					this.accessToken = this.#decrypt(value.access_token, this.secretKey as string);
-				} catch {
-					// Decryption failed (wrong secret key or corrupted ciphertext) —
-					// discard the stale cache entry and fetch a fresh token.
-					return await this.refreshAndPersistToken();
-				}
-			} else {
-				this.accessToken = value.access_token;
-			}
-			return this.accessToken as string;
-		} catch (err) {
-			if (err instanceof SyntaxError) return await this.refreshAndPersistToken();
-			throw err;
+		if (!this._pendingToken) {
+			this._pendingToken = this.#fetchAndCacheToken().finally(() => {
+				this._pendingToken = null;
+			});
 		}
+		return this._pendingToken;
+	}
+
+	async #fetchAndCacheToken(): Promise<string> {
+		const generation = this._configGeneration;
+		const cachedTokenObj = await (new Cache(this.app) as any).segment().get(this._cacheKey);
+		if (generation !== this._configGeneration) {
+			return this.#fetchAndCacheToken();
+		}
+		const token = this.#tryApplyCachedValue(cachedTokenObj?.cache_value);
+		if (token !== null) {
+			return token;
+		}
+		return await this.#migrateLegacyTokenOrRefresh();
+	}
+
+	/**
+	 * Parses a raw cache_value string and, if it holds a still-valid access token,
+	 * applies it to this.accessToken/this.expiresAt and returns it. Returns null for
+	 * any "no usable token here" outcome (missing/malformed entry, expired, or a
+	 * corrupted/mismatched-key decryption failure) so callers can fall back to another
+	 * source. A missing secretKey for an encrypted entry is a hard configuration error
+	 * and throws rather than falling back, matching the behavior for the primary key.
+	 */
+	#tryApplyCachedValue(rawCacheValue: string | undefined): string | null {
+		if (!rawCacheValue) return null;
+		let value: { access_token?: string | null; expires_at?: number | null };
+		try {
+			value = JSON.parse(rawCacheValue);
+		} catch {
+			return null;
+		}
+		if (!value?.access_token) {
+			return null;
+		}
+		const expiryTime = value.expires_at;
+		if (expiryTime === undefined || expiryTime === null || expiryTime < Date.now()) {
+			return null;
+		}
+		if (this.#isEncrypted(value.access_token)) {
+			if (!this.secretKey) {
+				throw new CatalystConnectorError(
+					'SECRET_KEY_MISSING',
+					'The cached access token is encrypted. Please provide a valid secret key to decrypt it.'
+				);
+			}
+			try {
+				this.accessToken = this.#decrypt(value.access_token, this.secretKey);
+			} catch {
+				return null;
+			}
+		} else {
+			this.accessToken = value.access_token;
+		}
+		this.expiresAt = expiryTime;
+		return this.accessToken;
+	}
+
+	/**
+	 * One-time migration fallback for SDK versions up to v0.0.4, which cached tokens
+	 * under a plain 'ZC_CONN_<name>' key with no config hash. Adopts a still-valid
+	 * legacy token and persists it forward under the new hashed key; falls back to a
+	 * normal refresh otherwise. Only trusted while _configGeneration === 0, since the
+	 * legacy entry carries no config fingerprint and can't be verified against a
+	 * rotated configuration.
+	 */
+	async #migrateLegacyTokenOrRefresh(): Promise<string> {
+		const generation = this._configGeneration;
+		if (generation !== 0) {
+			return await this.refreshAndPersistToken();
+		}
+		const legacyCacheObj = await (new Cache(this.app) as any)
+			.segment()
+			.get(this._legacyCacheKey)
+			.catch(() => null);
+		if (generation !== this._configGeneration) {
+			return this.#fetchAndCacheToken();
+		}
+		const legacyToken = legacyCacheObj
+			? this.#tryApplyCachedValue(legacyCacheObj.cache_value)
+			: null;
+		if (legacyToken === null) {
+			return await this.refreshAndPersistToken();
+		}
+		const cacheKey = this._cacheKey;
+		const expiresAt = this.expiresAt;
+		const expiresInSeconds = Number.isFinite(this.expiresIn)
+			? this.expiresIn
+			: Math.max(1, Math.ceil(((expiresAt ?? Date.now()) - Date.now()) / 1000));
+		await this.#persistAccessToken(cacheKey, legacyToken, expiresInSeconds, expiresAt);
+		if (generation !== this._configGeneration) {
+			return this.#fetchAndCacheToken();
+		}
+		return legacyToken;
 	}
 
 	/**
@@ -178,6 +389,7 @@ export class Connector {
 			isNonEmptyString(this.redirectUrl, REDIRECT_URL, true);
 		}, CatalystConnectorError);
 		this.#validateOAuthUrl(this.authUrl, AUTH_URL);
+		const generation = this._configGeneration;
 		const request: IRequestConfig = {
 			method: REQ_METHOD.post,
 			url: this.authUrl,
@@ -202,13 +414,30 @@ export class Connector {
 				true
 			);
 		}, CatalystConnectorError);
-		this.accessToken = tokenObj[ACCESS_TOKEN] as string;
+		if (generation !== this._configGeneration) {
+			throw new CatalystConnectorError(
+				'CONNECTOR_CONFIG_CHANGED',
+				'The connector configuration changed while generating the access token. The exchanged token was discarded; please retry the authorization flow.'
+			);
+		}
 		this.refreshToken = tokenObj[REFRESH_TOKEN] as string;
-		this.expiresIn = parseInt(tokenObj[EXPIRES_IN] as string);
-		const expires = Date.now() + (this.expiresIn * 1000 - 900000); // Convert expiryIn seconds to milliseconds and subtract 15 minutes
-		this.expiresAt = this.refreshIn ? Date.now() + this.refreshIn : expires;
-		await this.putAccessTokenInCache();
-		return this.accessToken;
+		const accessToken = tokenObj[ACCESS_TOKEN] as string;
+		const expiresIn = parseInt(tokenObj[EXPIRES_IN] as string);
+		const expires = Date.now() + (expiresIn * 1000 - 900000); // Convert expiryIn seconds to milliseconds and subtract 15 minutes
+		const expiresAt = this.refreshIn ? Date.now() + this.refreshIn : expires;
+		this.accessToken = accessToken;
+		this.expiresIn = expiresIn;
+		this.expiresAt = expiresAt;
+		const postAssignGeneration = this._configGeneration;
+		const cacheKey = this._cacheKey;
+		await this.#persistAccessToken(cacheKey, accessToken, expiresIn, expiresAt);
+		if (postAssignGeneration !== this._configGeneration) {
+			throw new CatalystConnectorError(
+				'CONNECTOR_CONFIG_CHANGED',
+				'The connector configuration changed while generating the access token. The exchanged token was discarded; please retry the authorization flow.'
+			);
+		}
+		return accessToken;
 	}
 
 	/**
@@ -220,9 +449,14 @@ export class Connector {
 	 * ```
 	 */
 	async refreshAndPersistToken(): Promise<string> {
-		await this.refreshAccessToken();
-		await this.putAccessTokenInCache();
-		return this.accessToken as string;
+		const { cacheKey, accessToken, expiresIn, expiresAt } =
+			await this.#refreshAccessTokenValue();
+		const generation = this._configGeneration;
+		await this.#persistAccessToken(cacheKey, accessToken, expiresIn, expiresAt);
+		if (generation !== this._configGeneration) {
+			return this.refreshAndPersistToken();
+		}
+		return accessToken;
 	}
 
 	/**
@@ -235,11 +469,25 @@ export class Connector {
 	 * ```
 	 */
 	async refreshAccessToken(): Promise<void> {
+		await this.#refreshAccessTokenValue();
+	}
+
+	/**
+	 * Performs the refresh-token network exchange and applies the result, guarding
+	 * against a configuration change that happened while the request was in flight.
+	 */
+	async #refreshAccessTokenValue(): Promise<{
+		cacheKey: string;
+		accessToken: string;
+		expiresIn: number;
+		expiresAt: number;
+	}> {
 		await wrapValidatorsWithPromise(() => {
 			isNonEmptyString(this.refreshToken, 'refresh_token', true);
 			isNonEmptyString(this.refreshUrl, 'refresh_url', true);
 		}, CatalystConnectorError);
 		this.#validateOAuthUrl(this.refreshUrl, REFRESH_URL);
+		const generation = this._configGeneration;
 		const request: IRequestConfig = {
 			method: REQ_METHOD.post,
 			url: this.refreshUrl,
@@ -258,10 +506,18 @@ export class Connector {
 			isNonNullObject(tokenObject, 'auth_response', true);
 			ObjectHasProperties(tokenObject, [ACCESS_TOKEN, EXPIRES_IN], 'auth_response', true);
 		}, CatalystConnectorError);
-		this.accessToken = tokenObject[ACCESS_TOKEN] as string;
-		this.expiresIn = parseInt(tokenObject[EXPIRES_IN] as string);
-		const expires = Date.now() + (this.expiresIn * 1000 - 900000);
-		this.expiresAt = this.refreshIn ? Date.now() + this.refreshIn : expires;
+		if (generation !== this._configGeneration) {
+			return this.#refreshAccessTokenValue();
+		}
+		const accessToken = tokenObject[ACCESS_TOKEN] as string;
+		const expiresIn = parseInt(tokenObject[EXPIRES_IN] as string);
+		const expires = Date.now() + (expiresIn * 1000 - 900000);
+		const expiresAt = this.refreshIn ? Date.now() + this.refreshIn : expires;
+		this.accessToken = accessToken;
+		this.expiresIn = expiresIn;
+		this.expiresAt = expiresAt;
+		const cacheKey = this._cacheKey;
+		return { cacheKey, accessToken, expiresIn, expiresAt };
 	}
 
 	/**
@@ -334,17 +590,32 @@ export class Connector {
 	 * ```
 	 */
 	async putAccessTokenInCache(): Promise<ICatalystCacheRes> {
+		return this.#persistAccessToken(
+			this._cacheKey,
+			this.accessToken,
+			this.expiresIn,
+			this.expiresAt
+		);
+	}
+
+	/**
+	 * Writes the given cache key/token snapshot to Catalyst Cache as-is.
+	 */
+	async #persistAccessToken(
+		cacheKey: string,
+		accessToken: string | null,
+		expiresIn: number,
+		expiresAt: number | null
+	): Promise<ICatalystCacheRes> {
 		const tokenObj = {
-			access_token: this.accessToken,
-			expiry_in_seconds: this.expiresIn,
-			expires_at: this.expiresAt
+			access_token: accessToken,
+			expiry_in_seconds: expiresIn,
+			expires_at: expiresAt
 		};
-		if (this.secretKey && this.accessToken) {
-			tokenObj.access_token = this.#encrypt(this.accessToken, this.secretKey);
+		if (this.secretKey && accessToken) {
+			tokenObj.access_token = this.#encrypt(accessToken, this.secretKey);
 		}
 		const tokenStr: string = JSON.stringify(tokenObj);
-		return new Cache(this.app)
-			.segment()
-			.put(this._connectorName, tokenStr, Math.ceil(this.expiresIn / 3600));
+		return new Cache(this.app).segment().put(cacheKey, tokenStr, Math.ceil(expiresIn / 3600));
 	}
 }
