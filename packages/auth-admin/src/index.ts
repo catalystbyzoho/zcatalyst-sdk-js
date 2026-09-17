@@ -40,7 +40,7 @@ const {
 	PROJECT_KEY_NAME,
 	ENVIRONMENT_KEY_NAME,
 	ENVIRONMENT,
-	ZC_ORG_ID
+	X_ZOHO_CATALYST_ORG_ID
 } = CONSTANTS;
 
 let appOptions: Record<string, string | number | Credential | Object> = {};
@@ -405,8 +405,8 @@ export function addDefaultAppHeaders(headers: Record<string, string>, values?: I
 	headers[ENVIRONMENT_KEY_NAME] = values?.environment as string;
 	headers[ENVIRONMENT] = values?.environment as string; // handle indide the quick ml
 
-	if (isNonEmptyString(process.env.ZC_ORG_ID)) {
-		headers[ZC_ORG_ID] = process.env.ZC_ORG_ID as string;
+	if (isNonEmptyString(process.env.X_ZOHO_CATALYST_ORG_ID)) {
+		headers[X_ZOHO_CATALYST_ORG_ID] = process.env.X_ZOHO_CATALYST_ORG_ID as string;
 	}
 
 	if (isNonEmptyString(values?.projectSecretKey)) {
