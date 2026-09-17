@@ -31,6 +31,7 @@ function setupIndexedDBMock() {
 				result: {
 					objectStoreNames: { contains: () => true },
 					createObjectStore: jest.fn(),
+					close: jest.fn(),
 					transaction: (_n: string, _m: string) => {
 						const tx: any = {};
 						const store = {
@@ -80,15 +81,15 @@ function setupIndexedDBMock() {
 							},
 							error: null
 						};
-					},
-					close: jest.fn()
+					}
 				}
 			};
 			queueMicrotask(() => {
 				req.onsuccess?.(new Event('success'));
 			});
 			return req;
-		})
+		}),
+		deleteDatabase: jest.fn()
 	};
 }
 
@@ -161,6 +162,97 @@ describe('Authentication (Browser)', () => {
 			document.cookie = 'test_cookie=value';
 			await zcAuth.signOut('/');
 			expect(window.location.replace).toHaveBeenCalled();
+		});
+	});
+
+	describe('assertPopupAuthAllowed', () => {
+		it('should resolve when window.open and indexedDB are available', async () => {
+			await expect(zcAuth.assertPopupAuthAllowed()).resolves.toBeUndefined();
+		});
+
+		it('should throw POPUP_NOT_SUPPORTED when window.open is not a function', async () => {
+			const original = window.open;
+			Object.defineProperty(window, 'open', { value: undefined, configurable: true });
+			await expect(zcAuth.assertPopupAuthAllowed()).rejects.toMatchObject({
+				code: 'app/POPUP_NOT_SUPPORTED'
+			});
+			Object.defineProperty(window, 'open', { value: original, configurable: true });
+		});
+
+		it('should throw IDB_NOT_SUPPORTED when indexedDB is undefined', async () => {
+			const original = (global as any).indexedDB;
+			Object.defineProperty(global, 'indexedDB', { value: undefined, configurable: true });
+			await expect(zcAuth.assertPopupAuthAllowed()).rejects.toMatchObject({
+				code: 'app/IDB_NOT_SUPPORTED'
+			});
+			Object.defineProperty(global, 'indexedDB', { value: original, configurable: true });
+		});
+
+		it('should throw IDB_ACCESS_DENIED when indexedDB.open fires onerror', async () => {
+			const original = (global as any).indexedDB;
+			(global as any).indexedDB = {
+				open: jest.fn(() => {
+					const req: any = {};
+					queueMicrotask(() => {
+						req.onerror?.({ target: { error: new Error('quota exceeded') } });
+					});
+					return req;
+				})
+			};
+			await expect(zcAuth.assertPopupAuthAllowed()).rejects.toMatchObject({
+				code: 'app/IDB_ACCESS_DENIED'
+			});
+			Object.defineProperty(global, 'indexedDB', { value: original, configurable: true });
+		});
+
+		it('should throw IDB_ACCESS_DENIED when indexedDB.open times out', async () => {
+			jest.useFakeTimers();
+			const original = (global as any).indexedDB;
+			// open() never fires any callback — simulates a hung IDB
+			(global as any).indexedDB = {
+				open: jest.fn(() => ({}))
+			};
+			const assertPromise = zcAuth.assertPopupAuthAllowed();
+			jest.advanceTimersByTime(2001);
+			await expect(assertPromise).rejects.toMatchObject({
+				code: 'app/IDB_ACCESS_DENIED'
+			});
+			Object.defineProperty(global, 'indexedDB', { value: original, configurable: true });
+		});
+
+		it('should resolve on two overlapping calls without false IDB_ACCESS_DENIED', async () => {
+			// Both concurrent calls must succeed — no onblocked from a delete race.
+			const [r1, r2] = await Promise.all([
+				zcAuth.assertPopupAuthAllowed(),
+				zcAuth.assertPopupAuthAllowed()
+			]);
+			expect(r1).toBeUndefined();
+			expect(r2).toBeUndefined();
+		});
+
+		it('should resolve on a second call after the first succeeds', async () => {
+			await expect(zcAuth.assertPopupAuthAllowed()).resolves.toBeUndefined();
+			await expect(zcAuth.assertPopupAuthAllowed()).resolves.toBeUndefined();
+		});
+
+		it('should not render #zc-signin-button when assertPopupAuthAllowed throws in iframe context', async () => {
+			// Restore real getElementById so we can check the real DOM
+			document.getElementById = HTMLDocument.prototype.getElementById.bind(document);
+
+			Object.defineProperty(window, 'self', { value: {}, configurable: true });
+			Object.defineProperty(window, 'top', { value: window, configurable: true });
+			const original = (global as any).indexedDB;
+			Object.defineProperty(global, 'indexedDB', { value: undefined, configurable: true });
+
+			await expect(zcAuth.signIn('signin-container')).rejects.toMatchObject({
+				code: 'app/IDB_NOT_SUPPORTED'
+			});
+			// Button must NOT be mounted — assertPopupAuthAllowed throws before showIframeConfirmModal
+			expect(document.getElementById('zc-signin-button')).toBeNull();
+
+			Object.defineProperty(global, 'indexedDB', { value: original, configurable: true });
+			Object.defineProperty(window, 'self', { value: window, configurable: true });
+			Object.defineProperty(window, 'top', { value: window, configurable: true });
 		});
 	});
 
@@ -338,11 +430,11 @@ describe('Authentication (Browser)', () => {
 		beforeEach(() => {
 			// Restore real getElementById so the DOM elements are found correctly.
 			document.getElementById = HTMLDocument.prototype.getElementById.bind(document);
-			document.getElementById('__catalyst-iframe-btn')?.remove();
+			document.getElementById('zc-signin-button')?.remove();
 		});
 
 		afterEach(() => {
-			document.getElementById('__catalyst-iframe-btn')?.remove();
+			document.getElementById('zc-signin-button')?.remove();
 			// Restore self/top so other tests are not affected.
 			Object.defineProperty(window, 'self', { value: window, configurable: true });
 			Object.defineProperty(window, 'top', { value: window, configurable: true });
@@ -354,26 +446,38 @@ describe('Authentication (Browser)', () => {
 			});
 		});
 
-		it('should render a Sign In button inside the container when inside iframe', () => {
+		/** Flushes pending microtasks (IDB mock uses queueMicrotask). */
+		async function flushMicrotasks() {
+			// Two rounds: one for queueMicrotask inside IDB mock,
+			// one for the Promise chain in assertPopupAuthAllowed.
+			await new Promise((r) => queueMicrotask(r as () => void));
+			await Promise.resolve();
+		}
+
+		it('should render a Sign In button inside the container when inside iframe', async () => {
 			mockIframeContext(true);
 			void zcAuth.signIn('signin-container');
-			const btn = document.getElementById('__catalyst-iframe-btn') as HTMLButtonElement;
+			await flushMicrotasks();
+			const btn = document.getElementById('zc-signin-button') as HTMLButtonElement;
 			expect(btn).not.toBeNull();
 			expect(btn.textContent).toBe('Sign In');
 		});
 
-		it('should use iframeButtonLabel from config', () => {
+		it('should always render the default Sign In label (no custom label support)', async () => {
 			mockIframeContext(true);
-			void zcAuth.signIn('signin-container', { iframeButtonLabel: 'Log In' });
-			const btn = document.getElementById('__catalyst-iframe-btn') as HTMLButtonElement;
-			expect(btn.textContent).toBe('Log In');
+			void zcAuth.signIn('signin-container');
+			await flushMicrotasks();
+			const btn = document.getElementById('zc-signin-button') as HTMLButtonElement;
+			expect(btn).not.toBeNull();
+			expect(btn.textContent).toBe('Sign In');
 		});
 
 		it('should reject and re-enable the button when confirm fails', async () => {
 			mockIframeContext(true);
 			jest.spyOn(window, 'open').mockReturnValue(null as unknown as Window);
 			const signInPromise = zcAuth.signIn('signin-container');
-			const btn = document.getElementById('__catalyst-iframe-btn') as HTMLButtonElement;
+			await flushMicrotasks();
+			const btn = document.getElementById('zc-signin-button') as HTMLButtonElement;
 			btn.click();
 			await expect(signInPromise).rejects.toMatchObject({
 				code: 'app/POPUP_BLOCKED'
@@ -384,13 +488,13 @@ describe('Authentication (Browser)', () => {
 		it('should reject concurrent signIn while button is open with POPUP_ALREADY_OPEN', async () => {
 			mockIframeContext(true);
 			const first = zcAuth.signIn('signin-container');
+			await flushMicrotasks();
 			await expect(zcAuth.signIn('signin-container')).rejects.toMatchObject({
 				code: 'app/POPUP_ALREADY_OPEN'
 			});
-			expect(document.querySelectorAll('#__catalyst-iframe-btn')).toHaveLength(1);
-			// Reject first by simulating blocked popup
+			expect(document.querySelectorAll('#zc-signin-button')).toHaveLength(1);
 			jest.spyOn(window, 'open').mockReturnValue(null as unknown as Window);
-			(document.getElementById('__catalyst-iframe-btn') as HTMLButtonElement).click();
+			(document.getElementById('zc-signin-button') as HTMLButtonElement).click();
 			await expect(first).rejects.toMatchObject({ code: 'app/POPUP_BLOCKED' });
 		});
 
@@ -399,12 +503,12 @@ describe('Authentication (Browser)', () => {
 			const fakePopup = makeFakePopup();
 			const openSpy = jest.spyOn(window, 'open').mockReturnValue(fakePopup);
 			const signInPromise = zcAuth.signIn('signin-container', { redirectUrl: '/dashboard' });
-			const btn = document.getElementById('__catalyst-iframe-btn') as HTMLButtonElement;
+			await flushMicrotasks();
+			const btn = document.getElementById('zc-signin-button') as HTMLButtonElement;
 			expect(btn).not.toBeNull();
 			btn.click();
 			await Promise.resolve();
 			expect(openSpy).toHaveBeenCalled();
-			// Close the popup so the poll settles the promise.
 			(fakePopup as { closed: boolean }).closed = true;
 			await expect(signInPromise).rejects.toThrow('Popup closed before auth completed.');
 		});

@@ -79,6 +79,25 @@ export interface ICatalystCustomTokenResponse {
 	scopes: Array<string>;
 }
 
+/**
+ * Configuration for the embedded IAM sign-in flow.
+ *
+ * When `signIn` is called from within an iframe context, the SDK renders a
+ * button in the DOM to satisfy the browser's trusted-gesture requirement for
+ * `window.open()`. That button is always rendered with the fixed element id
+ * **`"zc-signin-button"`** — use this id to target and style the button from
+ * your own stylesheet.
+ *
+ * @example
+ * ```css
+ * #zc-signin-button {
+ *   background: #0070f3;
+ *   color: #fff;
+ *   border-radius: 6px;
+ *   padding: 10px 24px;
+ * }
+ * ```
+ */
 export interface ICatalystSignInConfig {
 	signInProvidersOnly?: boolean;
 	cssUrl?: string;
@@ -89,15 +108,15 @@ export interface ICatalystSignInConfig {
 	redirectUrl?: string;
 	isHosted?: boolean;
 	/**
-	 * Label text for the sign-in / sign-out button rendered inside an iframe.
-	 * Defaults to 'Sign In' or 'Sign Out' based on the action.
+	 * Custom label text for the "Sign In" button rendered when `signIn()` is
+	 * called from inside an iframe. Defaults to `'Sign In'`.
+	 *
+	 * @example
+	 * ```ts
+	 * await zcAuth.signIn('login-container', { signinButtonLabel: 'Log in to continue' });
+	 * ```
 	 */
-	iframeButtonLabel?: string;
-	/**
-	 * Inline style overrides for the iframe button. Merged on top of the
-	 * default shadcn-inspired styles.
-	 */
-	iframeButtonStyle?: Partial<CSSStyleDeclaration>;
+	signinButtonLabel?: string;
 }
 
 export interface ICatalystPopupSignInConfig {

@@ -51,6 +51,7 @@ import {
 	TokenResponse,
 	UserDetails
 } from './utils/interface.js';
+import { assertPopupAuthAllowed } from './utils/popup-support.js';
 import { hasSuffInfo } from './utils/validators.js';
 
 const { CREDENTIAL_USER, REQ_METHOD, COMPONENT } = CONSTANTS;
@@ -116,9 +117,15 @@ class Authentication implements Component {
 	}
 
 	/**
-	 * Initializes the browser authentication component.
+	 * Initializes the browser authentication component by fetching project
+	 * credentials and restoring any previously stored OAuth token.
 	 *
-	 * @returns A promise that resolves when browser authentication initialization is complete.
+	 * Call this once — typically at application startup — before using any other
+	 * `zcAuth` method. Without calling `init()` first, methods such as
+	 * {@link signIn}, {@link isUserAuthenticated}, and {@link generateAuthToken}
+	 * may operate with incomplete project configuration.
+	 *
+	 * @returns A promise that resolves when initialization is complete.
 	 *
 	 * @example
 	 * ```ts
@@ -150,12 +157,39 @@ class Authentication implements Component {
 	}
 
 	/**
-	 * Returns whether the SDK is running inside an iframe.
+	 * Returns whether the SDK is currently running inside an iframe.
+	 *
+	 * Use this to conditionally choose between the embedded sign-in flow
+	 * (`signIn`) and the popup-based flow (`signInViaPopup` / `signOutViaPopup`).
+	 * Pair with {@link assertPopupAuthAllowed} before calling `signInViaPopup`
+	 * to confirm the browser supports both `window.open()` and IndexedDB.
+	 * Note that `signOutViaPopup` only needs `window.open` — it does not use
+	 * IndexedDB — so the logout handler can be registered even when the IDB
+	 * check fails.
+	 *
+	 * @returns `true` when the current page is embedded inside an iframe,
+	 *   `false` otherwise.
 	 *
 	 * @example
 	 * ```ts
 	 * if (zcAuth.isIframeContext()) {
-	 *   // use popup flow
+	 *   // Always register the logout handler — signOutViaPopup does not need IndexedDB.
+	 *   document.getElementById('logout-btn')?.addEventListener('click', async () => {
+	 *     await zcAuth.signOutViaPopup('/goodbye');
+	 *   });
+	 *
+	 *   try {
+	 *     await zcAuth.assertPopupAuthAllowed(); // throws if window.open or IDB unavailable
+	 *     // sign-in popup is supported — register login handler
+	 *     document.getElementById('login-btn')?.addEventListener('click', async () => {
+	 *       await zcAuth.signInViaPopup();
+	 *     });
+	 *   } catch (err) {
+	 *     // sign-in popup not supported — show fallback UI based on err.code
+	 *   }
+	 * } else {
+	 *   // standard page — mount the login iframe directly
+	 *   await zcAuth.signIn('login-container');
 	 * }
 	 * ```
 	 */
@@ -164,10 +198,120 @@ class Authentication implements Component {
 	}
 
 	/**
-	 * Starts the embedded IAM sign-in flow inside a target DOM element or
-	 * redirects an already authenticated user.
+	 * Asserts that the popup-based sign-in flow is supported in the current
+	 * browser environment.
 	 *
-	 * @param id - DOM element ID where the login iframe should be mounted.
+	 * Call this once at startup — not inside a click handler — before
+	 * registering {@link signInViaPopup} or {@link signOutViaPopup} listeners.
+	 * Awaiting this inside a click handler introduces an async gap that drops
+	 * the browser's trusted-gesture requirement and causes the popup to be
+	 * silently blocked.
+	 *
+	 * Checks two prerequisites:
+	 *
+	 * - `window.open` exists — confirms the API is present. Some embedded
+	 *   browsers and WebViews remove it entirely. Note: this does not guarantee
+	 *   popups will open — a popup blocker or sandboxed iframe without
+	 *   `allow-popups` can still return `null` at runtime. That case is reported
+	 *   as `POPUP_BLOCKED` by {@link signInViaPopup}.
+	 * - IndexedDB is accessible — the SDK stores the OAuth token in IndexedDB
+	 *   after popup sign-in. A live open attempt is made because browsers such
+	 *   as Safari in Private mode expose the `indexedDB` global but throw when a
+	 *   database is actually opened. The probe times out after 2 seconds.
+	 *
+	 * Sign-out does not need this check. {@link signOutViaPopup} only opens a
+	 * popup — it does not use IndexedDB. You may still register the logout
+	 * handler after catching `IDB_NOT_SUPPORTED` or `IDB_ACCESS_DENIED`.
+	 *
+	 * @returns A promise that resolves when both checks pass.
+	 * @throws {CatalystAuthenticationError} with code `POPUP_NOT_SUPPORTED` when
+	 *   `window.open` is not a function in the current environment.
+	 * @throws {CatalystAuthenticationError} with code `IDB_NOT_SUPPORTED` when
+	 *   `indexedDB` is not defined in the current environment.
+	 * @throws {CatalystAuthenticationError} with code `IDB_ACCESS_DENIED` when
+	 *   `indexedDB` is defined but cannot be opened or times out.
+	 *
+	 * @example
+	 * ```ts
+	 * // Always register logout — signOutViaPopup does not need IndexedDB.
+	 * document.getElementById('logout-btn')?.addEventListener('click', async () => {
+	 *   await zcAuth.signOutViaPopup('/goodbye');
+	 * });
+	 *
+	 * // Gate sign-in popup on the full assert (needs both window.open and IDB).
+	 * try {
+	 *   await zcAuth.assertPopupAuthAllowed(); // at startup, NOT inside click
+	 *   document.getElementById('login-btn')?.addEventListener('click', async () => {
+	 *     await zcAuth.signInViaPopup();
+	 *   });
+	 * } catch (err) {
+	 *   if (err.code === 'app/POPUP_NOT_SUPPORTED') {
+	 *     // window.open API missing — show "use a different browser" message
+	 *   } else if (err.code === 'app/IDB_NOT_SUPPORTED' || err.code === 'app/IDB_ACCESS_DENIED') {
+	 *     // IndexedDB unavailable — sign-in popup cannot store the token.
+	 *     // Logout handler above is still active because it does not need IDB.
+	 *   }
+	 * }
+	 * ```
+	 */
+	async assertPopupAuthAllowed(): Promise<void> {
+		return assertPopupAuthAllowed();
+	}
+
+	/**
+	 * Starts the embedded IAM sign-in flow inside a target DOM element, or
+	 * redirects an already-authenticated user to the given URL.
+	 *
+	 * ---
+	 *
+	 * ### Behaviour inside an iframe
+	 *
+	 * When this method is called while the page is running **inside an iframe**,
+	 * the SDK cannot open the IAM login page inline. Instead it automatically
+	 * renders a **"Sign In" button** in the DOM to satisfy the browser's
+	 * trusted-gesture requirement for `window.open()`.
+	 *
+	 * That button always has the fixed element id **`"zc-signin-button"`**.
+	 * You can target it with your own CSS to match your UI:
+	 *
+	 * ```css
+	 * #zc-signin-button {
+	 *   background: #0070f3;
+	 *   color: #fff;
+	 *   border-radius: 6px;
+	 *   padding: 10px 24px;
+	 * }
+	 * ```
+	 *
+	 * When the user clicks the rendered button, the SDK opens an authentication
+	 * popup to complete the sign-in flow.
+	 *
+	 * > **If you do not want the SDK-rendered button** and prefer to trigger the
+	 * > popup yourself (e.g. from your own button), skip `signIn()` entirely and
+	 * > call {@link signInViaPopup} directly from inside your own click handler:
+	 * >
+	 * > ```ts
+	 * > document.getElementById('my-login-btn')?.addEventListener('click', async () => {
+	 * >   await zcAuth.signInViaPopup();
+	 * > });
+	 * > ```
+	 *
+	 * > **Important — signing out after an iframe sign-in:**
+	 * > If the user signed in while the page was running inside an iframe (via the
+	 * > button above or via `signInViaPopup`), calling {@link signOut} will **not**
+	 * > clear the session. You must use {@link signOutViaPopup} instead:
+	 * >
+	 * > ```ts
+	 * > document.getElementById('my-logout-btn')?.addEventListener('click', async () => {
+	 * >   await zcAuth.signOutViaPopup('/goodbye');
+	 * > });
+	 * > ```
+	 *
+	 * ---
+	 *
+	 * @param id - DOM element ID where the login iframe (non-iframe context) or the
+	 *   "Sign In" button (iframe context) will be mounted. This element must exist
+	 *   in the DOM before calling `signIn()`.
 	 * @param config - Sign-in configuration.
 	 *   - `redirectUrl`: URL to open after successful sign-in.
 	 *   - `serviceUrl`: Service URL used as the post-login destination.
@@ -175,14 +319,16 @@ class Authentication implements Component {
 	 *   - `signInProvidersOnly`: Whether to show only configured federated sign-in providers.
 	 *   - `forgotPasswordId`: DOM element ID where the forgot-password iframe should be mounted.
 	 *   - `forgotPasswordCssUrl`: Custom CSS URL for the forgot-password page.
-	 *   - `popupWidth` / `popupHeight` / `popupTimeoutMs`: Popup window options when `signIn` runs inside an iframe.
 	 *   - `isHosted`: Whether the iframe popup uses hosted login.
-	 * @returns A promise that resolves after the sign-in iframe flow is prepared or a redirect is triggered.
+	 *   - `signinButtonLabel`: Custom label for the "Sign In" button rendered in iframe context.
+	 *     Defaults to `'Sign In'`.
+	 * @returns A promise that resolves after the sign-in flow is prepared or a redirect is triggered.
 	 * @throws {CatalystAuthenticationError} when the target DOM element cannot be found, or when
-	 *   an iframe confirm modal is cancelled / fails / is already open.
+	 *   a sign-in button/popup is already open.
 	 *
 	 * @example
 	 * ```ts
+	 * // Standard (non-iframe) usage:
 	 * await zcAuth.signIn('login-container', { redirectUrl: '/dashboard' });
 	 * ```
 	 */
@@ -207,8 +353,11 @@ class Authentication implements Component {
 			window.location.pathname + window.location.search;
 
 		if (detectIframeContext()) {
+			// Assert popup support before mounting the button. This must happen
+			// before showIframeConfirmModal so unsupported environments throw here
+			// (and #zc-signin-button is never added to the DOM).
+			await this.assertPopupAuthAllowed();
 			return showIframeConfirmModal(
-				'signin',
 				async () => {
 					await this.#popupManager.signInViaPopup({
 						isHosted: config.isHosted,
@@ -223,8 +372,7 @@ class Authentication implements Component {
 					window.location.href = this.#constructRedirectUrl(redirectTarget);
 				},
 				id,
-				config.iframeButtonLabel,
-				config.iframeButtonStyle
+				config.signinButtonLabel
 			);
 		}
 		try {
@@ -242,8 +390,14 @@ class Authentication implements Component {
 	/**
 	 * Redirects the browser to the Catalyst hosted sign-in page.
 	 *
+	 * Use this as a simpler alternative to {@link signIn} when you do not need
+	 * an embedded login form — the user is redirected to the Catalyst-hosted
+	 * login page and returned to `redirectUrl` after a successful sign-in.
+	 *
 	 * @param redirectUrl - URL to return to after a successful hosted sign-in.
-	 * @returns A promise that resolves after credentials are available and the redirect is initiated.
+	 *   Defaults to `'/'`.
+	 * @returns A promise that resolves after credentials are loaded and the
+	 *   redirect is initiated.
 	 *
 	 * @example
 	 * ```ts
@@ -258,13 +412,20 @@ class Authentication implements Component {
 	}
 
 	/**
-	 * Enables JWT token authentication and registers a callback to fetch user details.
+	 * Enables JWT token authentication and registers a callback that the SDK
+	 * invokes whenever it needs to fetch or refresh user details.
 	 *
-	 * @param callbackFn - Callback invoked by the auth flow to fetch or refresh user details.
+	 * Call this once during app initialization when your Catalyst app uses
+	 * JWT-based authentication instead of the default cookie/OAuth flow.
+	 *
+	 * @param callbackFn - Function invoked by the auth flow to fetch or refresh
+	 *   user details (e.g. calling your own `/api/current-user` endpoint).
 	 *
 	 * @example
 	 * ```ts
-	 * zcAuth.signinWithJwt(() => { void fetch('/api/current-user'); });
+	 * zcAuth.signinWithJwt(() => {
+	 *   void fetch('/api/current-user');
+	 * });
 	 * ```
 	 */
 	public signinWithJwt(callbackFn: () => void): void {
@@ -301,19 +462,37 @@ class Authentication implements Component {
 	/**
 	 * Signs out the current browser user and redirects to the requested URL.
 	 *
-	 * @param redirectURL - URL to navigate to after sign-out.
+	 * ---
+	 *
+	 * ### Does not work inside an iframe
+	 *
+	 * `signOut()` relies on `window.location.replace()` and Accounts server
+	 * redirects to clear the session. Neither of these work correctly when the
+	 * page is embedded inside an iframe — the navigation targets the iframe, not
+	 * the top-level window, so the session will not be cleared.
+	 *
+	 * If the user signed in while running inside an iframe (via {@link signIn}'s
+	 * auto-rendered button or via {@link signInViaPopup}), you **must** use
+	 * {@link signOutViaPopup} to sign them out:
+	 *
+	 * ```ts
+	 * document.getElementById('my-logout-btn')?.addEventListener('click', async () => {
+	 *   await zcAuth.signOutViaPopup('/goodbye');
+	 * });
+	 * ```
+	 *
+	 * ---
+	 *
+	 * @param redirectURL - URL to navigate to after sign-out. Defaults to `'/'`.
 	 * @returns A promise that resolves after the sign-out redirect is initiated.
 	 *
 	 * @example
 	 * ```ts
+	 * // Standard (non-iframe) usage:
 	 * await zcAuth.signOut('/signed-out');
 	 * ```
 	 */
-	async signOut(
-		redirectURL = '/',
-		id?: string,
-		config: Pick<ICatalystSignInConfig, 'iframeButtonLabel' | 'iframeButtonStyle'> = {}
-	): Promise<void> {
+	async signOut(redirectURL = '/'): Promise<void> {
 		const authProtocol = ConfigStore.get('AUTH_PROTOCOL') as unknown as Auth_Protocol;
 		this.authProtocol = authProtocol;
 
@@ -325,18 +504,6 @@ class Authentication implements Component {
 			setDefaultProjectConfig();
 			window.location.replace(redirectURL);
 			return;
-		}
-
-		if (detectIframeContext()) {
-			return showIframeConfirmModal(
-				'signout',
-				async () => {
-					await this.#popupManager.signOutViaPopup(redirectURL);
-				},
-				id,
-				config.iframeButtonLabel,
-				config.iframeButtonStyle
-			);
 		}
 
 		// OAuth — only clear IDB token, reset config, redirect.
@@ -371,23 +538,42 @@ class Authentication implements Component {
 				await this.requester.send(request);
 				window.location.replace(redirectURL);
 			} catch {
-				window.location.replace(this.#constructSignOutUrl(redirectURL));
+				if (!detectIframeContext()) {
+					window.location.replace(this.#constructSignOutUrl(redirectURL));
+				}
 			}
 		} else {
-			window.location.replace(this.#constructSignOutUrl(redirectURL));
+			if (!detectIframeContext()) {
+				window.location.replace(this.#constructSignOutUrl(redirectURL));
+			}
 		}
 	}
 
 	/**
 	 * Registers a public user for the current Catalyst project.
 	 *
+	 * Sends a sign-up request for a new user. A confirmation email is sent to
+	 * the provided `email_id`. The user must confirm their email before they can
+	 * sign in.
+	 *
 	 * @param body - Sign-up details for the new user.
+	 *   - `last_name` *(required)*: Last name of the user.
+	 *   - `email_id` *(required)*: Email address of the user.
+	 *   - `first_name`: First name of the user.
+	 *   - `redirect_url`: URL to redirect the user to after email confirmation.
+	 *   - `platform_type`: Platform type (`'web'` by default).
 	 * @returns A promise that resolves to the sign-up API response data.
-	 * @throws {CatalystAuthenticationError} when required sign-up details are missing or invalid.
+	 * @throws {CatalystAuthenticationError} when `last_name` or `email_id` are
+	 *   missing or invalid.
 	 *
 	 * @example
 	 * ```ts
-	 * await zcAuth.signUp({ last_name: 'Patel', email_id: 'maya@example.com' });
+	 * await zcAuth.signUp({
+	 *   first_name: 'Maya',
+	 *   last_name: 'Patel',
+	 *   email_id: 'maya@example.com',
+	 *   redirect_url: '/welcome'
+	 * });
 	 * ```
 	 */
 	public async signUp(body: ICatalystSignUpConfig): Promise<unknown> {
@@ -422,15 +608,25 @@ class Authentication implements Component {
 	}
 
 	/**
-	 * Checks whether a browser user is authenticated and returns user details when available.
+	 * Checks whether a browser user is currently authenticated and returns their
+	 * details when they are.
 	 *
-	 * @param org_id - Optional organization ID used to validate the current user in a specific org.
-	 * @returns A promise that resolves to the current user details or `false` when unauthenticated.
+	 * Internally calls {@link getProjectUserDetails} and returns the user data on
+	 * success, or `false` when the user is not signed in.
+	 *
+	 * @param org_id - Optional organization ID to scope the user lookup to a
+	 *   specific Catalyst organization.
+	 * @returns A promise that resolves to the current user's details object when
+	 *   authenticated, or `false` when the user is not signed in.
 	 *
 	 * @example
 	 * ```ts
 	 * const user = await zcAuth.isUserAuthenticated();
-	 * if (user) console.log('Signed in');
+	 * if (user) {
+	 *   console.log('Signed in as', user);
+	 * } else {
+	 *   console.log('Not signed in');
+	 * }
 	 * ```
 	 */
 	public async isUserAuthenticated(org_id?: string): Promise<unknown> {
@@ -501,11 +697,68 @@ class Authentication implements Component {
 	}
 
 	/**
-	 * Opens a popup window to perform the Catalyst sign-in flow.
-	 * Internal — only called from {@link signIn} when running inside an iframe.
-	 * Exposed here so existing tests and callers that reference it directly still work.
+	 * Opens a popup window to perform the Catalyst sign-in flow and resolves with
+	 * the OAuth token once the popup posts it back.
 	 *
-	 * @param config - Optional popup dimensions, timeout, and hosted-mode flag.
+	 * ---
+	 *
+	 * Check browser support first — at startup, not inside the click handler.
+	 * Call {@link assertPopupAuthAllowed} once during app initialisation to
+	 * confirm `window.open` and IndexedDB are available. Do not await it inside
+	 * the click handler — that async gap drops the browser's trusted-gesture
+	 * requirement and will cause the popup to be silently blocked.
+	 *
+	 * ```ts
+	 * // correct — assertPopupAuthAllowed at startup
+	 * try {
+	 *   await zcAuth.assertPopupAuthAllowed();
+	 *   document.getElementById('login-btn')?.addEventListener('click', async () => {
+	 *     await zcAuth.signInViaPopup(); // called synchronously from click
+	 *   });
+	 * } catch (err) { /* show fallback UI *\/ }
+	 *
+	 * // wrong — awaiting inside click drops the trusted gesture
+	 * loginBtn.addEventListener('click', async () => {
+	 *   await zcAuth.assertPopupAuthAllowed(); // drops trusted gesture
+	 *   await zcAuth.signInViaPopup();
+	 * });
+	 * ```
+	 *
+	 * Must be called directly from a user action. Browsers block `window.open()`
+	 * calls not triggered synchronously by a trusted user gesture (`click` /
+	 * `keydown`). Calling this from a timer, resolved `Promise`, or any async
+	 * context not rooted in user input will cause the popup to be silently blocked.
+	 *
+	 * Sign-out must also use the popup flow. Signing in via popup establishes an
+	 * OAuth session stored in IndexedDB. {@link signOut} cannot clear this
+	 * session — you must call {@link signOutViaPopup} to sign the user out:
+	 *
+	 * ```ts
+	 * document.getElementById('logout-btn')?.addEventListener('click', async () => {
+	 *   await zcAuth.signOutViaPopup('/goodbye');
+	 * });
+	 * ```
+	 *
+	 * ---
+	 *
+	 * @param config - Optional popup configuration.
+	 *   - `width` / `height`: Popup window dimensions in pixels.
+	 *   - `timeoutMs`: How long to wait before rejecting with a timeout error.
+	 *   - `isHosted`: Whether to use the Catalyst hosted login page inside the popup.
+	 *   - `cssUrl`: Custom CSS URL to apply to the sign-in page.
+	 *   - `signInProvidersOnly`: Show only federated sign-in providers.
+	 *   - `redirectUrl` / `serviceUrl`: Post-login destination URL.
+	 *   - `forgotPasswordCssUrl` / `forgotPasswordId`: Forgot-password page options.
+	 * @returns A promise that resolves to the signed-in token details once the
+	 *   popup completes authentication.
+	 * @throws {CatalystAuthenticationError} with code `POPUP_BLOCKED` when the
+	 *   browser blocks the popup (i.e. not called from a user action).
+	 * @throws {CatalystAuthenticationError} with code `POPUP_ALREADY_OPEN` when a
+	 *   sign-in popup is already waiting for a response.
+	 * @throws {CatalystAuthenticationError} with code `POPUP_TIMEOUT` when the
+	 *   popup does not complete within `timeoutMs`.
+	 * @throws {CatalystAuthenticationError} with code `AUTH_ERROR` when the popup
+	 *   reports a sign-in failure.
 	 */
 	async signInViaPopup(
 		config: ICatalystPopupSignInConfig = {}
@@ -514,10 +767,25 @@ class Authentication implements Component {
 	}
 
 	/**
-	 * Opens a popup window to perform the Catalyst sign-out flow.
-	 * Internal — only called from {@link signOut} when running inside an iframe.
+	 * Opens a popup window to perform the Catalyst sign-out flow and resolves once
+	 * the popup signals completion.
 	 *
-	 * @param redirectUrl - URL to navigate to in the host frame after sign-out.
+	 * Must be called directly from a user action. Browsers block `window.open()`
+	 * calls not triggered synchronously by a trusted user gesture (`click` /
+	 * `keydown`). Calling this from a timer, resolved `Promise`, or any async
+	 * context not rooted in user input will cause the popup to be silently blocked.
+	 *
+	 * ```ts
+	 * document.getElementById('logout-btn')?.addEventListener('click', async () => {
+	 *   await zcAuth.signOutViaPopup('/goodbye');
+	 * });
+	 * ```
+	 *
+	 * @param redirectUrl - URL to navigate to in the host frame after sign-out
+	 *   completes. Defaults to `'/'`.
+	 * @returns A promise that resolves when the sign-out popup signals completion.
+	 * @throws {CatalystAuthenticationError} with code `POPUP_TIMEOUT` when the
+	 *   popup does not complete within the default timeout.
 	 */
 	async signOutViaPopup(redirectUrl = '/'): Promise<void> {
 		return this.#popupManager.signOutViaPopup(redirectUrl);
@@ -525,9 +793,14 @@ class Authentication implements Component {
 
 	/**
 	 * Generates an OAuth access token via the Catalyst custom-token / remote-auth flow.
-	 * Exposed here for popup login pages.
 	 *
-	 * @param feature - Catalyst feature to scope the token to.
+	 * Used internally by popup login pages. Call this from within a Catalyst
+	 * popup login page to obtain a scoped access token for a specific feature.
+	 *
+	 * @param feature - The Catalyst feature to scope the token to.
+	 *   - `'functions'`: Token scoped for invoking Catalyst serverless functions.
+	 *   - `'stratus'`: Token scoped for accessing Catalyst Stratus object storage.
+	 * @returns A promise resolving to the generated token and its expiry.
 	 */
 	async generateAuthToken(feature: 'functions' | 'stratus'): Promise<TokenResponse> {
 		return this.#tokenManager.generateAuthToken(feature);

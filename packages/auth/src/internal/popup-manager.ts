@@ -24,10 +24,12 @@ import { TokenManager } from './token-manager.js';
 /**
  * Manages the popup-based sign-in and sign-out flows.
  *
- * {@link signInViaPopup} and {@link signOutViaPopup} are intentionally
- * NOT exported from web.ts — they are only called internally by
- * {@link Authentication.signIn} and {@link Authentication.signOut} when
- * the SDK detects it is running inside an iframe context.
+ * Both {@link signInViaPopup} and {@link signOutViaPopup} open a native
+ * browser popup via `window.open()`. Browsers require this call to originate
+ * directly from a trusted user gesture (e.g. a `click` or `keydown` event).
+ * Calling either method from a timer, resolved `Promise`, or any other
+ * asynchronous context that is not synchronously rooted in user input will
+ * cause the popup to be silently blocked by the browser.
  *
  * Used internally by {@link Authentication}. Not exported from web.ts.
  */
@@ -92,8 +94,10 @@ export class PopupManager {
 	 * Opens a popup window to perform the Catalyst sign-in flow and resolves with
 	 * the resulting OAuth token once the popup posts it back via postMessage.
 	 *
-	 * Intended to be called only from {@link Authentication.signIn} when the SDK
-	 * detects it is running inside an iframe context.
+	 * > **Must be called directly from a user action.**
+	 * > Browsers block `window.open()` calls not triggered synchronously by a
+	 * > trusted gesture (e.g. a `click` or `keydown` event). Calling this from a
+	 * > timer or a resolved `Promise` will cause the popup to be silently blocked.
 	 *
 	 * @param config - Optional popup dimensions, timeout, and hosted-mode flag.
 	 * @returns A promise that resolves to the signed-in token details.
@@ -293,8 +297,10 @@ export class PopupManager {
 	 * Opens a popup window to perform the Catalyst sign-out flow and waits for
 	 * the popup to signal completion via postMessage.
 	 *
-	 * Intended to be called only from {@link Authentication.signOut} when the SDK
-	 * detects it is running inside an iframe context.
+	 * > **Must be called directly from a user action.**
+	 * > Browsers block `window.open()` calls not triggered synchronously by a
+	 * > trusted gesture (e.g. a `click` or `keydown` event). Calling this from a
+	 * > timer or a resolved `Promise` will cause the popup to be silently blocked.
 	 *
 	 * @param redirectUrl - URL to navigate to in the host frame after sign-out.
 	 * @returns A promise that resolves when the sign-out popup signals completion.

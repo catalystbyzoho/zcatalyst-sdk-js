@@ -1,11 +1,29 @@
 import { CatalystAuthenticationError } from '../utils/error.js';
 
-const STYLE_ID = '__catalyst-iframe-btn-styles';
-const BTN_ID = '__catalyst-iframe-btn';
+/**
+ * The fixed HTML element id of the "Sign In" button rendered by the SDK when
+ * it detects that {@link Authentication.signIn} is called from inside an iframe.
+ *
+ * Browsers block `window.open()` calls not triggered by a direct user gesture.
+ * The SDK mounts this button so that clicking it satisfies the trusted-gesture
+ * requirement before opening the authentication popup.
+ *
+ * Style the button entirely from your own stylesheet using this id:
+ *
+ * ```css
+ * #zc-signin-button {
+ *   background: #0070f3;
+ *   color: #fff;
+ *   border-radius: 6px;
+ *   padding: 10px 24px;
+ * }
+ * ```
+ */
+const BTN_ID = 'zc-signin-button';
 
 /**
- * Renders a shadcn-inspired button inside the target container (or document.body
- * if no container id is provided) when the SDK is running inside an iframe.
+ * Renders a "Sign In" button inside the DOM element identified by `containerId`
+ * when {@link Authentication.signIn} is called from inside an iframe.
  *
  * Browsers block `window.open()` calls not triggered by a direct user gesture.
  * Mounting a button and opening the popup on click satisfies the trusted-gesture
@@ -14,19 +32,22 @@ const BTN_ID = '__catalyst-iframe-btn';
  * Concurrent calls while a button is already rendered are rejected immediately
  * with `POPUP_ALREADY_OPEN`.
  *
- * @param action       - 'signin' or 'signout'.
- * @param onConfirm    - Async callback invoked on button click (opens popup).
- * @param containerId  - Optional DOM element id to mount the button into.
- *                       Falls back to document.body when not provided.
- * @param label        - Optional custom button label.
- * @param customStyle  - Optional inline style overrides.
+ * The button is rendered with the fixed element id **`"zc-signin-button"`**.
+ * No default styles are applied by the SDK — style it freely from your own CSS:
+ *
+ * ```css
+ * #zc-signin-button { background: #0070f3; color: #fff; }
+ * ```
+ *
+ * @param onConfirm   - Async callback invoked on button click (opens the sign-in popup).
+ * @param containerId - DOM element id of the container passed to {@link Authentication.signIn}.
+ *                      The button is appended directly inside that element.
+ * @param buttonLabel - Optional custom label for the button. Defaults to `'Sign In'`.
  */
 export function showIframeConfirmModal(
-	action: 'signin' | 'signout',
 	onConfirm: () => Promise<void>,
 	containerId?: string,
-	label?: string,
-	customStyle?: Partial<CSSStyleDeclaration>
+	buttonLabel?: string
 ): Promise<void> {
 	// Reject concurrent calls — button is already in the DOM
 	if (document.getElementById(BTN_ID)) {
@@ -40,73 +61,15 @@ export function showIframeConfirmModal(
 	}
 
 	return new Promise<void>((resolve, reject) => {
-		const isSignIn = action === 'signin';
-		const defaultLabel = isSignIn ? 'Sign In' : 'Sign Out';
-		const btnLabel = label ?? defaultLabel;
-
-		// Inject styles once
-		if (!document.getElementById(STYLE_ID)) {
-			const style = document.createElement('style');
-			style.id = STYLE_ID;
-			style.textContent = [
-				`#${BTN_ID} {`,
-				'  display: inline-flex;',
-				'  align-items: center;',
-				'  justify-content: center;',
-				'  gap: 8px;',
-				'  padding: 10px 20px;',
-				'  font-size: 14px;',
-				'  font-weight: 500;',
-				'  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;',
-				'  line-height: 1;',
-				'  border-radius: 8px;',
-				'  border: 1px solid rgba(0,0,0,0.1);',
-				'  background: #18181b;',
-				'  color: #fafafa;',
-				'  cursor: pointer;',
-				'  transition: background 0.15s, opacity 0.15s, box-shadow 0.15s;',
-				'  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);',
-				'  outline: none;',
-				'  user-select: none;',
-				'  -webkit-user-select: none;',
-				'}',
-				`#${BTN_ID}:hover:not(:disabled) {`,
-				'  background: #27272a;',
-				'  box-shadow: 0 4px 8px rgba(0,0,0,0.15);',
-				'}',
-				`#${BTN_ID}:focus-visible {`,
-				'  box-shadow: 0 0 0 3px rgba(24,24,27,0.25);',
-				'}',
-				`#${BTN_ID}:disabled {`,
-				'  opacity: 0.5;',
-				'  cursor: not-allowed;',
-				'}',
-				'@media (prefers-color-scheme: dark) {',
-				`  #${BTN_ID} {`,
-				'    background: #fafafa;',
-				'    color: #18181b;',
-				'    border-color: rgba(255,255,255,0.1);',
-				'  }',
-				`  #${BTN_ID}:hover:not(:disabled) { background: #e4e4e7; }`,
-				'}'
-			].join('\n');
-			document.head.appendChild(style);
-		}
-
 		// Find container or fall back to body
 		const container: HTMLElement =
 			(containerId ? document.getElementById(containerId) : null) ?? document.body;
 
-		// Build button
+		// Build button — no inline or injected styles; user controls all styling via #zc-signin-button
 		const btn = document.createElement('button');
 		btn.id = BTN_ID;
 		btn.type = 'button';
-		btn.textContent = btnLabel;
-
-		// Apply custom style overrides on top of defaults
-		if (customStyle) {
-			Object.assign(btn.style, customStyle);
-		}
+		btn.textContent = buttonLabel ?? 'Sign In';
 
 		btn.addEventListener('click', async () => {
 			btn.disabled = true;
