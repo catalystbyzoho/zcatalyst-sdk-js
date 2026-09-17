@@ -44,7 +44,6 @@ export const CONSTANTS = {
 	},
 	CATALYST_AUTH_ENV_KEY: 'ZC_SDK_AUTH_CONFIG',
 	X_ZOHO_CATALYST_RESOURCE_ID: 'X-Zc-Resource-Id',
-	ZC_ORG_ID: 'CATALYST-ORG',
 	X_ZOHO_CATALYST_ORG_ID: 'CATALYST-ORG',
 	CREDENTIAL_SUFFIX: 'catalyst/application_auth.json',
 	AUTH_HEADER: 'Authorization',
