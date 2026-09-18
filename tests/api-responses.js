@@ -938,6 +938,7 @@ exports.responses = {
 			data: {
 				data: {
 					status: 'success',
+					conversationId: 'conv123',
 					response: '[" prediction results "]'
 				}
 			}
