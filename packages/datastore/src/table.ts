@@ -9,10 +9,10 @@ import {
 	wrapValidatorsWithPromise
 } from '@zcatalyst/utils';
 
-import { BulkRead, BulkWrite } from './bulk-job';
-import { Datastore } from './datastore';
-import { CatalystDataStoreError } from './utils/error';
-import { ICatalystColumn, ICatalystRow, ICatalystTable } from './utils/interface';
+import { BulkRead, BulkWrite } from './bulk-job.js';
+import { Datastore } from './datastore.js';
+import { CatalystDataStoreError } from './utils/error.js';
+import { ICatalystColumn, ICatalystRow, ICatalystTable } from './utils/interface.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ICatalystRowInput = { [column_name: string]: any; ROWID?: string | number };

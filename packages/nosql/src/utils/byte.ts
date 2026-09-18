@@ -1,5 +1,5 @@
-import { CatalystNoSQLError } from '../utils/error';
-import { TNoSQLByte } from './types';
+import { CatalystNoSQLError } from '../utils/error.js';
+import { TNoSQLByte } from './types.js';
 
 /** * Byte(B) implementation of a NoSQL */
 export class NoSQLByte {

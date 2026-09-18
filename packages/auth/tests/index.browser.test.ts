@@ -88,5 +88,36 @@ describe('Authentication (Browser)', () => {
 		it('should send password change request', async () => {
 			await expect(zcAuth.changePassword('oldPass123', 'newPass456')).resolves.toBeDefined();
 		});
+
+		it('should send passwords in the request body, never in the URL/query string', async () => {
+			const sendSpy = jest.spyOn(zcAuth.requester, 'send');
+
+			await zcAuth.changePassword('oldPass123', 'newPass456');
+
+			expect(sendSpy).toHaveBeenCalledTimes(1);
+			const sentRequest = sendSpy.mock.calls[0][0];
+
+			// Passwords must be present only in the JSON body.
+			expect(sentRequest.data).toEqual({
+				old_password: 'oldPass123',
+				new_password: 'newPass456'
+			});
+
+			// Passwords must never leak into the query string or URL.
+			expect(sentRequest.qs).not.toEqual(
+				expect.objectContaining({
+					old_password: expect.anything(),
+					new_password: expect.anything()
+				})
+			);
+			expect(JSON.stringify(sentRequest.qs ?? {})).not.toContain('oldPass123');
+			expect(JSON.stringify(sentRequest.qs ?? {})).not.toContain('newPass456');
+			expect(sentRequest.path).not.toContain('oldPass123');
+			expect(sentRequest.path).not.toContain('newPass456');
+			expect(sentRequest.url ?? '').not.toContain('oldPass123');
+			expect(sentRequest.url ?? '').not.toContain('newPass456');
+
+			sendSpy.mockRestore();
+		});
 	});
 });

@@ -26,6 +26,13 @@ module.exports = {
   },
   
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+
+  // Source imports use explicit ".js" extensions (required for Node's ESM
+  // loader), but the files on disk are ".ts". Strip the extension so Jest
+  // resolves back to the ".ts" source under ts-jest.
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1'
+  },
   
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',

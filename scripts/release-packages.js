@@ -14,6 +14,9 @@
  * Requirements:
  * - NPM_TOKEN environment variable must be set for authentication.
  * - NPM_REGISTRY environment variable (optional, defaults to registry.npmjs.org).
+ * - Publishes with npm provenance (--provenance); this requires running in a
+ *   CI environment with OIDC support (e.g. GitHub Actions with
+ *   `id-token: write` permission) and publishing to a provenance-aware registry.
  *
  * Usage:
  *   node scripts/release-packages.js          # publish missing versions
@@ -76,7 +79,10 @@ function publish(pkg, registryConfig) {
     npmrcCreated = true;
 
     console.log(`Publishing ${pkg.name} (${pkg.version})...`);
-    execSync(`pnpm publish --registry ${url} --access=public --no-git-checks`, { cwd: pkg.path, stdio: 'inherit' });
+    execSync(`pnpm publish --registry ${url} --access=public --no-git-checks --provenance`, {
+      cwd: pkg.path,
+      stdio: 'inherit',
+    });
     console.log(`Published ${pkg.name}@${pkg.version}`);
   } catch (err) {
     throw new Error(`Failed to publish ${pkg.name}: ${err.message}`);

@@ -16,7 +16,7 @@ import {
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { CatalystFunctionError } from './utils/error';
+import { CatalystFunctionError } from './utils/error.js';
 
 const { REQ_METHOD, CREDENTIAL_USER, COMPONENT } = CONSTANTS;
 

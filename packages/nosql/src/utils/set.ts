@@ -1,8 +1,8 @@
 import { isValidNumber } from '@zcatalyst/utils';
 
-import { CatalystNoSQLError } from '../utils/error';
-import { NoSQLByte } from './byte';
-import { TNoSQLByte } from './types';
+import { CatalystNoSQLError } from '../utils/error.js';
+import { NoSQLByte } from './byte.js';
+import { TNoSQLByte } from './types.js';
 
 /** * String set (SS) implementation for NoSQL */
 export class NoSQLStringSet extends Set<string> {

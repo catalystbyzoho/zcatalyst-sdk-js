@@ -13,9 +13,9 @@ import {
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { Table, TableAdmin } from './table';
-import { CatalystDataStoreError } from './utils/error';
-import { ICatalystSearch, ICatalystTable } from './utils/interface';
+import { Table, TableAdmin } from './table.js';
+import { CatalystDataStoreError } from './utils/error.js';
+import { ICatalystSearch, ICatalystTable } from './utils/interface.js';
 
 const { REQ_METHOD, CREDENTIAL_USER, COMPONENT, ACCEPT_HEADER } = CONSTANTS;
 
@@ -24,7 +24,10 @@ export type ICatalystZCQLResult = { [tableName: string]: { [x: string]: any } };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ICatalystSearchResults = { [tableName: string]: Array<{ [columnName: string]: any }> };
 
-/** Provides user-scoped Catalyst Datastore operations for tables, ZCQL, and search. */
+/**
+ * Provides user-scoped Catalyst Datastore operations for tables, ZCQL, and search.
+ * @category Datastore
+ */
 export class Datastore implements Component {
 	requester: Handler;
 	/** Creates a datastore client for the provided Catalyst app. */
@@ -32,12 +35,16 @@ export class Datastore implements Component {
 		this.requester = new Handler(app, this);
 	}
 
-	/** Retrieves the datastore component name. */
+	/** Retrieves the datastore component name.
+	 * @category Component Info
+	 */
 	getComponentName(): string {
 		return COMPONENT.datastore;
 	}
 
-	/** Retrieves the package version used by this component. */
+	/** Retrieves the package version used by this component.
+	 * @category Component Info
+	 */
 	getComponentVersion(): string {
 		return version;
 	}
@@ -53,6 +60,7 @@ export class Datastore implements Component {
 	 * const datastore = new Datastore();
 	 * const tableById = datastore.table('12345');
 	 * const tableByName = datastore.table('Users');
+	 * @category Table Access
 	 */
 	table(id: string): Table {
 		wrapValidators(() => {
@@ -76,6 +84,7 @@ export class Datastore implements Component {
 	 * const rows = await datastore.executeZCQLQuery(
 	 *   "SELECT * FROM Users WHERE status = 'active'"
 	 * );
+	 * @category Query Operations
 	 */
 	async executeZCQLQuery(query: string): Promise<Array<ICatalystZCQLResult>> {
 		await wrapValidatorsWithPromise(() => {
@@ -85,6 +94,41 @@ export class Datastore implements Component {
 			method: REQ_METHOD.post,
 			path: '/query',
 			data: { query },
+			type: RequestType.JSON,
+			expecting: ResponseType.JSON,
+			service: CatalystService.BAAS,
+			track: true,
+			user: CREDENTIAL_USER.user,
+			headers: {
+				[ACCEPT_HEADER.KEY]: ACCEPT_HEADER.ZCQL
+			}
+		};
+		const resp = await this.requester.send(request);
+		return resp.data.data as Array<ICatalystZCQLResult>;
+	}
+
+	/**
+	 * Executes an OLAP (Online Analytical Processing) ZCQL query against the datastore.
+	 *
+	 * @param query - The ZCQL query string to execute in OLAP mode.
+	 * @returns A promise resolving to an array of table values.
+	 * @throws {@link CatalystDataStoreError} if the query string is empty or invalid.
+	 *
+	 * @example
+	 * const datastore = new Datastore();
+	 * const rows = await datastore.executeOLAPQuery(
+	 *   "SELECT * FROM Users WHERE status = 'active'"
+	 * );
+	 * @category Query Operations
+	 */
+	async executeOLAPQuery(query: string): Promise<Array<ICatalystZCQLResult>> {
+		await wrapValidatorsWithPromise(() => {
+			isNonEmptyString(query, 'query', true);
+		}, CatalystDataStoreError);
+		const request: IRequestConfig = {
+			method: REQ_METHOD.post,
+			path: '/query',
+			data: { query, OLAP: true },
 			type: RequestType.JSON,
 			expecting: ResponseType.JSON,
 			service: CatalystService.BAAS,
@@ -111,6 +155,7 @@ export class Datastore implements Component {
 	 *   search: 'example',
 	 *   search_table_columns: { Users: ['name', 'email'] }
 	 * });
+	 * @category Query Operations
 	 */
 	async executeSearchQuery(searchQuery: ICatalystSearch): Promise<ICatalystSearchResults> {
 		await wrapValidatorsWithPromise(() => {
@@ -136,7 +181,10 @@ export class Datastore implements Component {
 	}
 }
 
-/** Provides admin-scoped Catalyst Datastore operations for table metadata. */
+/**
+ * Provides admin-scoped Catalyst Datastore operations for table metadata.
+ * @category Datastore
+ */
 export class DatastoreAdmin extends Datastore {
 	/** Creates an admin datastore client for the provided Catalyst app. */
 	constructor(app?: unknown) {
@@ -151,6 +199,7 @@ export class DatastoreAdmin extends Datastore {
 	 * @example
 	 * const datastore = new DatastoreAdmin();
 	 * const tables = await datastore.getAllTables();
+	 * @category Table Access
 	 */
 	async getAllTables(): Promise<Array<Table>> {
 		const request: IRequestConfig = {
@@ -179,6 +228,7 @@ export class DatastoreAdmin extends Datastore {
 	 * @example
 	 * const datastore = new DatastoreAdmin();
 	 * const tableDetails = await datastore.getTableDetails('12345');
+	 * @category Table Access
 	 */
 	async getTableDetails(id: string): Promise<Table> {
 		await wrapValidatorsWithPromise(() => {
@@ -207,6 +257,7 @@ export class DatastoreAdmin extends Datastore {
 	 * const datastore = new Datastore();
 	 * const tableById = datastore.table('12345');
 	 * const tableByName = datastore.table('Users');
+	 * @category Table Access
 	 */
 	table(id: string): TableAdmin {
 		wrapValidators(() => {

@@ -1,6 +1,10 @@
 {
   "name": "zcatalyst-sdk-js",
-  "version": "0.0.3",
+  "version": "0.0.5",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/catalystbyzoho/zcatalyst-sdk-js.git"
+  },
   "scripts": {
     "clean": "turbo run clean --force --parallel",
     "build": "turbo run build",
@@ -18,9 +22,6 @@
     "lint-fix": "turbo run lint -- --fix",
     "format": "turbo run format --parallel",
     "prepare": "husky || true",
-    "publish-packages": "turbo run build && node scripts/publish-packages.js",
-    "publish-all": "for pkg in packages/*; do (cd $pkg && pnpm publish --tag latest); done",
-    "unpublish-all": "for pkg in packages/*; do (cd $pkg && pnpm unpublish); done",
     "version:update": "node scripts/version-update.js",
     "changelog:update": "node ./scripts/change-log.js",
     "release": "node scripts/release-packages.js"
@@ -58,7 +59,7 @@
   },
   "packageManager": "pnpm@9.15.4",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "pnpm": {
     "overrides": {

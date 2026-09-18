@@ -1,6 +1,7 @@
 /**
  * Catalyst QuickML — invoke deployed machine-learning endpoints.
  *
+ * @module @zcatalyst/quickml
  * @packageDocumentation
  */
 
@@ -17,7 +18,7 @@ import fs from 'fs';
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { CatalystQuickMLError } from './utils/error';
+import { CatalystQuickMLError } from './utils/error.js';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 

@@ -3,13 +3,13 @@ import {
 	CONSTANTS,
 	isNonEmptyObject,
 	isNonEmptyString
-} from '../../../utils/src';
+} from '../../../utils/src/index.js';
 import {
 	ApplicationDefaultCredential,
 	CatalystApp,
 	CatalystCredential,
 	Credential
-} from './credential';
+} from './credential.js';
 
 const {
 	INIT_TYPE,
@@ -239,6 +239,6 @@ export {
 	Credential,
 	RefreshTokenCredential,
 	TicketCredential
-} from '../../src/credential';
-export { CatalystApp } from './credential';
+} from '../../src/credential.js';
+export { CatalystApp } from './credential.js';
 export { CatalystAppError };

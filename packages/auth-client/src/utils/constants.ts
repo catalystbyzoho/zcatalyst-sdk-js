@@ -1,4 +1,4 @@
-import { AuthProtocol, CatalystConfig } from './interfaces';
+import { AuthProtocol, CatalystConfig } from './interfaces.js';
 
 // =============================================================================
 // URL DIVIDERS & ROUTING CONSTANTS

@@ -1,5 +1,15 @@
 # @zcatalyst/stratus
 
+## [0.0.5](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.5) - 2026-08-19
+
+### Bug Fixes
+- fixed the bucket url formation issue [`#39`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/39)
+
+## [0.0.4](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.4) - 2026-08-04
+
+### Bug Fixes
+- Validate and sanitize bucket names to prevent authority-injection attacks that could redirect bucket requests (and their bearer tokens) to an attacker-controlled host, and verify the resolved bucket URL's origin.[`#34`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/34)
+
 ## [0.0.3](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.3) - 2026-06-30
 
 ### Bug Fixes

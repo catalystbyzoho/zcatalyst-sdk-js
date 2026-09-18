@@ -1,1 +1,1 @@
-export { Stratus, TransferManager } from './stratus';
+export { Stratus, TransferManager } from './stratus.js';

@@ -5,7 +5,7 @@ import https from 'https';
 import { resolve } from 'path';
 import { stringify } from 'querystring';
 
-import { CatalystAuthError } from './errors';
+import { CatalystAuthError } from './errors.js';
 
 const {
 	CREDENTIAL_SUFFIX,
@@ -14,10 +14,55 @@ const {
 	CREDENTIAL_TYPE,
 	CREDENTIAL_USER,
 	CSRF_TOKEN_NAME,
-	ACCOUNTS_ORIGIN
+	ACCOUNTS_ORIGIN,
+	PROJECT_HEADER
 } = CONSTANTS;
 
 export const globalValue = {};
+
+const REDACTED = '[REDACTED]';
+
+// Header/property names that carry secrets and must never be echoed back in errors.
+const SENSITIVE_FIELDS = new Set(
+	[
+		CREDENTIAL_HEADER.admin_token,
+		CREDENTIAL_HEADER.user_token,
+		CREDENTIAL_HEADER.cookie,
+		CREDENTIAL_HEADER.signature,
+		CREDENTIAL_HEADER.zcsrf,
+		PROJECT_HEADER.key,
+		PROJECT_HEADER.projectSecretKey,
+		'access_token',
+		'accessToken',
+		'refresh_token',
+		'refreshToken',
+		'client_secret',
+		'clientSecret',
+		'adminToken',
+		'userToken',
+		'cookie',
+		'ticket',
+		CSRF_TOKEN_NAME,
+		'zcrf_header',
+		'Authorization'
+	].map((field) => field.toLowerCase())
+);
+
+/*
+ * Returns a shallow copy of the given object with any known credential/secret
+ * fields replaced so it can be safely attached to an error's `value` for
+ * debugging without leaking admin tokens, project keys, cookies, etc.
+ */
+function redactSensitiveFields(source: unknown): unknown {
+	if (typeof source !== 'object' || source === null) {
+		return source;
+	}
+	const redacted: Record<string, unknown> = {};
+	for (const [key, val] of Object.entries(source as Record<string, unknown>)) {
+		redacted[key] = SENSITIVE_FIELDS.has(key.toLowerCase()) ? REDACTED : val;
+	}
+	return redacted;
+}
 
 const CREDENTIAL_PATH = process.env.HOME
 	? resolve(resolve(process.env.HOME, '.config'), CREDENTIAL_SUFFIX)
@@ -29,7 +74,7 @@ function getAttr(from: { [x: string]: string | undefined }, key: string, alt?: s
 		throw new CatalystAuthError(
 			'INVALID_CREDENTIAL',
 			`Unable to get ${alt} from credential Object provided`,
-			from
+			redactSensitiveFields(from)
 		);
 	}
 	return tmp;
@@ -418,7 +463,7 @@ export class CatalystCredential extends Credential {
 				throw new CatalystAuthError(
 					'AUTH_ERROR',
 					'User not authenticated. Please login to proceed with user scope',
-					credObj
+					redactSensitiveFields(credObj)
 				);
 			}
 
@@ -427,7 +472,7 @@ export class CatalystCredential extends Credential {
 				throw new CatalystAuthError(
 					'INVALID_CREDENTIAL',
 					'missing user credentials',
-					credObj
+					redactSensitiveFields(credObj)
 				);
 			}
 		}
@@ -443,7 +488,7 @@ export class CatalystCredential extends Credential {
 				throw new CatalystAuthError(
 					'INVALID_CREDENTIAL',
 					'admin credential type is unknown',
-					credObj
+					redactSensitiveFields(credObj)
 				);
 		}
 		switch (this.userCredType) {
@@ -585,7 +630,7 @@ export class ApplicationDefaultCredential extends Credential {
 			throw new CatalystAuthError(
 				'INVALID_CREDENTIAL',
 				'Unable to get token object from path or env',
-				token
+				redactSensitiveFields(token)
 			);
 		}
 
@@ -599,7 +644,7 @@ export class ApplicationDefaultCredential extends Credential {
 			throw new CatalystAuthError(
 				'INVALID_CREDENTIAL',
 				'The given token object does not contain proper credentials',
-				token
+				redactSensitiveFields(token)
 			);
 		}
 	}
@@ -637,7 +682,7 @@ export class ApplicationCustomCredential extends Credential {
 			throw new CatalystAuthError(
 				'INVALID_CREDENTIAL',
 				'Unable to get token object from path or env',
-				credObj
+				redactSensitiveFields(credObj)
 			);
 		}
 
@@ -651,7 +696,7 @@ export class ApplicationCustomCredential extends Credential {
 			throw new CatalystAuthError(
 				'INVALID_CREDENTIAL',
 				'The given token object does not contain proper credentials',
-				credObj
+				redactSensitiveFields(credObj)
 			);
 		}
 	}

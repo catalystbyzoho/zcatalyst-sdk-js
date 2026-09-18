@@ -1,10 +1,15 @@
 {
   "name": "@zcatalyst/auth",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "main": "./dist-cjs/index.js",
   "module": "./dist-es/index.js",
   "types": "./dist-types/index.d.ts",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/catalystbyzoho/zcatalyst-sdk-js.git",
+    "directory": "packages/auth"
+  },
   "exports": {
     ".": {
       "node": {
@@ -43,7 +48,7 @@
   "scripts": {
     "build": "pnpm clean && concurrently 'pnpm:build:cjs' 'pnpm:build:es' 'pnpm:build:types && pnpm build:types:downlevel'",
     "build:cjs": "pnpm tsc -p tsconfig.cjs.json",
-    "build:es": "pnpm tsc -p tsconfig.es.json",
+    "build:es": "pnpm tsc -p tsconfig.es.json && node ../../scripts/fix-esm-json-imports.js dist-es",
     "build:types": "pnpm tsc -p tsconfig.types.json",
     "build:types:downlevel": "rimraf dist-types/ts3.4 && downlevel-dts dist-types dist-types/ts3.4",
     "clean": "rimraf ./dist-* && rimraf *.tsbuildinfo || exit 0",
@@ -66,7 +71,7 @@
     "ts-jest": "^29.2.5"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "files": [
     "dist-*/**"

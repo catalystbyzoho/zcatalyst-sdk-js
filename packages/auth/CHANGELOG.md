@@ -1,5 +1,10 @@
 # @zcatalyst/auth
 
+## [0.0.4](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.4) - 2026-08-19
+
+### Bug Fixes
+- fixed the change password query parameter issue [`#40`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/40)
+
 ## [0.0.3](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.3) - 2026-06-30
 
 ### Enhancements

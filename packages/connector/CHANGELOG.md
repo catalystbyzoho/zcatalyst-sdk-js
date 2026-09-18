@@ -1,5 +1,10 @@
 # @zcatalyst/connector
 
+## [0.0.4](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.4) - 2026-08-04
+
+### Bug Fixes
+- Stop attaching the default Catalyst auth headers to external OAuth token/refresh requests, and enforce HTTPS on configured auth/refresh URLs (loopback exempted for local development).[`#35`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/35)
+
 ## [0.0.3](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.3) - 2026-06-30
 
 ### Bug Fixes

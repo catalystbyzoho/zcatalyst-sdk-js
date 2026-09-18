@@ -1,9 +1,9 @@
 import { CatalystApp } from '@zcatalyst/auth-admin';
 import { Component } from '@zcatalyst/utils';
 
-import { ZCAuth } from '../../../auth-admin/src/__mocks__';
-import { IRequestConfig } from '../utils/interfaces';
-import { AuthorizedHttpClient, DefaultHttpResponse } from './http-handler';
+import { ZCAuth } from '../../../auth-admin/src/__mocks__/index.js';
+import { IRequestConfig } from '../utils/interfaces.js';
+import { AuthorizedHttpClient, DefaultHttpResponse } from './http-handler.js';
 
 export class Handler {
 	app?: CatalystApp;
@@ -30,5 +30,5 @@ export class Handler {
 	}
 }
 
-export * from '../utils/enums';
-export * from '../utils/interfaces';
+export * from '../utils/enums.js';
+export * from '../utils/interfaces.js';
