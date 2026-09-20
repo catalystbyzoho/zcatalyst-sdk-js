@@ -10,9 +10,7 @@ jest.mock('../src/http-handler', () => {
 });
 
 // Provide global helper to create mock app with response data
-(global as unknown as Record<string, unknown>).createMockAppWithResponses = (
-	responseMap: unknown
-) => {
+(global as any).createMockAppWithResponses = (responseMap: unknown) => {
 	return {
 		resd: responseMap,
 		config: {

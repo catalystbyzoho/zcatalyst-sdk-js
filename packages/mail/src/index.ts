@@ -1,6 +1,7 @@
 /**
  * Catalyst Mail — send transactional and bulk email from your Catalyst app.
  *
+ * @module @zcatalyst/mail
  * @packageDocumentation
  */
 

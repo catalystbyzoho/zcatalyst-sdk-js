@@ -1,6 +1,7 @@
 /**
  * Catalyst NoSQL — schema-less document storage with rich item operations.
  *
+ * @module @zcatalyst/nosql
  * @packageDocumentation
  */
 

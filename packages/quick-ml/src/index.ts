@@ -1,6 +1,7 @@
 /**
  * Catalyst QuickML — invoke deployed machine-learning endpoints.
  *
+ * @module @zcatalyst/quickml
  * @packageDocumentation
  */
 

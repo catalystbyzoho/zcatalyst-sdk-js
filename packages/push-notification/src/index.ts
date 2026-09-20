@@ -1,6 +1,7 @@
 /**
  * Catalyst Push Notifications — send push messages to mobile and web clients.
  *
+ * @module @zcatalyst/push-notification
  * @packageDocumentation
  */
 

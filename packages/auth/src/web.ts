@@ -67,7 +67,7 @@ export const popupConstants = {
 } as const;
 
 /** Provides browser authentication flows for hosted sign-in, embedded sign-in, sign-up, and user profile access. */
-class Authentication implements Component {
+export class Authentication implements Component {
 	requester: Handler;
 	zaid: string = ConfigStore.get('ZAID') as string;
 	projectId: string = ConfigStore.get('PROJECT_ID') as string;

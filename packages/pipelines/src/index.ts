@@ -1,6 +1,7 @@
 /**
  * Catalyst Pipelines — build and deployment automation primitives.
  *
+ * @module @zcatalyst/pipelines
  * @packageDocumentation
  */
 

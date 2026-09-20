@@ -1,6 +1,7 @@
 /**
  * Catalyst Stratus — object storage with multi-part transfer support.
  *
+ * @module @zcatalyst/stratus
  * @packageDocumentation
  */
 
