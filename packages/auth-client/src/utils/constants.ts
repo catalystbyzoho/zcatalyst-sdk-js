@@ -98,6 +98,8 @@ export const JWT_COOKIE_PREFIX = 'JWT_AUTH';
 export const JWT_COOKIE_EXPIRY_PREFIX = 'JWT_EXPIRES_AT';
 export const TOKEN_GRANT_TYPE = 'refresh_token';
 export const AUTH_TOKEN_PREFIX = 'Bearer';
+export const IDB_DB_NAME = 'zcatalyst_auth';
+export const IDB_TOKEN_KEY = 'zcatalyst_client_token';
 
 // =============================================================================
 // PROJECT & APPLICATION CONSTANTS

@@ -30,7 +30,22 @@ import { CatalystConfig } from './utils/interfaces.js';
 import { syncProjectSession } from './utils/session.js';
 
 /**
+ * Shared in-flight promise for the `/sdk/init` fetch.
+ *
+ * If `getCredentials()` is called multiple times before the first call
+ * resolves (e.g. constructor fire-and-forget races with an explicit
+ * `await zcAuth.init()` call), all callers share the same Promise so
+ * only ONE network request is ever made. Once the promise settles it is
+ * cleared so the next explicit call (e.g. after sign-out) triggers a
+ * fresh fetch.
+ */
+let _credentialsPromise: Promise<void> | null = null;
+
+/**
  * Fetches browser project credentials and stores them for Catalyst client authentication.
+ * Multiple simultaneous callers are coalesced — only one `/sdk/init` request
+ * is ever in-flight at a time. All callers await the same promise and receive
+ * the result once it resolves.
  *
  * @returns The get credentials result.
  * @throws {CatalystAuthError} when credentials or authentication state are invalid.
@@ -41,52 +56,70 @@ import { syncProjectSession } from './utils/session.js';
  * await getCredentials();
  * ```
  */
-export async function getCredentials(): Promise<void> {
-	try {
-		setDefaultProjectConfig();
-		const response = await fetch(`/${URL_DIVIDER.RESERVED_URL}/sdk/init`, {
-			headers: {
-				Accept: 'application/json'
-			}
-		});
-
-		const credentials = await response.json();
-
-		// Handle nested credential structure
-		const finalCredentials = credentials.hasOwnProperty('credentialQR')
-			? (credentials.credentialQR as CatalystConfig)
-			: credentials;
-
-		// Validate required properties
-		validateRequiredCredentials(finalCredentials);
-
-		ConfigStore.set(
-			STRATUS_DOMAIN,
-			`-${finalCredentials.environment}${finalCredentials.stratus_suffix}`
-		);
-		ConfigStore.set(API_DOMAIN, finalCredentials.api_domain);
-		ConfigStore.set(ZAID, finalCredentials.zaid);
-		ConfigStore.set(PROJECT_ID, finalCredentials.project_id);
-		ConfigStore.set(IAM_DOMAIN, finalCredentials.auth_domain);
-		ConfigStore.set(ENVIRONMENT, finalCredentials.environment);
-		ConfigStore.set(IS_APPSAIL, finalCredentials.is_appsail);
-		ConfigStore.set(PROJECT_DOMAIN, finalCredentials.project_domain);
-		if (finalCredentials.org_id) {
-			ConfigStore.set(ORG_ID, finalCredentials.org_id);
-		}
-		ConfigStore.set(INITIALIZED, true + '');
-		setGlobal('__catalyst', finalCredentials);
-
-		// Clear stratus_jwt only when the project session actually changed so
-		// same-project reloads keep the cached cookie valid.
-		syncProjectSession(finalCredentials);
-	} catch (error) {
-		throw new CatalystAuthError(
-			'CREDENTIAL_FETCH_ERROR',
-			`Failed to fetch credentials: ${error instanceof Error ? error.message : 'Unknown error'}`,
-			500
-		);
+export function getCredentials(): Promise<void> {
+	// If a fetch is already in-flight, return the same promise so all callers
+	// wait for the single request — no duplicate /sdk/init calls, no race
+	// where a second caller reads undefined from ConfigStore mid-fetch.
+	if (_credentialsPromise !== null) {
+		return _credentialsPromise;
 	}
+
+	_credentialsPromise = (async (): Promise<void> => {
+		try {
+			setDefaultProjectConfig();
+			const response = await fetch(`/${URL_DIVIDER.RESERVED_URL}/sdk/init`, {
+				headers: {
+					Accept: 'application/json'
+				}
+			});
+
+			const credentials = await response.json();
+
+			// Handle nested credential structure
+			const finalCredentials = credentials.hasOwnProperty('credentialQR')
+				? (credentials.credentialQR as CatalystConfig)
+				: credentials;
+
+			// Validate required properties
+			validateRequiredCredentials(finalCredentials);
+
+			ConfigStore.set(
+				STRATUS_DOMAIN,
+				`-${finalCredentials.environment}${finalCredentials.stratus_suffix}`
+			);
+			ConfigStore.set(API_DOMAIN, finalCredentials.api_domain);
+			ConfigStore.set(ZAID, finalCredentials.zaid);
+			ConfigStore.set(PROJECT_ID, finalCredentials.project_id);
+			ConfigStore.set(IAM_DOMAIN, finalCredentials.auth_domain);
+			ConfigStore.set(ENVIRONMENT, finalCredentials.environment);
+			ConfigStore.set(IS_APPSAIL, finalCredentials.is_appsail);
+			ConfigStore.set(PROJECT_DOMAIN, finalCredentials.project_domain);
+			if (finalCredentials.org_id) {
+				ConfigStore.set(ORG_ID, finalCredentials.org_id);
+			}
+			ConfigStore.set(INITIALIZED, true + '');
+			setGlobal('__catalyst', finalCredentials);
+
+			// Clear stratus_jwt only when the project session actually changed so
+			// same-project reloads keep the cached cookie valid.
+			syncProjectSession(finalCredentials);
+		} catch (error) {
+			// Clear the promise on failure so the next caller triggers a fresh fetch
+			// rather than re-awaiting a permanently rejected promise.
+			_credentialsPromise = null;
+			throw new CatalystAuthError(
+				'CREDENTIAL_FETCH_ERROR',
+				`Failed to fetch credentials: ${error instanceof Error ? error.message : 'Unknown error'}`,
+				500
+			);
+		} finally {
+			// Once resolved successfully, clear the cached promise so an explicit
+			// re-init (e.g. after sign-out) always fetches fresh credentials.
+			_credentialsPromise = null;
+		}
+	})();
+
+	return _credentialsPromise;
 }
 
 /**
@@ -236,6 +269,11 @@ export async function collectZCRFToken(): Promise<unknown> {
 
 export { Auth_Protocol, ConfigStore };
 export * from './utils/constants.js';
+export {
+	clearOAuthTokenFromIDB,
+	getOAuthTokenFromIDB,
+	setOAuthTokenInIDB
+} from './utils/idb-token.js';
 export {
 	clearStratusJwt,
 	getStratusJwtExpiry,

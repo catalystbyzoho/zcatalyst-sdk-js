@@ -57,7 +57,7 @@
   "lint-staged": {
     "**/*.{js,ts,jsx,tsx}": "eslint --fix"
   },
-  "packageManager": "pnpm@9.15.4",
+  "packageManager": "pnpm@11.24.0",
   "engines": {
     "node": ">=22"
   },

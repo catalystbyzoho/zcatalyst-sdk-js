@@ -1,10 +1,13 @@
 import {
 	addDefaultAppHeaders,
 	Auth_Protocol,
+	clearOAuthTokenFromIDB,
 	collectZCRFToken,
 	ConfigStore,
+	getOAuthTokenFromIDB,
 	getToken,
 	JWT_COOKIE_PREFIX,
+	OAUTH_TOKEN_PREFIX,
 	PROJECT_ID
 } from '@zcatalyst/auth-client';
 import { CatalystService, CONSTANTS, getServicePath } from '@zcatalyst/utils';
@@ -337,6 +340,8 @@ export class ResponseHandler {
 				return await ResponseHandler.#followZcrfTokenProtocol(headers);
 			case Auth_Protocol.JwtTokenProtocol:
 				return await ResponseHandler.#followJwtZCAuthProtocol(headers);
+			case Auth_Protocol.OAuthTokenProtocol:
+				return await ResponseHandler.#followOAuthTokenProtocol(headers);
 			default:
 				return Promise.resolve(headers);
 		}
@@ -363,6 +368,18 @@ export class ResponseHandler {
 			});
 	}
 
+	static async #followOAuthTokenProtocol(headers: HeadersInit): Promise<HeadersInit> {
+		return this.getOAuthZCAuthToken()
+			.then((resp) => {
+				(headers as Record<string, string>)[HTTP_HEADER_MAP.AUTHORIZATION_KEY] =
+					resp.access_token;
+				return headers;
+			})
+			.catch((err) => {
+				throw new CatalystAPIError('API_ERROR', err.message, err.status);
+			});
+	}
+
 	// Method to get JWT authentication token
 	/**
 	 * Builds the browser JWT authorization token from the configured cookie.
@@ -378,7 +395,7 @@ export class ResponseHandler {
 	public static getJWTZCAuthToken(): Promise<jwtAccessTokenResponse> {
 		const jwtPrefix = ConfigStore.get(JWT_COOKIE_PREFIX);
 		return new Promise((resolve, reject) => {
-			const jwtZCAuthToken = getToken() as unknown as string;
+			const jwtZCAuthToken = getToken(JWT_COOKIE_PREFIX) as unknown as string;
 			if (jwtZCAuthToken === '') {
 				reject('Unable to get the JWT Access Token.');
 			} else {
@@ -387,6 +404,20 @@ export class ResponseHandler {
 				});
 			}
 		});
+	}
+
+	public static async getOAuthZCAuthToken(): Promise<jwtAccessTokenResponse> {
+		const stored = await getOAuthTokenFromIDB();
+		if (!stored?.token) {
+			throw new Error('No access token found.');
+		}
+		if (stored.exp <= Date.now()) {
+			await clearOAuthTokenFromIDB();
+			throw new Error('Access token has expired.');
+		}
+		return {
+			access_token: `${OAUTH_TOKEN_PREFIX} ${stored.token}`
+		};
 	}
 
 	/**

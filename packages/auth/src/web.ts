@@ -2,6 +2,7 @@ import {
 	clearStratusJwt,
 	ConfigStore,
 	getCredentials,
+	getOAuthTokenFromIDB,
 	JWT_COOKIE_PREFIX,
 	setDefaultProjectConfig
 } from '@zcatalyst/auth-client';
@@ -18,28 +19,56 @@ import {
 import pkg from '../package.json';
 const { version } = pkg;
 import {
-	AUTH_ERROR_MSG,
-	AUTH_STATIC_FILES,
+	IframeSignInManager,
+	PopupManager,
+	showIframeConfirmModal,
+	TokenManager
+} from './internal/index.js';
+import {
 	CURRENT_CLIENT_PAGE_HOST,
 	CURRENT_CLIENT_PAGE_PORT,
 	CURRENT_CLIENT_PAGE_PROTOCOL,
 	FETCH_DETAILS_CALLBACK_FN,
+	POPUP_LOGIN_PATH,
+	POPUP_LOGOUT_PATH,
+	POPUP_MSG_AUTH_ERROR,
+	POPUP_MSG_AUTH_REQUEST,
+	POPUP_MSG_AUTH_TOKEN,
+	POPUP_MSG_SIGNOUT_DONE,
 	UM_URL_DIVIDER,
 	URL_DIVIDER
 } from './utils/constants.js';
 import { Auth_Protocol } from './utils/enums.js';
 import { CatalystAuthenticationError } from './utils/error.js';
 import { wrapCheck } from './utils/functions.js';
+import { isIframeContext as detectIframeContext } from './utils/iframe-context.js';
 import {
 	ICatalystAuthResponse,
-	ICatalystCustomTokenResponse,
+	ICatalystPopupSignInConfig,
+	ICatalystPopupSignInResult,
 	ICatalystSignInConfig,
 	ICatalystSignUpConfig,
+	TokenResponse,
 	UserDetails
 } from './utils/interface.js';
-import { applyQueryString, hasSuffInfo } from './utils/validators.js';
+import { assertPopupAuthAllowed } from './utils/popup-support.js';
+import { hasSuffInfo } from './utils/validators.js';
 
 const { CREDENTIAL_USER, REQ_METHOD, COMPONENT } = CONSTANTS;
+
+/**
+ * Popup message-type / path constants exposed on {@link zcAuth}.
+ *
+ * @beta
+ */
+export const popupConstants = {
+	POPUP_LOGIN_PATH,
+	POPUP_LOGOUT_PATH,
+	POPUP_MSG_AUTH_REQUEST,
+	POPUP_MSG_AUTH_TOKEN,
+	POPUP_MSG_SIGNOUT_DONE,
+	POPUP_MSG_AUTH_ERROR
+} as const;
 
 /** Provides browser authentication flows for hosted sign-in, embedded sign-in, sign-up, and user profile access. */
 export class Authentication implements Component {
@@ -48,12 +77,32 @@ export class Authentication implements Component {
 	projectId: string = ConfigStore.get('PROJECT_ID') as string;
 	isAppsail: string = ConfigStore.get('IS_APPSAIL') as string;
 	authProtocol: Auth_Protocol = ConfigStore.get('AUTH_PROTOCOL') as unknown as Auth_Protocol;
+	/** @beta */
+	readonly popupConstants = popupConstants;
+
+	/** Internal managers — not exposed on the public API surface. */
+	#tokenManager: TokenManager;
+	#popupManager: PopupManager;
+	#iframeSignIn: IframeSignInManager;
+
 	/** Creates a browser authentication client for the provided Catalyst app. */
 	constructor(app?: unknown) {
 		this.requester = new Handler(app, this);
 		getCredentials().catch(() => {
 			// Credentials will be loaded on-demand or set via ConfigStore
 		});
+
+		// Wire up internal managers.
+		this.#tokenManager = new TokenManager(this.requester, (protocol) =>
+			this.#setAuthProtocol(protocol as Auth_Protocol)
+		);
+		this.#popupManager = new PopupManager(this.#tokenManager, (protocol) =>
+			this.#setAuthProtocol(protocol)
+		);
+		this.#iframeSignIn = new IframeSignInManager(this.zaid, this.projectId, (url) =>
+			this.#constructRedirectUrl(url)
+		);
+
 		this.signIn = this.signIn.bind(this);
 		this.signOut = this.signOut.bind(this);
 		this.isUserAuthenticated = this.isUserAuthenticated.bind(this);
@@ -73,21 +122,205 @@ export class Authentication implements Component {
 	}
 
 	/**
-	 * Initializes the browser authentication component.
+	 * Initializes the browser authentication component by fetching project
+	 * credentials and restoring any previously stored OAuth token.
 	 *
-	 * @returns A promise that resolves when browser authentication initialization is complete.
+	 * Call this once — typically at application startup — before using any other
+	 * `zcAuth` method. Without calling `init()` first, methods such as
+	 * {@link signIn}, {@link isUserAuthenticated}, and {@link generateAuthToken}
+	 * may operate with incomplete project configuration.
+	 *
+	 * @returns A promise that resolves when initialization is complete.
 	 *
 	 * @example
 	 * ```ts
 	 * await zcAuth.init();
 	 * ```
 	 */
-	async init(): Promise<void> {}
+	async init(): Promise<void> {
+		// Ensure credentials (project_id, zaid, org_id, etc.) are fetched before
+		// any auth operation. The constructor fires getCredentials() in the background
+		// (fire-and-forget), so awaiting it here guarantees project_id is set before
+		// isUserAuthenticated() / signIn() / generateAuthToken() run — preventing
+		// URLs like /baas/v1/project/undefined/project-user/current in popup contexts.
+		await getCredentials();
+		// Refresh instance fields from ConfigStore after getCredentials() completes.
+		this.zaid = ConfigStore.get('ZAID') as string;
+		this.projectId = ConfigStore.get('PROJECT_ID') as string;
+		this.isAppsail = ConfigStore.get('IS_APPSAIL') as string;
+		this.authProtocol = ConfigStore.get('AUTH_PROTOCOL') as unknown as Auth_Protocol;
+		// Sync updated values into the iframe manager.
+		this.#iframeSignIn.updateConfig(this.zaid, this.projectId);
+
+		// Restores OAuth from the IDB record keyed by this project id.
+		const storedToken = await getOAuthTokenFromIDB().catch(() => null);
+		if (storedToken && storedToken.exp > Date.now()) {
+			this.#setAuthProtocol(Auth_Protocol.OAuthTokenProtocol);
+		}
+	}
 
 	/**
-	 * Starts the embedded IAM sign-in flow inside a target DOM element or redirects an already authenticated user.
+	 * Returns whether the SDK is currently running inside an iframe.
 	 *
-	 * @param id - DOM element ID where the login iframe should be mounted.
+	 * Use this to conditionally choose between the embedded sign-in flow
+	 * (`signIn`) and the popup-based flow (`signInViaPopup` / `signOutViaPopup`).
+	 * Pair with {@link assertPopupAuthAllowed} before calling `signInViaPopup`
+	 * to confirm the browser supports both `window.open()` and IndexedDB.
+	 * Note that `signOutViaPopup` only needs `window.open` — it does not use
+	 * IndexedDB — so the logout handler can be registered even when the IDB
+	 * check fails.
+	 *
+	 * @returns `true` when the current page is embedded inside an iframe,
+	 *   `false` otherwise.
+	 *
+	 * @example
+	 * ```ts
+	 * if (zcAuth.isIframeContext()) {
+	 *   // Always register the logout handler — signOutViaPopup does not need IndexedDB.
+	 *   document.getElementById('logout-btn')?.addEventListener('click', async () => {
+	 *     await zcAuth.signOutViaPopup('/goodbye');
+	 *   });
+	 *
+	 *   try {
+	 *     await zcAuth.assertPopupAuthAllowed(); // throws if window.open or IDB unavailable
+	 *     // sign-in popup is supported — register login handler
+	 *     document.getElementById('login-btn')?.addEventListener('click', async () => {
+	 *       await zcAuth.signInViaPopup();
+	 *     });
+	 *   } catch (err) {
+	 *     // sign-in popup not supported — show fallback UI based on err.code
+	 *   }
+	 * } else {
+	 *   // standard page — mount the login iframe directly
+	 *   await zcAuth.signIn('login-container');
+	 * }
+	 * ```
+	 *
+	 * @beta
+	 */
+	isIframeContext(): boolean {
+		return detectIframeContext();
+	}
+
+	/**
+	 * Asserts that the popup-based sign-in flow is supported in the current
+	 * browser environment.
+	 *
+	 * Call this once at startup — not inside a click handler — before
+	 * registering {@link signInViaPopup} or {@link signOutViaPopup} listeners.
+	 * Awaiting this inside a click handler introduces an async gap that drops
+	 * the browser's trusted-gesture requirement and causes the popup to be
+	 * silently blocked.
+	 *
+	 * Checks two prerequisites:
+	 *
+	 * - `window.open` exists — confirms the API is present. Some embedded
+	 *   browsers and WebViews remove it entirely. Note: this does not guarantee
+	 *   popups will open — a popup blocker or sandboxed iframe without
+	 *   `allow-popups` can still return `null` at runtime. That case is reported
+	 *   as `POPUP_BLOCKED` by {@link signInViaPopup}.
+	 * - IndexedDB is accessible — the SDK stores the OAuth token in IndexedDB
+	 *   after popup sign-in. A live open attempt is made because browsers such
+	 *   as Safari in Private mode expose the `indexedDB` global but throw when a
+	 *   database is actually opened. The probe times out after 2 seconds.
+	 *
+	 * Sign-out does not need this check. {@link signOutViaPopup} only opens a
+	 * popup — it does not use IndexedDB. You may still register the logout
+	 * handler after catching `IDB_NOT_SUPPORTED` or `IDB_ACCESS_DENIED`.
+	 *
+	 * @returns A promise that resolves when both checks pass.
+	 * @throws {CatalystAuthenticationError} with code `POPUP_NOT_SUPPORTED` when
+	 *   `window.open` is not a function in the current environment.
+	 * @throws {CatalystAuthenticationError} with code `IDB_NOT_SUPPORTED` when
+	 *   `indexedDB` is not defined in the current environment.
+	 * @throws {CatalystAuthenticationError} with code `IDB_ACCESS_DENIED` when
+	 *   `indexedDB` is defined but cannot be opened or times out.
+	 *
+	 * @beta
+	 *
+	 * @example
+	 * ```ts
+	 * // Always register logout — signOutViaPopup does not need IndexedDB.
+	 * document.getElementById('logout-btn')?.addEventListener('click', async () => {
+	 *   await zcAuth.signOutViaPopup('/goodbye');
+	 * });
+	 *
+	 * // Gate sign-in popup on the full assert (needs both window.open and IDB).
+	 * try {
+	 *   await zcAuth.assertPopupAuthAllowed(); // at startup, NOT inside click
+	 *   document.getElementById('login-btn')?.addEventListener('click', async () => {
+	 *     await zcAuth.signInViaPopup();
+	 *   });
+	 * } catch (err) {
+	 *   if (err.code === 'app/POPUP_NOT_SUPPORTED') {
+	 *     // window.open API missing — show "use a different browser" message
+	 *   } else if (err.code === 'app/IDB_NOT_SUPPORTED' || err.code === 'app/IDB_ACCESS_DENIED') {
+	 *     // IndexedDB unavailable — sign-in popup cannot store the token.
+	 *     // Logout handler above is still active because it does not need IDB.
+	 *   }
+	 * }
+	 * ```
+	 *
+	 * @beta
+	 */
+	async assertPopupAuthAllowed(): Promise<void> {
+		return assertPopupAuthAllowed();
+	}
+
+	/**
+	 * Starts the embedded IAM sign-in flow inside a target DOM element, or
+	 * redirects an already-authenticated user to the given URL.
+	 *
+	 * ---
+	 *
+	 * ### Behaviour inside an iframe
+	 *
+	 * When this method is called while the page is running **inside an iframe**,
+	 * the SDK cannot open the IAM login page inline. Instead it automatically
+	 * renders a **"Sign In" button** in the DOM to satisfy the browser's
+	 * trusted-gesture requirement for `window.open()`.
+	 *
+	 * That button always has the fixed element id **`"zc-signin-button"`**.
+	 * You can target it with your own CSS to match your UI:
+	 *
+	 * ```css
+	 * #zc-signin-button {
+	 *   background: #0070f3;
+	 *   color: #fff;
+	 *   border-radius: 6px;
+	 *   padding: 10px 24px;
+	 * }
+	 * ```
+	 *
+	 * When the user clicks the rendered button, the SDK opens an authentication
+	 * popup to complete the sign-in flow.
+	 *
+	 * > **If you do not want the SDK-rendered button** and prefer to trigger the
+	 * > popup yourself (e.g. from your own button), skip `signIn()` entirely and
+	 * > call {@link signInViaPopup} directly from inside your own click handler:
+	 * >
+	 * > ```ts
+	 * > document.getElementById('my-login-btn')?.addEventListener('click', async () => {
+	 * >   await zcAuth.signInViaPopup();
+	 * > });
+	 * > ```
+	 *
+	 * > **Important — signing out after an iframe sign-in:**
+	 * > If the user signed in while the page was running inside an iframe (via the
+	 * > button above or via `signInViaPopup`), calling {@link signOut} will **not**
+	 * > clear the session. You must use {@link signOutViaPopup} instead:
+	 * >
+	 * > ```ts
+	 * > document.getElementById('my-logout-btn')?.addEventListener('click', async () => {
+	 * >   await zcAuth.signOutViaPopup('/goodbye');
+	 * > });
+	 * > ```
+	 *
+	 * ---
+	 *
+	 * @param id - DOM element ID where the login iframe (non-iframe context) or the
+	 *   "Sign In" button (iframe context) will be mounted. This element must exist
+	 *   in the DOM before calling `signIn()`.
 	 * @param config - Sign-in configuration.
 	 *   - `redirectUrl`: URL to open after successful sign-in.
 	 *   - `serviceUrl`: Service URL used as the post-login destination.
@@ -95,38 +328,85 @@ export class Authentication implements Component {
 	 *   - `signInProvidersOnly`: Whether to show only configured federated sign-in providers.
 	 *   - `forgotPasswordId`: DOM element ID where the forgot-password iframe should be mounted.
 	 *   - `forgotPasswordCssUrl`: Custom CSS URL for the forgot-password page.
-	 * @returns A promise that resolves after the sign-in iframe flow is prepared or a redirect is triggered.
-	 * @throws {CatalystAuthenticationError} when the target DOM element cannot be found.
-	 * @see {@link zcAuth} in `./node` for the Node.js authentication surface.
+	 *   - `isHosted`: Whether the iframe popup uses hosted login.
+	 *   - `signinButtonLabel`: Custom label for the "Sign In" button rendered in iframe context.
+	 *     Defaults to `'Sign In'`.
+	 * @returns A promise that resolves after the sign-in flow is prepared or a redirect is triggered.
+	 * @throws {CatalystAuthenticationError} when the target DOM element cannot be found, or when
+	 *   a sign-in button/popup is already open.
 	 *
 	 * @example
 	 * ```ts
-	 * import { zcAuth } from '@zcatalyst/auth';
-	 *
+	 * // Standard (non-iframe) usage:
 	 * await zcAuth.signIn('login-container', { redirectUrl: '/dashboard' });
 	 * ```
 	 */
 	async signIn(id: string, config: ICatalystSignInConfig = {}): Promise<void> {
+		// Ensure credentials are loaded before using projectId/zaid.
+		if (ConfigStore.get('INITIALIZED') !== 'true') {
+			await getCredentials();
+		}
+		// Always resync instance fields from ConfigStore — whether credentials
+		// were just fetched above or were already loaded by a prior init() call.
+		this.zaid = ConfigStore.get('ZAID') as string;
+		this.projectId = ConfigStore.get('PROJECT_ID') as string;
+		this.isAppsail = ConfigStore.get('IS_APPSAIL') as string;
+		this.authProtocol = ConfigStore.get('AUTH_PROTOCOL') as unknown as Auth_Protocol;
+		this.#iframeSignIn.updateConfig(this.zaid, this.projectId);
+
+		// Default redirect target: use caller-provided URL or fall back to the
+		// current path so the user lands back where they were after sign-in.
+		const redirectTarget =
+			config.redirectUrl ??
+			config.serviceUrl ??
+			window.location.pathname + window.location.search;
+
+		if (detectIframeContext()) {
+			// Assert popup support before mounting the button. This must happen
+			// before showIframeConfirmModal so unsupported environments throw here
+			// (and #zc-signin-button is never added to the DOM).
+			await this.assertPopupAuthAllowed();
+			return showIframeConfirmModal(
+				async () => {
+					await this.#popupManager.signInViaPopup({
+						isHosted: config.isHosted,
+						cssUrl: config.cssUrl,
+						signInProvidersOnly: config.signInProvidersOnly,
+						forgotPasswordCssUrl: config.forgotPasswordCssUrl,
+						forgotPasswordId: config.forgotPasswordId,
+						is_customize_forgot_password: config.is_customize_forgot_password,
+						redirectUrl: config.redirectUrl,
+						serviceUrl: config.serviceUrl
+					});
+					window.location.href = this.#constructRedirectUrl(redirectTarget);
+				},
+				id,
+				config.signinButtonLabel
+			);
+		}
 		try {
 			const isValidUser = await this.#isValidUser();
 			if (isValidUser) {
-				window.location.href = this.#constructRedirectUrl(
-					config.redirectUrl ?? config.serviceUrl ?? ''
-				);
+				window.location.href = this.#constructRedirectUrl(redirectTarget);
 			} else {
-				await this.#notSignedIn(id, config);
+				await this.#notSignedIn(id, { ...config, redirectUrl: redirectTarget });
 			}
 		} catch {
-			await this.#notSignedIn(id, config);
+			await this.#notSignedIn(id, { ...config, redirectUrl: redirectTarget });
 		}
 	}
 
 	/**
 	 * Redirects the browser to the Catalyst hosted sign-in page.
 	 *
+	 * Use this as a simpler alternative to {@link signIn} when you do not need
+	 * an embedded login form — the user is redirected to the Catalyst-hosted
+	 * login page and returned to `redirectUrl` after a successful sign-in.
+	 *
 	 * @param redirectUrl - URL to return to after a successful hosted sign-in.
-	 * @returns A promise that resolves after credentials are available and the redirect is initiated.
-	 * @see {@link zcAuth} in `./node` for the Node.js authentication surface.
+	 *   Defaults to `'/'`.
+	 * @returns A promise that resolves after credentials are loaded and the
+	 *   redirect is initiated.
 	 *
 	 * @example
 	 * ```ts
@@ -141,11 +421,14 @@ export class Authentication implements Component {
 	}
 
 	/**
-	 * Enables JWT token authentication and registers a callback to fetch user details.
+	 * Enables JWT token authentication and registers a callback that the SDK
+	 * invokes whenever it needs to fetch or refresh user details.
 	 *
-	 * @param callbackFn - Callback invoked by the auth flow to fetch or refresh user details.
-	 * @returns Nothing.
-	 * @see {@link zcAuth} in `./node` for the Node.js authentication surface.
+	 * Call this once during app initialization when your Catalyst app uses
+	 * JWT-based authentication instead of the default cookie/OAuth flow.
+	 *
+	 * @param callbackFn - Function invoked by the auth flow to fetch or refresh
+	 *   user details (e.g. calling your own `/api/current-user` endpoint).
 	 *
 	 * @example
 	 * ```ts
@@ -156,19 +439,18 @@ export class Authentication implements Component {
 	 */
 	public signinWithJwt(callbackFn: () => void): void {
 		ConfigStore.set(FETCH_DETAILS_CALLBACK_FN, callbackFn);
-		ConfigStore.set('AUTH_PROTOCOL', Auth_Protocol.JwtTokenProtocol);
+		this.#setAuthProtocol(Auth_Protocol.JwtTokenProtocol);
 	}
 
 	/**
 	 * Retrieves the public sign-up configuration for the current Catalyst project.
 	 *
 	 * @returns A promise that resolves to the public sign-up settings response.
-	 * @see {@link zcAuth} in `./node` for the Node.js authentication surface.
 	 *
 	 * @example
 	 * ```ts
-	 * const signupSettings = await zcAuth.publicSignup();
-	 * console.log(signupSettings.data?.public_signup);
+	 * const settings = await zcAuth.publicSignup();
+	 * console.log(settings.data?.public_signup);
 	 * ```
 	 */
 	async publicSignup(): Promise<ICatalystAuthResponse> {
@@ -179,341 +461,130 @@ export class Authentication implements Component {
 				appDomain +
 				`/${URL_DIVIDER.RESERVED_URL}/${URL_DIVIDER.AUTH}/${URL_DIVIDER.PUBLIC_SIGNUP}`,
 			type: RequestType.JSON,
-			expecting: ResponseType.JSON, // text
+			expecting: ResponseType.JSON,
 			service: CatalystService.EXTERNAL
 		};
 		const resp = await this.requester.send(request);
 		return resp.data;
 	}
 
-	//Normal styling for iframe
-	#styleIFrame(iframe: HTMLIFrameElement): void {
-		iframe.style.height = '100%';
-		iframe.style.width = '100%';
-		iframe.style.border = 'none';
-	}
-
-	#createIframeAndAttach(id: string, url: string) {
-		const target: HTMLElement = document.getElementById(id) as HTMLElement;
-		if (target === null) {
-			throw new CatalystAuthenticationError(
-				'AUTHENTICATION_ERROR',
-				`Unable to get element with id : ${id}`
-			); // TODO: throwing error here is crt
-		} else {
-			const iframe: HTMLIFrameElement = document.createElement('iframe');
-			iframe.src = url;
-			iframe.id = 'iam_iframe';
-			this.#styleIFrame(iframe);
-			target.innerHTML = '';
-			target.appendChild(iframe);
-			return iframe;
-		}
-	}
-
-	#constructIAMIframeUrl(config: ICatalystSignInConfig, isPublicSignupEnabled: boolean) {
-		const signInProvidersOnly = config.signInProvidersOnly;
-		const hideForgotPassword = signInProvidersOnly ? true : false;
-		const cssUrl: string =
-			config.cssUrl ||
-			applyQueryString(AUTH_STATIC_FILES.URL, {
-				file_name: config.signInProvidersOnly
-					? AUTH_STATIC_FILES.SIGNIN_WITH_PROVIDERS_ONLY
-					: AUTH_STATIC_FILES.SIGNIN
-			});
-		// service url availbel in params
-		const redirectUrl = new URLSearchParams(window.location.search).get(
-			'service_url'
-		) as string;
-		const serviceUrl = config.redirectUrl ?? config.serviceUrl ?? redirectUrl;
-		const appDomain = `${location.protocol}//${location.host}`;
-		const signInRedirect = encodeURIComponent(this.#constructRedirectUrl(serviceUrl));
-
-		const recoveryUrl = `${appDomain}/accounts/p/70-${this.zaid}/password?servicename=ZohoCatalyst&&serviceurl=${signInRedirect}`;
-
-		const urlParams: Record<string, string | boolean> = {
-			css_url: cssUrl,
-			portal: this.zaid,
-			servicename: 'ZohoCatalyst',
-			serviceurl: encodeURIComponent(this.#constructRedirectUrl(serviceUrl)),
-			hide_signup: true,
-			hide_fs: `${!isPublicSignupEnabled}`,
-			dcc: true,
-			hide_fp: `${hideForgotPassword}`,
-			recoveryurl: encodeURIComponent(recoveryUrl)
-		};
-
-		const params = Object.keys(urlParams)
-			.map((key) => `${key}=${urlParams[key]}`)
-			.join('&');
-		const baseDomain = `${appDomain}/accounts/p/${this.zaid}/signin?${params}`;
-		return baseDomain;
-	}
-
-	async #errorMsgHandler() {
-		this.#attachMutationObserver(Authentication.#getEmailInpErrorDiv(), this.#trackErrorMsgCnt);
-	}
-
-	async #trackErrorMsgCnt(mutationList: Array<MutationRecord>, _observer: unknown) {
-		for (const mutation of mutationList) {
-			if (
-				mutation.type === 'attributes' &&
-				(mutation.target as HTMLElement).style.display === 'block'
-			) {
-				const errorDiv = Authentication.#getEmailInpErrorDiv() as HTMLElement;
-				if (errorDiv.innerText.toLowerCase().includes(AUTH_ERROR_MSG.noAccountIncludes)) {
-					errorDiv.innerText = AUTH_ERROR_MSG.noAccountMsg;
-				}
-			}
-		}
-	}
-
-	static #getEmailInpErrorDiv() {
-		const iframeElem = document.getElementById('iam_iframe') as HTMLIFrameElement;
-		return iframeElem.contentDocument
-			?.getElementById('login_id_container')
-			?.querySelector('.fielderror');
-	}
-
-	#attachMutationObserver(
-		elem?: Element | null,
-		callbackFn?: (m: Array<MutationRecord>, o: unknown) => void,
-		config = { attributes: true }
-	) {
-		if (callbackFn && elem) {
-			// TODO: check this logic
-			const observer = new MutationObserver(callbackFn);
-			observer.observe(elem, config);
-		}
-	}
-
 	/**
 	 * Signs out the current browser user and redirects to the requested URL.
 	 *
-	 * @param redirectURL - URL to navigate to after sign-out.
+	 * ---
+	 *
+	 * ### Does not work inside an iframe
+	 *
+	 * `signOut()` relies on `window.location.replace()` and Accounts server
+	 * redirects to clear the session. Neither of these work correctly when the
+	 * page is embedded inside an iframe — the navigation targets the iframe, not
+	 * the top-level window, so the session will not be cleared.
+	 *
+	 * If the user signed in while running inside an iframe (via {@link signIn}'s
+	 * auto-rendered button or via {@link signInViaPopup}), you **must** use
+	 * {@link signOutViaPopup} to sign them out:
+	 *
+	 * ```ts
+	 * document.getElementById('my-logout-btn')?.addEventListener('click', async () => {
+	 *   await zcAuth.signOutViaPopup('/goodbye');
+	 * });
+	 * ```
+	 *
+	 * ---
+	 *
+	 * @param redirectURL - URL to navigate to after sign-out. Defaults to `'/'`.
 	 * @returns A promise that resolves after the sign-out redirect is initiated.
-	 * @see {@link zcAuth} in `./node` for the Node.js authentication surface.
 	 *
 	 * @example
 	 * ```ts
+	 * // Standard (non-iframe) usage:
 	 * await zcAuth.signOut('/signed-out');
 	 * ```
 	 */
 	async signOut(redirectURL = '/'): Promise<void> {
-		setDefaultProjectConfig();
-		if (this.authProtocol === Auth_Protocol.JwtTokenProtocol) {
-			document.cookie = `${JWT_COOKIE_PREFIX}=; path=/; expires=${new Date().toUTCString()};`;
-			document.cookie = `user_cred=; path=/; expires=${new Date().toUTCString()};`;
+		const authProtocol = ConfigStore.get('AUTH_PROTOCOL') as unknown as Auth_Protocol;
+		this.authProtocol = authProtocol;
+
+		// JWT — clear its own cookies with past expiry, reset config, redirect.
+		if (authProtocol === Auth_Protocol.JwtTokenProtocol) {
+			document.cookie = `${JWT_COOKIE_PREFIX}=; path=/; expires=${new Date(0).toUTCString()};`;
+			document.cookie = `user_cred=; path=/; expires=${new Date(0).toUTCString()};`;
 			clearStratusJwt();
-			// Force immediate redirect for JWT
+			setDefaultProjectConfig();
 			window.location.replace(redirectURL);
 			return;
+		}
+
+		// OAuth — revoke at Accounts, clear IDB token, reset config, redirect.
+		if (authProtocol === Auth_Protocol.OAuthTokenProtocol) {
+			await this.#tokenManager.revokeStoredAccessToken();
+			await this.#tokenManager.clearTokenStorage();
+			setDefaultProjectConfig();
+			window.location.replace(redirectURL);
+			return;
+		}
+
+		// ZcrfTokenProtocol — clear stratus_jwt, reset config, then hit Accounts logout.
+		clearStratusJwt();
+		setDefaultProjectConfig();
+		if (this.isAppsail === 'true') {
+			const validUser = await this.#isValidUser();
+			if (!validUser) {
+				if (redirectURL.startsWith('/')) {
+					redirectURL =
+						CURRENT_CLIENT_PAGE_PORT != ''
+							? `${CURRENT_CLIENT_PAGE_PROTOCOL}//${CURRENT_CLIENT_PAGE_HOST}:${CURRENT_CLIENT_PAGE_PORT}${redirectURL}`
+							: `${CURRENT_CLIENT_PAGE_PROTOCOL}//${CURRENT_CLIENT_PAGE_HOST}${redirectURL}`;
+				}
+				window.location.replace(redirectURL);
+				return;
+			}
+			try {
+				const request: IRequestConfig = {
+					method: REQ_METHOD.get,
+					url: this.#constructSignOutUrl(redirectURL),
+					external: true
+				};
+				await this.requester.send(request);
+				window.location.replace(redirectURL);
+			} catch {
+				await this.#tokenManager.finishZcrfSignOut(
+					redirectURL,
+					this.#constructSignOutUrl(redirectURL)
+				);
+			}
 		} else {
-			if (this.isAppsail === 'true') {
-				const validUser = await this.#isValidUser();
-				if (!validUser) {
-					if (redirectURL.startsWith('/')) {
-						redirectURL =
-							CURRENT_CLIENT_PAGE_PORT != ''
-								? `${CURRENT_CLIENT_PAGE_PROTOCOL}//${CURRENT_CLIENT_PAGE_HOST}:${CURRENT_CLIENT_PAGE_PORT}${redirectURL}`
-								: `${CURRENT_CLIENT_PAGE_PROTOCOL}//${CURRENT_CLIENT_PAGE_HOST}${redirectURL}`;
-					}
-					window.location.replace(redirectURL);
-					return;
-				}
-
-				try {
-					const request: IRequestConfig = {
-						method: REQ_METHOD.get,
-						url: this.#constructSignOutUrl(redirectURL),
-						external: true
-					};
-					await this.requester.send(request);
-					document.cookie = `CAUTH=; path=/accounts; expires=${new Date().toUTCString()};`;
-					// Use replace instead of href for immediate navigation
-					window.location.replace(redirectURL);
-				} catch {
-					// Use replace for error case too
-					window.location.replace(this.#constructSignOutUrl(redirectURL));
-				}
-			} else {
-				// Use replace instead of href for immediate navigation
-				window.location.replace(this.#constructSignOutUrl(redirectURL));
-			}
+			await this.#tokenManager.finishZcrfSignOut(
+				redirectURL,
+				this.#constructSignOutUrl(redirectURL)
+			);
 		}
-	}
-
-	#constructSignOutUrl(redirectURL: string): string {
-		if (redirectURL.startsWith('/')) {
-			redirectURL =
-				CURRENT_CLIENT_PAGE_PORT != ''
-					? `${CURRENT_CLIENT_PAGE_PROTOCOL}//${CURRENT_CLIENT_PAGE_HOST}:${CURRENT_CLIENT_PAGE_PORT}${redirectURL}`
-					: `${CURRENT_CLIENT_PAGE_PROTOCOL}//${CURRENT_CLIENT_PAGE_HOST}${redirectURL}`;
-		}
-		return `/accounts/p/${this.zaid}/logout?servicename=ZohoCatalyst&serviceurl=${redirectURL}`;
-	}
-
-	async #notSignedIn(
-		id: string,
-		config: ICatalystSignInConfig
-	): Promise<{ status?: number; content?: string }> {
-		// Start the asynchronous operation
-		const publicSignupResp: ICatalystAuthResponse = await this.publicSignup();
-		const isPublicSignupEnabled = publicSignupResp.data?.public_signup as boolean;
-
-		const signinIframe = this.#createIframeAndAttach(
-			id,
-			this.#constructIAMIframeUrl(config, isPublicSignupEnabled)
-		);
-
-		if (signinIframe) {
-			signinIframe.onload = () => {
-				const iframeElem = document.getElementById(
-					'iam_iframe'
-				) as HTMLIFrameElement | null;
-				if (!iframeElem) return; // Ensure iframeElem exists
-
-				const iframeDoc = iframeElem.contentWindow?.document;
-				if (!iframeDoc) return; // Ensure iframeDoc exists
-
-				const loginInpElem = iframeDoc.getElementById(
-					'login_id'
-				) as HTMLInputElement | null;
-				if (loginInpElem) {
-					loginInpElem.placeholder = AUTH_ERROR_MSG.emptyEmailAddress;
-				}
-
-				// Override values in I18N and error message handling
-				this.#overrideValuesInI18N(iframeElem);
-				this.#errorMsgHandler();
-
-				if (config.signInProvidersOnly) {
-					const fieldcontainer = iframeDoc.querySelector(
-						'.fieldcontainer'
-					) as HTMLElement | null;
-					const signinContainer = iframeDoc.querySelector(
-						'.signin_container'
-					) as HTMLElement | null;
-					const signinBox = iframeDoc.querySelector('.signin_box') as HTMLElement | null;
-
-					if (fieldcontainer && signinContainer && signinBox) {
-						fieldcontainer.style.display = 'none';
-						signinContainer.style.minHeight = '320px';
-						signinBox.style.minHeight = '320px';
-
-						if (!iframeDoc.querySelector('.fed_2show')) {
-							const divElem = document.createElement('div');
-							divElem.innerText = 'No Social Logins available';
-							fieldcontainer?.parentElement?.parentElement?.appendChild(divElem);
-						}
-					}
-				}
-
-				// Forgot password handler
-				const forgotPasswordElem = iframeDoc.getElementById('forgotpassword');
-				if (forgotPasswordElem) {
-					const originalForgotPwd = forgotPasswordElem.querySelector(
-						'a'
-					) as HTMLElement | null;
-					if (originalForgotPwd) {
-						originalForgotPwd.onclick = () =>
-							this.#forgotPasswordClickHandle(id, config);
-					}
-
-					const blueForgotPwd = iframeDoc.querySelectorAll(
-						'#blueforgotpassword'
-					) as NodeListOf<HTMLElement>;
-					blueForgotPwd.forEach((btn) => {
-						btn.onclick = () => this.#forgotPasswordClickHandle(id, config);
-					});
-				}
-
-				// Resolve the promise with the status and content
-				return { status: 200, content: 'success' }; // check is it resolvable resolve({})
-			};
-		}
-		return {};
-	}
-
-	#overrideValuesInI18N(iframe: HTMLIFrameElement) {
-		if (iframe.contentWindow?.I18N) {
-			const IAMi18nData = (iframe.contentWindow?.I18N as { data?: Record<string, unknown> })
-				?.data;
-			if (IAMi18nData) {
-				IAMi18nData['IAM.PHONE.ENTER.VALID.MOBILE_NUMBER'] =
-					AUTH_ERROR_MSG.emptyEmailAddress;
-				IAMi18nData['IAM.NEW.SIGNIN.ENTER.EMAIL.OR.MOBILE'] =
-					AUTH_ERROR_MSG.emptyEmailAddress;
-			}
-		}
-	}
-
-	#forgotPasswordClickHandle(id: string, config: ICatalystSignInConfig) {
-		const forgotPwdIframe = this.#createIframeAndAttach(
-			config.forgotPasswordId ?? id,
-			this.#getIAMForgotPasswordURL(config)
-		);
-		if (forgotPwdIframe) {
-			forgotPwdIframe.onload = () => {
-				const iframeElem: HTMLIFrameElement = document.getElementById(
-					'iam_iframe'
-				) as HTMLIFrameElement;
-				const iframeDoc = iframeElem.contentWindow?.document as Document;
-				const loginInpElem: HTMLInputElement = iframeDoc?.getElementById(
-					'login_id'
-				) as HTMLInputElement;
-				loginInpElem.placeholder = AUTH_ERROR_MSG.emptyEmailAddress;
-				this.#overrideValuesInI18N(iframeElem);
-			};
-		}
-	}
-
-	#getIAMForgotPasswordURL(config: ICatalystSignInConfig): string {
-		const iframeElem: HTMLIFrameElement = document.getElementById(
-			'iam_iframe'
-		) as HTMLIFrameElement;
-		const iframeDoc = iframeElem.contentWindow?.document;
-		const loginInpElem: HTMLInputElement = iframeDoc?.getElementById(
-			'login_id'
-		) as HTMLInputElement;
-		const cssUrl = config.forgotPasswordCssUrl
-			? config.forgotPasswordCssUrl
-			: applyQueryString(AUTH_STATIC_FILES.URL, { file_name: AUTH_STATIC_FILES.FORGOT_PWD });
-		const queryParams = {
-			css_url: cssUrl,
-			portal: this.zaid,
-			servicename: 'ZohoCatalyst',
-			serviceurl: `${location.protocol}//${location.host}/`,
-			hide_signup: true,
-			dcc: true,
-			LOGIN_ID: loginInpElem.value.toString()
-		};
-		const url = applyQueryString(
-			`${location.protocol}//${location.host}/accounts/p/${this.zaid}/password`,
-			queryParams
-		);
-		return url;
 	}
 
 	/**
 	 * Registers a public user for the current Catalyst project.
 	 *
+	 * Sends a sign-up request for a new user. A confirmation email is sent to
+	 * the provided `email_id`. The user must confirm their email before they can
+	 * sign in.
+	 *
 	 * @param body - Sign-up details for the new user.
-	 *   - `last_name`: Last name of the user.
-	 *   - `email_id`: Email address of the user.
-	 *   - `first_name`: Optional first name of the user.
-	 *   - `platform_type`: Optional platform identifier, defaults to `web`.
-	 *   - `redirect_url`: Optional URL to open after sign-up.
+	 *   - `last_name` *(required)*: Last name of the user.
+	 *   - `email_id` *(required)*: Email address of the user.
+	 *   - `first_name`: First name of the user.
+	 *   - `redirect_url`: URL to redirect the user to after email confirmation.
+	 *   - `platform_type`: Platform type (`'web'` by default).
 	 * @returns A promise that resolves to the sign-up API response data.
-	 * @throws {CatalystAuthenticationError} when required sign-up details are missing or invalid.
-	 * @see {@link zcAuth} in `./node` for the Node.js authentication surface.
+	 * @throws {CatalystAuthenticationError} when `last_name` or `email_id` are
+	 *   missing or invalid.
 	 *
 	 * @example
 	 * ```ts
 	 * await zcAuth.signUp({
+	 *   first_name: 'Maya',
 	 *   last_name: 'Patel',
-	 *   email_id: 'maya.patel@example.com',
-	 *   platform_type: 'web'
+	 *   email_id: 'maya@example.com',
+	 *   redirect_url: '/welcome'
 	 * });
 	 * ```
 	 */
@@ -549,16 +620,25 @@ export class Authentication implements Component {
 	}
 
 	/**
-	 * Checks whether a browser user is authenticated and returns user details when available.
+	 * Checks whether a browser user is currently authenticated and returns their
+	 * details when they are.
 	 *
-	 * @param org_id - Optional organization ID used to validate the current user in a specific org.
-	 * @returns A promise that resolves to the current user details or `false` when unauthenticated.
-	 * @see {@link zcAuth} in `./node` for the Node.js authentication surface.
+	 * Internally calls {@link getProjectUserDetails} and returns the user data on
+	 * success, or `false` when the user is not signed in.
+	 *
+	 * @param org_id - Optional organization ID to scope the user lookup to a
+	 *   specific Catalyst organization.
+	 * @returns A promise that resolves to the current user's details object when
+	 *   authenticated, or `false` when the user is not signed in.
 	 *
 	 * @example
 	 * ```ts
-	 * const user = await zcAuth.isUserAuthenticated('123456789');
-	 * if (user) console.log('Signed in');
+	 * const user = await zcAuth.isUserAuthenticated();
+	 * if (user) {
+	 *   console.log('Signed in as', user);
+	 * } else {
+	 *   console.log('Not signed in');
+	 * }
 	 * ```
 	 */
 	public async isUserAuthenticated(org_id?: string): Promise<unknown> {
@@ -570,32 +650,11 @@ export class Authentication implements Component {
 		}
 	}
 
-	#constructRedirectUrl(redirectUrl: string): string {
-		const baseRedirectUrl = `${location.protocol}//${location.host}/__catalyst/${this.projectId}/auth/signin-redirect?PROJECT_ID=${this.zaid}`;
-		if (
-			redirectUrl &&
-			!redirectUrl.includes(window.location.origin) &&
-			!isValidUrl(redirectUrl)
-		) {
-			redirectUrl = `${window.location.origin}${redirectUrl}`;
-		}
-		return redirectUrl ? `${baseRedirectUrl}&service_url=${redirectUrl}` : baseRedirectUrl;
-	}
-
-	async #isValidUser(org_id?: string): Promise<Boolean> {
-		const response = await this.getProjectUserDetails(org_id);
-		if (response.status === 'success') {
-			return true;
-		}
-		return false;
-	}
-
 	/**
 	 * Retrieves the current project user details for the browser session.
 	 *
 	 * @param org_id - Optional organization ID used to scope the user lookup.
 	 * @returns A promise that resolves to the project user details response.
-	 * @see {@link zcAuth} in `./node` for the Node.js authentication surface.
 	 *
 	 * @example
 	 * ```ts
@@ -607,11 +666,7 @@ export class Authentication implements Component {
 		const request: IRequestConfig = {
 			method: REQ_METHOD.get,
 			path: '/project-user/current',
-			qs: org_id
-				? {
-						org_id
-					}
-				: {},
+			qs: org_id ? { org_id } : {},
 			type: RequestType.JSON,
 			service: CatalystService.BAAS,
 			track: true,
@@ -625,14 +680,13 @@ export class Authentication implements Component {
 	 * Changes the password for the currently authenticated browser user.
 	 *
 	 * @param oldPassword - Current password of the authenticated user.
-	 * @param newPassword - New password to set for the authenticated user.
+	 * @param newPassword - New password to set.
 	 * @returns A promise that resolves to the change-password API response message.
 	 * @throws {CatalystAuthenticationError} when either password value is empty or invalid.
-	 * @see {@link zcAuth} in `./node` for the Node.js authentication surface.
 	 *
 	 * @example
 	 * ```ts
-	 * const message = await zcAuth.changePassword('old-password', 'new-password');
+	 * await zcAuth.changePassword('old-password', 'new-password');
 	 * ```
 	 */
 	async changePassword(oldPassword: string, newPassword: string): Promise<string> {
@@ -645,10 +699,7 @@ export class Authentication implements Component {
 			method: REQ_METHOD.post,
 			path: changePasswordUrl,
 			type: RequestType.JSON,
-			data: {
-				old_password: oldPassword,
-				new_password: newPassword
-			},
+			data: { old_password: oldPassword, new_password: newPassword },
 			service: CatalystService.BAAS,
 			track: true,
 			user: CREDENTIAL_USER.user
@@ -658,107 +709,187 @@ export class Authentication implements Component {
 	}
 
 	/**
-	 * Generates an OAuth access token for the currently authenticated browser user, scoped to
-	 * the given feature.
+	 * Opens a popup window to perform the Catalyst sign-in flow and resolves with
+	 * the OAuth token once the popup posts it back.
 	 *
-	 * Internally, a short-lived custom JWT is requested from Catalyst and then exchanged for an
-	 * OAuth access token via the IAM remote-auth endpoint.
+	 * ---
 	 *
-	 * @param feature - The feature the generated token should be scoped for.
-	 * @returns A promise that resolves to the OAuth access token and its expiry (in seconds).
-	 * @throws {CatalystAuthenticationError} when `feature` is invalid, the custom token cannot be
-	 * fetched, or the JWT-to-OAuth token exchange fails.
+	 * Check browser support first — at startup, not inside the click handler.
+	 * Call {@link assertPopupAuthAllowed} once during app initialisation to
+	 * confirm `window.open` and IndexedDB are available. Do not await it inside
+	 * the click handler — that async gap drops the browser's trusted-gesture
+	 * requirement and will cause the popup to be silently blocked.
 	 *
-	 * @example
 	 * ```ts
-	 * const { access_token, expires_in_sec } = await zcAuth.generateAuthToken('functions');
+	 * // correct — assertPopupAuthAllowed at startup
+	 * try {
+	 *   await zcAuth.assertPopupAuthAllowed();
+	 *   document.getElementById('login-btn')?.addEventListener('click', async () => {
+	 *     await zcAuth.signInViaPopup(); // called synchronously from click
+	 *   });
+	 * } catch (err) { /* show fallback UI *\/ }
+	 *
+	 * // wrong — awaiting inside click drops the trusted gesture
+	 * loginBtn.addEventListener('click', async () => {
+	 *   await zcAuth.assertPopupAuthAllowed(); // drops trusted gesture
+	 *   await zcAuth.signInViaPopup();
+	 * });
 	 * ```
+	 *
+	 * Must be called directly from a user action. Browsers block `window.open()`
+	 * calls not triggered synchronously by a trusted user gesture (`click` /
+	 * `keydown`). Calling this from a timer, resolved `Promise`, or any async
+	 * context not rooted in user input will cause the popup to be silently blocked.
+	 *
+	 * Sign-out must also use the popup flow. Signing in via popup establishes an
+	 * OAuth session stored in IndexedDB. {@link signOut} cannot clear this
+	 * session — you must call {@link signOutViaPopup} to sign the user out:
+	 *
+	 * ```ts
+	 * document.getElementById('logout-btn')?.addEventListener('click', async () => {
+	 *   await zcAuth.signOutViaPopup('/goodbye');
+	 * });
+	 * ```
+	 *
+	 * ---
+	 *
+	 * @param config - Optional popup configuration.
+	 *   - `width` / `height`: Popup window dimensions in pixels.
+	 *   - `timeoutMs`: How long to wait before rejecting with a timeout error.
+	 *   - `isHosted`: Whether to use the Catalyst hosted login page inside the popup.
+	 *   - `cssUrl`: Custom CSS URL to apply to the sign-in page.
+	 *   - `signInProvidersOnly`: Show only federated sign-in providers.
+	 *   - `redirectUrl` / `serviceUrl`: Post-login destination URL.
+	 *   - `forgotPasswordCssUrl` / `forgotPasswordId`: Forgot-password page options.
+	 * @returns A promise that resolves to the signed-in token details once the
+	 *   popup completes authentication.
+	 * @throws {CatalystAuthenticationError} with code `POPUP_BLOCKED` when the
+	 *   browser blocks the popup (i.e. not called from a user action).
+	 * @throws {CatalystAuthenticationError} with code `POPUP_ALREADY_OPEN` when a
+	 *   sign-in popup is already waiting for a response.
+	 * @throws {CatalystAuthenticationError} with code `POPUP_TIMEOUT` when the
+	 *   popup does not complete within `timeoutMs`.
+	 * @throws {CatalystAuthenticationError} with code `AUTH_ERROR` when the popup
+	 *   reports a sign-in failure.
+	 *
+	 * @beta
 	 */
-	async generateAuthToken(feature: 'functions' | 'stratus'): Promise<{
-		access_token: string;
-		expires_in_sec: number;
-	}> {
-		await wrapValidatorsWithPromise(() => {
-			isNonEmptyString(feature, 'feature', true);
-			if (feature !== 'functions' && feature !== 'stratus') {
-				throw new CatalystAuthenticationError(
-					'INVALID_ARGUMENT',
-					"'feature' must be either 'functions' or 'stratus'"
-				);
-			}
-		}, CatalystAuthenticationError);
+	async signInViaPopup(
+		config: ICatalystPopupSignInConfig = {}
+	): Promise<ICatalystPopupSignInResult> {
+		return this.#popupManager.signInViaPopup(config);
+	}
 
-		const customTokenRequest: IRequestConfig = {
-			method: REQ_METHOD.get,
-			path: '/authentication/custom-token',
-			type: RequestType.JSON,
-			service: CatalystService.BAAS,
-			user: CREDENTIAL_USER.user,
-			qs: {
-				feature
-			}
-		};
-		let customTokenData: ICatalystCustomTokenResponse;
-		try {
-			const customTokenResp = await this.requester.send(customTokenRequest);
-			customTokenData = customTokenResp.data.data as ICatalystCustomTokenResponse;
-		} catch (err) {
-			throw new CatalystAuthenticationError(
-				'AUTHENTICATION_ERROR',
-				'Unable to generate a custom token for the requested feature.',
-				err
-			);
+	/**
+	 * Opens a popup window to perform the Catalyst sign-out flow and resolves once
+	 * the popup signals completion.
+	 *
+	 * Must be called directly from a user action. Browsers block `window.open()`
+	 * calls not triggered synchronously by a trusted user gesture (`click` /
+	 * `keydown`). Calling this from a timer, resolved `Promise`, or any async
+	 * context not rooted in user input will cause the popup to be silently blocked.
+	 *
+	 * ```ts
+	 * document.getElementById('logout-btn')?.addEventListener('click', async () => {
+	 *   await zcAuth.signOutViaPopup('/goodbye');
+	 * });
+	 * ```
+	 *
+	 * @param redirectUrl - URL to navigate to in the host frame after sign-out
+	 *   completes. Defaults to `'/'`.
+	 * @returns A promise that resolves when the sign-out popup signals completion.
+	 * @throws {CatalystAuthenticationError} with code `POPUP_TIMEOUT` when the
+	 *   popup does not complete within the default timeout.
+	 *
+	 * @beta
+	 */
+	async signOutViaPopup(redirectUrl = '/'): Promise<void> {
+		return this.#popupManager.signOutViaPopup(redirectUrl);
+	}
+
+	/**
+	 * Generates an OAuth access token via the Catalyst custom-token / remote-auth flow.
+	 *
+	 * Used internally by popup login pages. Call this from within a Catalyst
+	 * popup login page to obtain a scoped access token for a specific feature.
+	 * Do not call this from inside an iframe — the custom-token exchange is
+	 * not supported in that context.
+	 *
+	 * @param feature - The Catalyst feature to scope the token to.
+	 *   - `'functions'`: Token scoped for invoking Catalyst serverless functions.
+	 *   - `'stratus'`: Token scoped for accessing Catalyst Stratus object storage.
+	 * @returns A promise resolving to the generated token and its expiry.
+	 */
+	async generateAuthToken(feature: 'functions' | 'stratus'): Promise<TokenResponse> {
+		return this.#tokenManager.generateAuthToken(feature);
+	}
+
+	/**
+	 * Revokes an OAuth access token at Zoho Accounts.
+	 *
+	 * Call this with a token you already hold. For the stored IndexedDB token,
+	 * {@link signOut} (OAuth / iframe) and {@link signOutViaPopup} revoke it
+	 * automatically before local cleanup.
+	 *
+	 * Does not clear IndexedDB or redirect.
+	 *
+	 * @param token - The access token to revoke.
+	 */
+	async revokeAccessToken(token: string): Promise<void> {
+		return this.#tokenManager.revokeAccessToken(token);
+	}
+
+	// ---------------------------------------------------------------------------
+	// Private helpers
+	// ---------------------------------------------------------------------------
+
+	#setAuthProtocol(protocol: Auth_Protocol): void {
+		this.authProtocol = protocol;
+		ConfigStore.set('AUTH_PROTOCOL', protocol);
+	}
+
+	#constructRedirectUrl(redirectUrl: string): string {
+		const baseRedirectUrl = `${location.protocol}//${location.host}/__catalyst/${this.projectId}/auth/signin-redirect?PROJECT_ID=${this.zaid}`;
+		if (
+			redirectUrl &&
+			!redirectUrl.includes(window.location.origin) &&
+			!isValidUrl(redirectUrl)
+		) {
+			redirectUrl = `${window.location.origin}${redirectUrl}`;
 		}
+		return redirectUrl
+			? `${baseRedirectUrl}&service_url=${encodeURIComponent(redirectUrl)}`
+			: baseRedirectUrl;
+	}
 
-		const remoteAuthRequest: IRequestConfig = {
-			method: REQ_METHOD.post,
-			service: CatalystService.EXTERNAL,
-			path: `/clientoauth/v2/${this.zaid}/remote/auth`,
-			origin: ConfigStore.get('IAM_DOMAIN') as string,
-			auth: false,
-			qs: {
-				response_type: 'remote_token',
-				scope: customTokenData.scopes.join(' '),
-				client_id: customTokenData.client_id,
-				jwt_token: customTokenData.jwt_token
-			}
-		};
-
-		let remoteAuthData: { access_token?: string; expires_in_sec?: number; expires_in?: number };
-		try {
-			const remoteAuthResp = await this.requester.send(remoteAuthRequest);
-			remoteAuthData = remoteAuthResp.data as typeof remoteAuthData;
-		} catch (err) {
-			throw new CatalystAuthenticationError(
-				'AUTHENTICATION_ERROR',
-				'Unable to exchange the custom JWT token for an OAuth access token.',
-				err
-			);
+	#constructSignOutUrl(redirectURL: string): string {
+		if (redirectURL.startsWith('/')) {
+			redirectURL =
+				CURRENT_CLIENT_PAGE_PORT != ''
+					? `${CURRENT_CLIENT_PAGE_PROTOCOL}//${CURRENT_CLIENT_PAGE_HOST}:${CURRENT_CLIENT_PAGE_PORT}${redirectURL}`
+					: `${CURRENT_CLIENT_PAGE_PROTOCOL}//${CURRENT_CLIENT_PAGE_HOST}${redirectURL}`;
 		}
+		return `/accounts/p/${this.zaid}/logout?servicename=ZohoCatalyst&serviceurl=${redirectURL}`;
+	}
 
-		const accessToken = remoteAuthData.access_token;
-		if (!accessToken) {
-			throw new CatalystAuthenticationError(
-				'AUTHENTICATION_ERROR',
-				'Unable to exchange JWT token for an OAuth access token.'
-			);
-		}
+	async #isValidUser(org_id?: string): Promise<Boolean> {
+		const response = await this.getProjectUserDetails(org_id);
+		return response.status === 'success';
+	}
 
-		const expiresInSec =
-			typeof remoteAuthData.expires_in_sec === 'number'
-				? remoteAuthData.expires_in_sec
-				: typeof remoteAuthData.expires_in === 'number'
-					? remoteAuthData.expires_in
-					: 3600;
-		return {
-			access_token: accessToken,
-			expires_in_sec: expiresInSec
-		};
+	async #notSignedIn(
+		id: string,
+		config: ICatalystSignInConfig
+	): Promise<{ status?: number; content?: string }> {
+		const publicSignupResp: ICatalystAuthResponse = await this.publicSignup();
+		const isPublicSignupEnabled = publicSignupResp.data?.public_signup as boolean;
+		return this.#iframeSignIn.renderSignInIframe(id, config, isPublicSignupEnabled);
 	}
 }
 
 export { UserManagement } from './user-management.js';
 export * from './utils/constants.js';
+export { isIframeContext } from './utils/iframe-context.js';
 
 export const zcAuth = new Authentication();
 
