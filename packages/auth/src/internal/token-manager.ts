@@ -1,24 +1,29 @@
-import { clearOAuthTokenFromIDB, ConfigStore, setOAuthTokenInIDB } from '@zcatalyst/auth-client';
+import {
+	clearOAuthTokenFromIDB,
+	ConfigStore,
+	getOAuthTokenFromIDB,
+	setOAuthTokenInIDB
+} from '@zcatalyst/auth-client';
 import { Handler, IRequestConfig, RequestType } from '@zcatalyst/transport';
 import { CatalystService, CONSTANTS } from '@zcatalyst/utils';
 
 import { CatalystAuthenticationError } from '../utils/error.js';
+import { isIframeContext } from '../utils/iframe-context.js';
 import { ICatalystCustomTokenResponse, TokenResponse } from '../utils/interface.js';
 
 const { CREDENTIAL_USER, REQ_METHOD } = CONSTANTS;
 
 /**
- * Manages OAuth token generation, storage in IndexedDB, and proactive
- * background refresh for the iframe / popup auth protocol.
+ * Manages OAuth token generation and storage in IndexedDB for the
+ * iframe / popup auth protocol.
  *
  * Used internally by {@link Authentication}. Not exported from web.ts.
  */
 export class TokenManager {
 	#requester: Handler;
-	#tokenRefreshTimer: ReturnType<typeof setTimeout> | null = null;
-	/** Incremented on sign-out so in-flight refresh results are discarded. */
+	/** Incremented on sign-out so in-flight token writes are discarded. */
 	#refreshEpoch = 0;
-	/** Called whenever the token refresh cycle needs to change the auth protocol. */
+	/** Called whenever the token persist cycle needs to change the auth protocol. */
 	#onProtocolChange: (protocol: string) => void;
 
 	constructor(requester: Handler, onProtocolChange: (protocol: string) => void) {
@@ -29,6 +34,8 @@ export class TokenManager {
 	/**
 	 * Generates an OAuth access token by exchanging a Catalyst custom JWT token
 	 * for a remote OAuth access token via the IAM remote-auth endpoint.
+	 *
+	 * Call this from a popup login page — it is not supported inside an iframe.
 	 *
 	 * @param feature - The Catalyst feature to scope the token to.
 	 * @returns A promise that resolves to the access token and its TTL.
@@ -98,8 +105,7 @@ export class TokenManager {
 	}
 
 	/**
-	 * Persists an OAuth access token to IndexedDB and schedules a proactive
-	 * refresh 5 minutes before the token expires.
+	 * Persists an OAuth access token to IndexedDB.
 	 *
 	 * @param accessToken - The raw OAuth access token string.
 	 * @param expiresInSec - Token lifetime in seconds from now.
@@ -114,66 +120,71 @@ export class TokenManager {
 			await clearOAuthTokenFromIDB();
 			return expiresAt;
 		}
-		this.cancelTokenRefresh();
-		if (epoch !== this.#refreshEpoch) {
-			await clearOAuthTokenFromIDB();
-			return expiresAt;
-		}
-		this.scheduleTokenRefresh(expiresAt);
 		return expiresAt;
 	}
 
 	/**
-	 * Cancels any pending refresh timer without touching IndexedDB.
+	 * Revokes an OAuth access token at Zoho Accounts.
+	 *
+	 * Does not clear IndexedDB — callers that also need local cleanup should
+	 * follow this with {@link clearTokenStorage}.
+	 *
+	 * @param token - The access token to revoke.
 	 */
-	cancelTokenRefresh(): void {
-		if (this.#tokenRefreshTimer !== null) {
-			clearTimeout(this.#tokenRefreshTimer);
-			this.#tokenRefreshTimer = null;
+	async revokeAccessToken(token: string): Promise<void> {
+		if (typeof token !== 'string' || !token) {
+			throw new CatalystAuthenticationError('INVALID_ARGUMENT', 'token is required.');
+		}
+		const zaid = ConfigStore.get('ZAID') as string;
+		const request: IRequestConfig = {
+			method: REQ_METHOD.post,
+			service: CatalystService.EXTERNAL,
+			path: `/accounts/op/${zaid}/oauth/v2/token/revoke`,
+			origin: ConfigStore.get('IAM_DOMAIN') as string,
+			auth: false,
+			headers: {
+				Origin: window.location.origin
+			},
+			qs: { token }
+		};
+		await this.#requester.send(request);
+	}
+
+	/**
+	 * Revokes the OAuth token currently stored in IndexedDB, if one exists.
+	 * Revoke failures are swallowed so local sign-out can still proceed.
+	 */
+	async revokeStoredAccessToken(): Promise<void> {
+		const stored = await getOAuthTokenFromIDB().catch(() => null);
+		if (stored?.token) {
+			await this.revokeAccessToken(stored.token).catch(() => {
+				// Best-effort — local clear/redirect must still run.
+			});
 		}
 	}
 
 	/**
-	 * Removes the stored OAuth token from IndexedDB and cancels any
-	 * pending refresh timer.
+	 * Removes the stored OAuth token from IndexedDB.
 	 */
 	async clearTokenStorage(): Promise<void> {
 		this.#refreshEpoch++;
-		this.cancelTokenRefresh();
 		await clearOAuthTokenFromIDB();
 	}
 
 	/**
-	 * Schedules a proactive token refresh from an absolute expiry timestamp.
-	 * Tokens with fewer than 5 minutes remaining are refreshed immediately.
-	 * Guard: if a timer is already running, do not overwrite it.
-	 *
-	 * @param expiresAt - Absolute expiry timestamp in milliseconds.
+	 * Completes ZCRF sign-out after the Accounts logout request is skipped or
+	 * fails. Top-level pages go to the Accounts logout URL. Iframes cannot
+	 * complete that redirect, so the stored OAuth token is revoked instead
+	 * and the app URL is used.
 	 */
-	scheduleTokenRefresh(expiresAt: number): void {
-		// Guard: if a timer is already running do not create a second one.
-		// Repeated init() calls must not stack parallel refresh cycles.
-		if (this.#tokenRefreshTimer !== null) {
+	async finishZcrfSignOut(redirectURL: string, accountsLogoutUrl: string): Promise<void> {
+		if (isIframeContext()) {
+			await this.revokeStoredAccessToken();
+			await this.clearTokenStorage();
+			window.location.replace(redirectURL);
 			return;
 		}
-		const FIVE_MINUTES_MS = 5 * 60 * 1000;
-		const refreshInMs = Math.max(0, expiresAt - Date.now() - FIVE_MINUTES_MS);
-		this.#tokenRefreshTimer = setTimeout(() => {
-			// Clear the handle before async work begins so the guard is
-			// released — allowing setTokenStorage() to schedule the next cycle.
-			this.#tokenRefreshTimer = null;
-			const epoch = this.#refreshEpoch;
-			this.generateAuthToken('functions')
-				.then((token) => {
-					if (epoch !== this.#refreshEpoch) {
-						return;
-					}
-					return this.setTokenStorage(token.access_token, token.expires_in_sec);
-				})
-				.catch(() => {
-					// Refresh failed — the next auth call will re-trigger the popup flow.
-				});
-		}, refreshInMs);
+		window.location.replace(accountsLogoutUrl);
 	}
 
 	// Expose the protocol-change callback so PopupManager can call it.

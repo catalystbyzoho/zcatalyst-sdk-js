@@ -349,6 +349,7 @@ export class PopupManager {
 					// ignore close errors
 				}
 				try {
+					await this.#tokenManager.revokeStoredAccessToken();
 					await this.#tokenManager.clearTokenStorage();
 					setDefaultProjectConfig();
 					if (redirectUrl) {

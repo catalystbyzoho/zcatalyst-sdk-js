@@ -1,4 +1,9 @@
-import { Auth_Protocol, ConfigStore, setOAuthTokenInIDB } from '@zcatalyst/auth-client';
+import {
+	Auth_Protocol,
+	ConfigStore,
+	getOAuthTokenFromIDB,
+	setOAuthTokenInIDB
+} from '@zcatalyst/auth-client';
 
 import { zcAuth } from '../src/index.browser';
 import {
@@ -102,6 +107,7 @@ describe('Authentication (Browser)', () => {
 		ConfigStore.set(CURRENT_CLIENT_PAGE_PROTOCOL, 'http:');
 		ConfigStore.set(CURRENT_CLIENT_PAGE_PORT, '3000');
 		ConfigStore.set('INITIALIZED', 'true');
+		ConfigStore.set('IAM_DOMAIN', 'https://accounts.zohoportal.com');
 		idbStore.clear();
 		setupIndexedDBMock();
 		jest.spyOn(window, 'addEventListener');
@@ -114,10 +120,6 @@ describe('Authentication (Browser)', () => {
 
 	afterEach(() => {
 		document.body.innerHTML = '';
-		// Cancel the private refresh timer on the shared zcAuth singleton so
-		// later tests (especially init rehydration) are not blocked by the
-		// scheduleTokenRefresh guard.
-		zcAuth.cancelTokenRefresh();
 		idbStore.clear();
 		jest.clearAllTimers();
 		jest.useRealTimers();
@@ -157,11 +159,104 @@ describe('Authentication (Browser)', () => {
 		});
 	});
 
+	describe('revokeAccessToken', () => {
+		it('should POST the token to the Accounts revoke endpoint', async () => {
+			const sendSpy = jest
+				.spyOn(zcAuth.requester, 'send')
+				.mockResolvedValue({ data: {} } as any);
+			await zcAuth.revokeAccessToken('test-access-token');
+			expect(sendSpy).toHaveBeenCalledWith(
+				expect.objectContaining({
+					method: 'POST',
+					path: '/accounts/op/test-zaid/oauth/v2/token/revoke',
+					origin: 'https://accounts.zohoportal.com',
+					auth: false,
+					qs: { token: 'test-access-token' }
+				})
+			);
+			sendSpy.mockRestore();
+		});
+
+		it('should throw when the token is empty', async () => {
+			await expect(zcAuth.revokeAccessToken('')).rejects.toThrow('token is required.');
+		});
+	});
+
 	describe('signOut', () => {
+		function mockIframeContext(active: boolean) {
+			const top = active ? ({} as Window) : window;
+			Object.defineProperty(window, 'self', { value: window, configurable: true });
+			Object.defineProperty(window, 'top', { value: top, configurable: true });
+		}
+
+		afterEach(() => {
+			Object.defineProperty(window, 'self', { value: window, configurable: true });
+			Object.defineProperty(window, 'top', { value: window, configurable: true });
+		});
+
 		it('should clear cookies and redirect on signout', async () => {
 			document.cookie = 'test_cookie=value';
 			await zcAuth.signOut('/');
 			expect(window.location.replace).toHaveBeenCalled();
+		});
+
+		it('should use the Accounts logout URL when not inside an iframe', async () => {
+			await zcAuth.signOut('/out');
+			expect(window.location.replace).toHaveBeenCalledWith(
+				expect.stringMatching(/\/accounts\/p\/.*\/logout/)
+			);
+		});
+
+		it('should revoke the stored OAuth token then redirect', async () => {
+			ConfigStore.set('AUTH_PROTOCOL', Auth_Protocol.OAuthTokenProtocol);
+			await setOAuthTokenInIDB('oauth-token', Date.now() + 3600_000);
+			const sendSpy = jest
+				.spyOn(zcAuth.requester, 'send')
+				.mockResolvedValue({ data: {} } as any);
+			await zcAuth.signOut('/after');
+			expect(sendSpy).toHaveBeenCalledWith(
+				expect.objectContaining({
+					method: 'POST',
+					path: '/accounts/op/test-zaid/oauth/v2/token/revoke',
+					auth: false,
+					qs: { token: 'oauth-token' }
+				})
+			);
+			expect(await getOAuthTokenFromIDB()).toBeNull();
+			expect(window.location.replace).toHaveBeenCalledWith('/after');
+			sendSpy.mockRestore();
+		});
+
+		it('should still clear IDB and redirect when OAuth revoke fails', async () => {
+			ConfigStore.set('AUTH_PROTOCOL', Auth_Protocol.OAuthTokenProtocol);
+			await setOAuthTokenInIDB('oauth-token', Date.now() + 3600_000);
+			const sendSpy = jest
+				.spyOn(zcAuth.requester, 'send')
+				.mockRejectedValue(new Error('network'));
+			await zcAuth.signOut('/after');
+			expect(await getOAuthTokenFromIDB()).toBeNull();
+			expect(window.location.replace).toHaveBeenCalledWith('/after');
+			sendSpy.mockRestore();
+		});
+
+		it('should revoke and replace the app URL when inside an iframe', async () => {
+			mockIframeContext(true);
+			await setOAuthTokenInIDB('iframe-token', Date.now() + 3600_000);
+			const sendSpy = jest
+				.spyOn(zcAuth.requester, 'send')
+				.mockResolvedValue({ data: {} } as any);
+			await zcAuth.signOut('/iframe-out');
+			expect(sendSpy).toHaveBeenCalledWith(
+				expect.objectContaining({
+					path: '/accounts/op/test-zaid/oauth/v2/token/revoke',
+					qs: { token: 'iframe-token' }
+				})
+			);
+			expect(window.location.replace).toHaveBeenCalledWith('/iframe-out');
+			expect(window.location.replace).not.toHaveBeenCalledWith(
+				expect.stringContaining('/accounts/p/')
+			);
+			sendSpy.mockRestore();
 		});
 	});
 
@@ -530,6 +625,54 @@ describe('Authentication (Browser)', () => {
 			expect(window.location.replace).toHaveBeenCalledWith('/goodbye');
 		});
 
+		it('should revoke the stored token before clearing IDB', async () => {
+			await setOAuthTokenInIDB('popup-token', Date.now() + 3600_000);
+			const sendSpy = jest
+				.spyOn(zcAuth.requester, 'send')
+				.mockResolvedValue({ data: {} } as any);
+			const fakePopup = makeFakePopup();
+			jest.spyOn(window, 'open').mockReturnValue(fakePopup);
+			const signOutPromise = zcAuth.signOutViaPopup('/goodbye');
+			await Promise.resolve();
+			const listener = getMessageListener();
+			listener({
+				origin: window.location.origin,
+				source: fakePopup,
+				data: { type: POPUP_MSG_SIGNOUT_DONE }
+			} as unknown as MessageEvent);
+			await signOutPromise;
+			expect(sendSpy).toHaveBeenCalledWith(
+				expect.objectContaining({
+					path: '/accounts/op/test-zaid/oauth/v2/token/revoke',
+					qs: { token: 'popup-token' }
+				})
+			);
+			expect(await getOAuthTokenFromIDB()).toBeNull();
+			expect(window.location.replace).toHaveBeenCalledWith('/goodbye');
+			sendSpy.mockRestore();
+		});
+
+		it('should still clear IDB and redirect when revoke fails', async () => {
+			await setOAuthTokenInIDB('popup-token', Date.now() + 3600_000);
+			const sendSpy = jest
+				.spyOn(zcAuth.requester, 'send')
+				.mockRejectedValue(new Error('network'));
+			const fakePopup = makeFakePopup();
+			jest.spyOn(window, 'open').mockReturnValue(fakePopup);
+			const signOutPromise = zcAuth.signOutViaPopup('/goodbye');
+			await Promise.resolve();
+			const listener = getMessageListener();
+			listener({
+				origin: window.location.origin,
+				source: fakePopup,
+				data: { type: POPUP_MSG_SIGNOUT_DONE }
+			} as unknown as MessageEvent);
+			await signOutPromise;
+			expect(await getOAuthTokenFromIDB()).toBeNull();
+			expect(window.location.replace).toHaveBeenCalledWith('/goodbye');
+			sendSpy.mockRestore();
+		});
+
 		it('should reset AUTH_PROTOCOL after popup sign-out when there is no redirect', async () => {
 			ConfigStore.set('AUTH_PROTOCOL', Auth_Protocol.OAuthTokenProtocol);
 			const fakePopup = makeFakePopup();
@@ -576,7 +719,7 @@ describe('Authentication (Browser)', () => {
 		});
 	});
 
-	describe('init — refresh timer rehydration from IndexedDB', () => {
+	describe('init — OAuth token restore from IndexedDB', () => {
 		const mockCreds = {
 			project_id: 'test-project',
 			zaid: 'test-zaid',
@@ -593,50 +736,20 @@ describe('Authentication (Browser)', () => {
 			(global.fetch as jest.Mock).mockResolvedValue({ json: async () => mockCreds });
 		});
 
-		it('should schedule immediate refresh when stored token has fewer than 5 minutes left', async () => {
-			// Math.max(0, 2min - 5min) = 0 → setTimeout(fn, 0), fires immediately.
-			const expiresAt = Date.now() + 2 * 60 * 1000;
-			await setOAuthTokenInIDB('almost-expired-token', expiresAt);
+		it('should restore OAuth protocol from a still-valid stored token without regenerating it', async () => {
+			const expiresAt = Date.now() + 30 * 60 * 1000;
+			await setOAuthTokenInIDB('valid-token', expiresAt);
 
-			// The refresh timer calls TokenManager.generateAuthToken() directly on
-			// the private #tokenManager instance — NOT on the public zcAuth wrapper.
-			// Spying on zcAuth.requester.send (the shared Handler both objects use)
-			// is the correct interception point.
-			const sendSpy = jest
-				.spyOn(zcAuth.requester, 'send')
-				.mockResolvedValue({ data: { data: null } } as any);
+			const sendSpy = jest.spyOn(zcAuth.requester, 'send');
 
 			await zcAuth.init();
-			// Allow the setTimeout(fn, 0) callback to execute.
+			// generateAuthToken is not supported inside an iframe, so init must
+			// not fire a background custom-token / remote-auth refresh.
 			await new Promise<void>((res) => setTimeout(res, 50));
 
-			expect(sendSpy).toHaveBeenCalled();
+			expect(ConfigStore.get('AUTH_PROTOCOL')).toBe(Auth_Protocol.OAuthTokenProtocol);
+			expect(sendSpy).not.toHaveBeenCalled();
 			sendSpy.mockRestore();
-		});
-
-		it('should not schedule a second timer if one is already running (guard check)', async () => {
-			// Seed a token with 30 min left → refresh delay ≈ 25 min.
-			const expiresAt = Date.now() + 30 * 60 * 1000;
-			await setOAuthTokenInIDB('long-lived-token', expiresAt);
-
-			// First init — schedules the timer (guard releases only when it fires).
-			await zcAuth.init();
-
-			// Second init — guard must prevent a second setTimeout for the refresh.
-			const timerSpy = jest.spyOn(global, 'setTimeout');
-			await zcAuth.init();
-
-			// Only look for setTimeout calls with a delay in the ~25 min refresh range.
-			// This filters out unrelated calls (IDB microtasks, Jest internals, etc.).
-			const TWENTY_FIVE_MIN = 25 * 60 * 1000;
-			const refreshTimerCall = timerSpy.mock.calls.find(
-				([fn, delay]) =>
-					typeof fn === 'function' &&
-					typeof delay === 'number' &&
-					delay >= TWENTY_FIVE_MIN - 5_000
-			);
-			expect(refreshTimerCall).toBeUndefined();
-			timerSpy.mockRestore();
 		});
 	});
 });

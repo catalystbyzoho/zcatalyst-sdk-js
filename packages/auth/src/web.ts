@@ -151,8 +151,6 @@ class Authentication implements Component {
 		const storedToken = await getOAuthTokenFromIDB().catch(() => null);
 		if (storedToken && storedToken.exp > Date.now()) {
 			this.#setAuthProtocol(Auth_Protocol.OAuthTokenProtocol);
-			// Rehydrate the proactive refresh timer after a page reload.
-			this.#tokenManager.scheduleTokenRefresh(storedToken.exp);
 		}
 	}
 
@@ -506,8 +504,9 @@ class Authentication implements Component {
 			return;
 		}
 
-		// OAuth — only clear IDB token, reset config, redirect.
+		// OAuth — revoke at Accounts, clear IDB token, reset config, redirect.
 		if (authProtocol === Auth_Protocol.OAuthTokenProtocol) {
+			await this.#tokenManager.revokeStoredAccessToken();
 			await this.#tokenManager.clearTokenStorage();
 			setDefaultProjectConfig();
 			window.location.replace(redirectURL);
@@ -538,14 +537,16 @@ class Authentication implements Component {
 				await this.requester.send(request);
 				window.location.replace(redirectURL);
 			} catch {
-				if (!detectIframeContext()) {
-					window.location.replace(this.#constructSignOutUrl(redirectURL));
-				}
+				await this.#tokenManager.finishZcrfSignOut(
+					redirectURL,
+					this.#constructSignOutUrl(redirectURL)
+				);
 			}
 		} else {
-			if (!detectIframeContext()) {
-				window.location.replace(this.#constructSignOutUrl(redirectURL));
-			}
+			await this.#tokenManager.finishZcrfSignOut(
+				redirectURL,
+				this.#constructSignOutUrl(redirectURL)
+			);
 		}
 	}
 
@@ -796,6 +797,8 @@ class Authentication implements Component {
 	 *
 	 * Used internally by popup login pages. Call this from within a Catalyst
 	 * popup login page to obtain a scoped access token for a specific feature.
+	 * Do not call this from inside an iframe — the custom-token exchange is
+	 * not supported in that context.
 	 *
 	 * @param feature - The Catalyst feature to scope the token to.
 	 *   - `'functions'`: Token scoped for invoking Catalyst serverless functions.
@@ -807,10 +810,18 @@ class Authentication implements Component {
 	}
 
 	/**
-	 * Cancels any pending OAuth refresh timer on this instance.
+	 * Revokes an OAuth access token at Zoho Accounts.
+	 *
+	 * Call this with a token you already hold. For the stored IndexedDB token,
+	 * {@link signOut} (OAuth / iframe) and {@link signOutViaPopup} revoke it
+	 * automatically before local cleanup.
+	 *
+	 * Does not clear IndexedDB or redirect.
+	 *
+	 * @param token - The access token to revoke.
 	 */
-	cancelTokenRefresh(): void {
-		this.#tokenManager.cancelTokenRefresh();
+	async revokeAccessToken(token: string): Promise<void> {
+		return this.#tokenManager.revokeAccessToken(token);
 	}
 
 	// ---------------------------------------------------------------------------
