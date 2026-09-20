@@ -56,7 +56,11 @@ import { hasSuffInfo } from './utils/validators.js';
 
 const { CREDENTIAL_USER, REQ_METHOD, COMPONENT } = CONSTANTS;
 
-/** Popup message-type / path constants exposed on {@link zcAuth}. */
+/**
+ * Popup message-type / path constants exposed on {@link zcAuth}.
+ *
+ * @beta
+ */
 export const popupConstants = {
 	POPUP_LOGIN_PATH,
 	POPUP_LOGOUT_PATH,
@@ -73,6 +77,7 @@ export class Authentication implements Component {
 	projectId: string = ConfigStore.get('PROJECT_ID') as string;
 	isAppsail: string = ConfigStore.get('IS_APPSAIL') as string;
 	authProtocol: Auth_Protocol = ConfigStore.get('AUTH_PROTOCOL') as unknown as Auth_Protocol;
+	/** @beta */
 	readonly popupConstants = popupConstants;
 
 	/** Internal managers — not exposed on the public API surface. */
@@ -190,6 +195,8 @@ export class Authentication implements Component {
 	 *   await zcAuth.signIn('login-container');
 	 * }
 	 * ```
+	 *
+	 * @beta
 	 */
 	isIframeContext(): boolean {
 		return detectIframeContext();
@@ -229,6 +236,8 @@ export class Authentication implements Component {
 	 * @throws {CatalystAuthenticationError} with code `IDB_ACCESS_DENIED` when
 	 *   `indexedDB` is defined but cannot be opened or times out.
 	 *
+	 * @beta
+	 *
 	 * @example
 	 * ```ts
 	 * // Always register logout — signOutViaPopup does not need IndexedDB.
@@ -251,6 +260,8 @@ export class Authentication implements Component {
 	 *   }
 	 * }
 	 * ```
+	 *
+	 * @beta
 	 */
 	async assertPopupAuthAllowed(): Promise<void> {
 		return assertPopupAuthAllowed();
@@ -760,6 +771,8 @@ export class Authentication implements Component {
 	 *   popup does not complete within `timeoutMs`.
 	 * @throws {CatalystAuthenticationError} with code `AUTH_ERROR` when the popup
 	 *   reports a sign-in failure.
+	 *
+	 * @beta
 	 */
 	async signInViaPopup(
 		config: ICatalystPopupSignInConfig = {}
@@ -787,6 +800,8 @@ export class Authentication implements Component {
 	 * @returns A promise that resolves when the sign-out popup signals completion.
 	 * @throws {CatalystAuthenticationError} with code `POPUP_TIMEOUT` when the
 	 *   popup does not complete within the default timeout.
+	 *
+	 * @beta
 	 */
 	async signOutViaPopup(redirectUrl = '/'): Promise<void> {
 		return this.#popupManager.signOutViaPopup(redirectUrl);
