@@ -97,10 +97,10 @@ importers:
         specifier: workspace:^
         version: link:../auth-admin
       '@zcatalyst/auth-client':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../auth-client
       '@zcatalyst/transport':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../transport
       '@zcatalyst/utils':
         specifier: workspace:^
@@ -306,7 +306,7 @@ importers:
         specifier: workspace:^
         version: link:../auth-admin
       '@zcatalyst/auth-client':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../auth-client
       '@zcatalyst/utils':
         specifier: workspace:^
