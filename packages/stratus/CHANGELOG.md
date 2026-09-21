@@ -1,5 +1,9 @@
 # @zcatalyst/stratus
 
+## [1.0.0](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v1.0.0) - 2026-09-21
+
+- First stable release.
+
 ## [0.0.5](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.5) - 2026-08-19
 
 ### Bug Fixes

@@ -1,6 +1,6 @@
 {
   "name": "zcatalyst-sdk-js",
-  "version": "0.0.5",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/catalystbyzoho/zcatalyst-sdk-js.git"

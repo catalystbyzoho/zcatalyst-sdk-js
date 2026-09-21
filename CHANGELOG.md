@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.0.0](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v1.0.0) - 2026-09-21
+
+- First stable release. All packages bumped to `v1.0.0`.
+
 ## [v0.0.5](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.5) - 2026-08-19
 
 #### `@zcatalyst/auth@v0.0.4`
