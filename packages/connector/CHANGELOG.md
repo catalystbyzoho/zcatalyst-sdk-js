@@ -2,7 +2,8 @@
 
 ## [1.0.0](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v1.0.0) - 2026-09-21
 
-- First stable release.
+### Bug Fixes
+- Fixed the refresh token update issue.[`#47`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/47)
 
 ## [0.0.4](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.4) - 2026-08-04
 
