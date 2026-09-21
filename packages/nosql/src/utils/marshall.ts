@@ -1,8 +1,8 @@
-import { CatalystNoSQLError } from '../utils/error';
-import { NoSQLByte } from './byte';
-import { DataType } from './enum';
-import { NoSQLByteSet, NoSQLNumberSet, NoSQLStringSet } from './set';
-import { TNoSQLAttribute, TNoSQLByte, TNoSQLValues } from './types';
+import { CatalystNoSQLError } from '../utils/error.js';
+import { NoSQLByte } from './byte.js';
+import { DataType } from './enum.js';
+import { NoSQLByteSet, NoSQLNumberSet, NoSQLStringSet } from './set.js';
+import { TNoSQLAttribute, TNoSQLByte, TNoSQLValues } from './types.js';
 
 /** * An optional configuration object for `serialize` */
 export interface MarshallOptions {

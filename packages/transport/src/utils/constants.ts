@@ -1,4 +1,4 @@
-import { HTTP_CODE_MAP_TYPE, HTTP_CODE_REV_MAP_TYPE } from './interfaces';
+import { HTTP_CODE_MAP_TYPE, HTTP_CODE_REV_MAP_TYPE } from './interfaces.js';
 
 export const HTTP_CODE_MAP: HTTP_CODE_MAP_TYPE = {
 	OK: {

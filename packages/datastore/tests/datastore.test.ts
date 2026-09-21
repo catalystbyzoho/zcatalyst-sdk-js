@@ -89,6 +89,13 @@ describe('test datastore', () => {
 		await expect(datastore.executeZCQLQuery('')).rejects.toThrow();
 	});
 
+	it('execute OLAP query', async () => {
+		await expect(datastore.executeOLAPQuery('SELECT * FROM Users')).resolves.toStrictEqual(
+			responses['/query'].POST.data.data
+		);
+		await expect(datastore.executeOLAPQuery('')).rejects.toThrow();
+	});
+
 	it('execute search query', async () => {
 		await expect(
 			datastore.executeSearchQuery({

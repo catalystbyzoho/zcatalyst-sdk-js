@@ -1,5 +1,13 @@
 {
-  "entryPoints": ["src/**/*"],
-  "exclude": ["src/__mocks__/**/*"],
-  "out": "../../docs/user-management"
+  "extends": [
+    "../../typedoc.base.json"
+  ],
+  "name": "Catalyst Authentication",
+  "entryPoints": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "src/__mocks__/**/*"
+  ],
+  "out": "../../docs/auth"
 }

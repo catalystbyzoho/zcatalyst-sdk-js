@@ -1,5 +1,5 @@
-import { ICatalystClientRes, ResponseHandler } from './fetch-handler';
-import { Component, IRequestConfig } from './utils/interfaces';
+import { ICatalystClientRes, ResponseHandler } from './fetch-handler.js';
+import { Component, IRequestConfig } from './utils/interfaces.js';
 
 // Re-export commonly needed utilities from utils to reduce coupling
 export { CatalystService, Component, CONSTANTS } from '@zcatalyst/utils';
@@ -37,6 +37,6 @@ export class Handler {
 	}
 }
 
-export { RequestType, ResponseType } from './utils/enums';
-export { CatalystAPIError } from './utils/errors';
+export { RequestType, ResponseType } from './utils/enums.js';
+export { CatalystAPIError } from './utils/errors.js';
 export { IRequestConfig };

@@ -1,6 +1,6 @@
 {
   "name": "zcatalyst-sdk-js",
-  "version": "0.0.5",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/catalystbyzoho/zcatalyst-sdk-js.git"
@@ -57,9 +57,9 @@
   "lint-staged": {
     "**/*.{js,ts,jsx,tsx}": "eslint --fix"
   },
-  "packageManager": "pnpm@9.15.4",
+  "packageManager": "pnpm@11.24.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "pnpm": {
     "overrides": {

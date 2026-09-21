@@ -120,3 +120,4 @@ __snapshots__/
 docs/*/
 .qodo
 .npmrc
+.typedoc-scratch/

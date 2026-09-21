@@ -5,7 +5,7 @@ import https from 'https';
 import { resolve } from 'path';
 import { stringify } from 'querystring';
 
-import { CatalystAuthError } from './errors';
+import { CatalystAuthError } from './errors.js';
 
 const {
 	CREDENTIAL_SUFFIX,

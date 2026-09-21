@@ -7,7 +7,7 @@ import {
 	JOB_SOURCE_TYPE,
 	JOB_STATUS,
 	TARGET_TYPE
-} from './enum';
+} from './enum.js';
 
 // CRON
 /** Collection of all types of crons that are available */

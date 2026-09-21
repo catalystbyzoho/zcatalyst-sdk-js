@@ -1,5 +1,30 @@
 # Change Log
 
+## [v1.0.0](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v1.0.0) - 2026-09-21
+
+First stable release. All packages bumped to `v1.0.0`.
+
+#### `@zcatalyst/auth@v1.0.0`
+- **Features**
+  - Added popup sign-in support.[`#48`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/48)
+  - Added auth token support.[`#49`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/49)
+
+#### `@zcatalyst/connections@v1.0.0`
+- **Features**
+  - Added connections support.[`#22`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/22)
+
+#### `@zcatalyst/connector@v1.0.0`
+- **Bug Fixes**
+  - Fixed the refresh token update issue.[`#47`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/47)
+
+#### `@zcatalyst/datastore@v1.0.0`
+- **Features**
+  - Added OLAP query support.[`#46`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/46)
+
+#### `@zcatalyst/smartbrowz@v1.0.0`
+- **Features**
+  - Added browser grid support.[`#32`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/32)
+
 ## [v0.0.5](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.5) - 2026-08-19
 
 #### `@zcatalyst/auth@v0.0.4`

@@ -1,6 +1,7 @@
 /**
  * Catalyst Job Scheduling — submit, schedule and manage cron and one-off jobs.
  *
+ * @module @zcatalyst/job-scheduling
  * @packageDocumentation
  */
 
@@ -15,11 +16,11 @@ import {
 
 import pkg from '../package.json';
 const { version } = pkg;
-import Cron from './cron';
-import Job from './job';
-import LOCAL_CONSTANTS from './utils/constants';
-import { CatalystJobSchedulingError } from './utils/error';
-import { ICatalystJobpoolDetails } from './utils/types';
+import Cron from './cron.js';
+import Job from './job.js';
+import LOCAL_CONSTANTS from './utils/constants.js';
+import { CatalystJobSchedulingError } from './utils/error.js';
+import { ICatalystJobpoolDetails } from './utils/types.js';
 
 const { COMPONENT, REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 const { API } = LOCAL_CONSTANTS;

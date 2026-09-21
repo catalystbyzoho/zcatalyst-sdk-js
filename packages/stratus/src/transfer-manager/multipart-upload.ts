@@ -1,8 +1,8 @@
 import { Handler } from '@zcatalyst/transport';
 
-import { Bucket } from '../bucket';
-import { IStratusMultipartSummaryRes } from '../utils/interface';
-import { StratusObjectRequest } from '../utils/types';
+import { Bucket } from '../bucket.js';
+import { IStratusMultipartSummaryRes } from '../utils/interface.js';
+import { StratusObjectRequest } from '../utils/types.js';
 
 /**
  * Represents an active multipart upload session.

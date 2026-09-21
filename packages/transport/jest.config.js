@@ -3,7 +3,9 @@ const base = require('../../jest.config.base.js');
 module.exports = {
   ...base,
   moduleNameMapper: {
+    ...base.moduleNameMapper,
     "^@zcatalyst/auth-admin$": "../../auth-admin/src/__mocks__",
+    "^@zcatalyst/auth-client$": "<rootDir>/../../packages/auth-client/src",
   },
   coverageThreshold: {
     global: {
