@@ -1,0 +1,634 @@
+<!DOCTYPE html><html class="default" lang="en"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>Catalyst Authentication</title><meta name="description" content="Documentation for Catalyst Authentication"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><link rel="stylesheet" href="assets/custom.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><div class="table-cell" id="tsd-search" data-base="."><div class="field"><label for="tsd-search-field" class="tsd-widget tsd-toolbar-icon search no-caption"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="assets/icons.svg#icon-search"></use></svg></label><input type="text" id="tsd-search-field" aria-label="Search"/></div><div class="field"><div id="tsd-toolbar-links"><a href="https://github.com/catalystbyzoho/zcatalyst-sdk-js">GitHub</a><a href="https://www.npmjs.com/org/zcatalyst">npm</a></div></div><ul class="results"><li class="state loading">Preparing search index...</li><li class="state failure">The search index is not available</li></ul><a href="index.html" class="title">Catalyst Authentication</a></div><div class="table-cell" id="tsd-widgets"><a href="#" class="tsd-widget tsd-toolbar-icon menu no-caption" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h1>Catalyst Authentication</h1></div><div class="tsd-panel tsd-typography"><a id="md:zcatalystauth" class="tsd-anchor"></a><h1 class="tsd-anchor-link">@zcatalyst/auth<a href="#md:zcatalystauth" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1><p>JavaScript SDK for Catalyst Authentication - Node.js and Browser Support</p>
+<a id="md:overview" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Overview<a href="#md:overview" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The <code>@zcatalyst/auth</code> package provides JavaScript/TypeScript methods for Catalyst authentication and user-management APIs. It has Node.js and browser entry points.</p>
+<a id="md:operation-scope" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Operation Scope<a href="#md:operation-scope" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Both the Node and browser entry points export the same class name (<code>UserManagement</code>). The Node entry point exposes the admin-augmented surface in addition to the user surface; the browser entry point exposes only the user surface.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th><code>UserManagement</code> method</th>
+<th>Available in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Get the currently signed-in user</td>
+<td><code>getCurrentUser()</code></td>
+<td>Node + Browser (user)</td>
+</tr>
+<tr>
+<td>Reset password for the current user</td>
+<td><code>resetPassword()</code></td>
+<td>Node + Browser (user)</td>
+</tr>
+<tr>
+<td>List every user in the project</td>
+<td><code>getAllUsers()</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Get a specific user's details</td>
+<td><code>getUserDetails(id)</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Delete a user</td>
+<td><code>deleteUser(id)</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Register a new user</td>
+<td><code>registerUser(payload)</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>List orgs the user belongs to</td>
+<td><code>getAllOrgs()</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Add a user to an org</td>
+<td><code>addUserToOrg(payload)</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Inspect a pending signup validation request</td>
+<td><code>getSignupValidationRequest(id)</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Mint a custom token for a user</td>
+<td><code>generateCustomToken(payload)</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Enable / disable a user</td>
+<td><code>updateUserStatus(id, status)</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Update a user's profile fields</td>
+<td><code>updateUserDetails(id, payload)</code></td>
+<td>Node only (admin)</td>
+</tr>
+</tbody>
+</table>
+<a id="md:prerequisites" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Prerequisites<a href="#md:prerequisites" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>Before using this SDK, ensure you have:</p>
+<ul>
+<li>A <a href="https://docs.catalyst.zoho.com/en/getting-started/catalyst-projects" target="_blank" class="external">Catalyst project</a> set up</li>
+<li>Your <strong>Project ID</strong> (unique identifier) and <strong>Project Key</strong> from <a href="https://docs.catalyst.zoho.com/en/getting-started/set-up-a-catalyst-project/general-settings" target="_blank" class="external">Project Settings</a></li>
+<li><a href="https://docs.catalyst.zoho.com/en/getting-started/installing-catalyst-cli" target="_blank" class="external">Catalyst CLI</a> installed (for Node.js development)</li>
+<li>At least one <a href="https://docs.catalyst.zoho.com/en/cloud-scale/help/authentication/authentication-types/" target="_blank" class="external">authentication type</a> configured in your project</li>
+</ul>
+<a id="md:installation" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Installation<a href="#md:installation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>To install this package, simply type add or install @zcatalyst/auth
+using your favorite package manager:</p>
+<ul>
+<li><code>npm install @zcatalyst/auth</code></li>
+<li><code>yarn add @zcatalyst/auth</code></li>
+<li><code>pnpm add @zcatalyst/auth</code></li>
+</ul>
+<a id="md:getting-started" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Getting Started<a href="#md:getting-started" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><a id="md:import" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Import<a href="#md:import" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>The Catalyst SDK is modularized by Components.
+To handle authentication, you only need to import the <code>zcAuth</code> function:</p>
+<a id="md:environment-specific-imports" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Environment-Specific Imports<a href="#md:environment-specific-imports" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><p>For explicit environment targeting:</p>
+<p><strong>Node.js Environment:</strong></p>
+<pre><code class="js"><span class="hl-0">// CommonJS</span><br/><span class="hl-1">const</span><span class="hl-2"> { </span><span class="hl-3">zcAuth</span><span class="hl-2">, </span><span class="hl-3">UserManagement</span><span class="hl-2"> } </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-4">require</span><span class="hl-2">(</span><span class="hl-5">&quot;@zcatalyst/auth/node&quot;</span><span class="hl-2">);</span><br/><br/><span class="hl-0">// ES6+</span><br/><span class="hl-1">import</span><span class="hl-2"> { zcAuth, UserManagement } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/node&quot;</span><span class="hl-2">;</span>
+</code><button type="button">Copy</button></pre>
+
+<p><strong>Browser Environment:</strong></p>
+<pre><code class="js"><span class="hl-0">// CommonJS</span><br/><span class="hl-1">const</span><span class="hl-2"> { </span><span class="hl-3">zcAuth</span><span class="hl-2">, </span><span class="hl-3">UserManagement</span><span class="hl-2"> } </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-4">require</span><span class="hl-2">(</span><span class="hl-5">&quot;@zcatalyst/auth/web&quot;</span><span class="hl-2">);</span><br/><br/><span class="hl-0">// ES6+</span><br/><span class="hl-1">import</span><span class="hl-2"> { zcAuth, UserManagement } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/web&quot;</span><span class="hl-2">;</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="md:package-root-import" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Package Root Import<a href="#md:package-root-import" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><pre><code class="js"><span class="hl-0">// CommonJS</span><br/><span class="hl-1">const</span><span class="hl-2"> { </span><span class="hl-3">zcAuth</span><span class="hl-2"> } </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-4">require</span><span class="hl-2">(</span><span class="hl-5">&quot;@zcatalyst/auth&quot;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+<pre><code class="ts"><span class="hl-0">// ES6+</span><br/><span class="hl-1">import</span><span class="hl-2"> { zcAuth } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth&quot;</span><span class="hl-2">;</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="md:usage" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Usage<a href="#md:usage" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><a id="md:nodejs-environment-server-side" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Node.js Environment (Server-Side)<a href="#md:nodejs-environment-server-side" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><p>For server-side authentication in Catalyst functions, initialize the SDK with Catalyst request headers or a custom credential:</p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { zcAuth } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/node&quot;</span><span class="hl-2">;</span><br/><br/><span class="hl-0">// Initialize with Catalyst request headers</span><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">app</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">init</span><span class="hl-2">(req);</span>
+</code><button type="button">Copy</button></pre>
+
+<p><strong>Initialize with Scope:</strong></p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { zcAuth } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/node&quot;</span><span class="hl-2">;</span><br/><br/><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">init</span><span class="hl-2">(req, {</span><br/><span class="hl-2">  type: </span><span class="hl-5">&#39;advancedio&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  appName: </span><span class="hl-5">&#39;my-app&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  scope: </span><span class="hl-5">&#39;admin&#39;</span><br/><span class="hl-2">});</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="md:browser-environment-client-side" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Browser Environment (Client-Side)<a href="#md:browser-environment-client-side" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><p>For client-side authentication, use the browser-specific methods to implement sign-in flows:</p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { zcAuth } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/web&quot;</span><span class="hl-2">;</span><br/><br/><span class="hl-0">// Embedded Authentication - Sign in with iframe</span><br/><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">signIn</span><span class="hl-2">(</span><span class="hl-5">&#39;element-id&#39;</span><span class="hl-2">, {</span><br/><span class="hl-2">  redirectUrl: </span><span class="hl-5">&#39;https://your-app.com/dashboard&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  cssUrl: </span><span class="hl-5">&#39;https://your-app.com/custom-login.css&#39;</span><span class="hl-2">  </span><span class="hl-0">// Optional: Custom styling</span><br/><span class="hl-2">});</span><br/><br/><span class="hl-0">// Check if user is authenticated</span><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">isAuthenticated</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">isUserAuthenticated</span><span class="hl-2">();</span><br/><span class="hl-1">if</span><span class="hl-2"> (isAuthenticated) {</span><br/><span class="hl-2">  console.</span><span class="hl-4">log</span><span class="hl-2">(</span><span class="hl-5">&#39;User is logged in&#39;</span><span class="hl-2">);</span><br/><span class="hl-2">}</span><br/><br/><span class="hl-0">// Sign out user</span><br/><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">signOut</span><span class="hl-2">(</span><span class="hl-5">&#39;/login&#39;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+<p><strong>Hosted Authentication:</strong></p>
+<p>Redirect users to Catalyst's hosted authentication page:</p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { zcAuth } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/web&quot;</span><span class="hl-2">;</span><br/><br/><span class="hl-0">// Redirect to hosted sign-in page</span><br/><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">hostedSignIn</span><span class="hl-2">(</span><span class="hl-5">&#39;https://your-app.com/dashboard&#39;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="md:environment-support" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Environment Support<a href="#md:environment-support" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>Use the entry point that matches your runtime:</p>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Available Methods</th>
+<th>Context</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Node.js</strong></td>
+<td><code>init()</code>, <code>getApp()</code></td>
+<td>Server-side functions and backend code</td>
+</tr>
+<tr>
+<td><strong>Browser</strong></td>
+<td><code>signIn()</code>, <code>signOut()</code>, <code>isUserAuthenticated()</code>, <code>hostedSignIn()</code>, <code>signUp()</code></td>
+<td>Client-side web applications</td>
+</tr>
+</tbody>
+</table>
+<a id="md:asyncawait" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Async/await<a href="#md:asyncawait" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>We recommend using <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await" target="_blank" class="external">await</a>
+operator to wait for the promise returned by authentication operations:</p>
+<pre><code class="js"><span class="hl-1">try</span><span class="hl-2"> {</span><br/><span class="hl-2">  </span><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">signIn</span><span class="hl-2">(</span><span class="hl-5">&#39;login-container&#39;</span><span class="hl-2">);</span><br/><span class="hl-2">} </span><span class="hl-1">catch</span><span class="hl-2"> (error) {</span><br/><span class="hl-2">  console.</span><span class="hl-4">error</span><span class="hl-2">(</span><span class="hl-5">&#39;Authentication failed:&#39;</span><span class="hl-2">, error);</span><br/><span class="hl-2">} </span><span class="hl-1">finally</span><span class="hl-2"> {</span><br/><span class="hl-2">  </span><span class="hl-0">// Cleanup or redirect logic</span><br/><span class="hl-2">}</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="md:error-handling" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Error Handling<a href="#md:error-handling" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>The SDK throws error objects with information such as message, statusCode, and name when available:</p>
+<pre><code class="js"><span class="hl-1">try</span><span class="hl-2"> {</span><br/><span class="hl-2">  </span><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">signIn</span><span class="hl-2">(</span><span class="hl-5">&#39;login-container&#39;</span><span class="hl-2">);</span><br/><span class="hl-2">} </span><span class="hl-1">catch</span><span class="hl-2"> (error) {</span><br/><span class="hl-2">  console.</span><span class="hl-4">error</span><span class="hl-2">({</span><br/><span class="hl-2">    message: error.message,     </span><span class="hl-0">// Error description</span><br/><span class="hl-2">    statusCode: error.statusCode, </span><span class="hl-0">// HTTP status code</span><br/><span class="hl-2">    name: error.name             </span><span class="hl-0">// Error type</span><br/><span class="hl-2">  });</span><br/><span class="hl-2">}</span>
+</code><button type="button">Copy</button></pre>
+
+<p><strong>Error Types:</strong></p>
+<ul>
+<li><code>CatalystAuthenticationError</code>: Authentication-specific errors</li>
+<li><code>CatalystUserManagementError</code>: User management operation errors</li>
+</ul>
+<a id="md:method-details" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Method Details<a href="#md:method-details" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><a id="md:authentication-zcauth" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Authentication (zcAuth)<a href="#md:authentication-zcauth" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>The <code>zcAuth</code> object is the main interface for authentication operations. Methods available depend on the execution environment.</p>
+<blockquote>
+<p><strong>Environment Detection</strong>: Import from <code>@zcatalyst/auth/node</code> for server-side or <code>@zcatalyst/auth/web</code> for client-side to explicitly target an environment.</p>
+</blockquote>
+<hr>
+<a id="md:nodejs-methods" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Node.js Methods<a href="#md:nodejs-methods" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>These methods are available when running in a Node.js environment (server-side functions, backend services).</p>
+<details>
+<summary>
+<strong>init(options, config)</strong> - Initialize Catalyst SDK
+</summary>
+<p>Initialize the Catalyst SDK with your project credentials. This is required before accessing any Catalyst components.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>options</code> (object): Project configuration
+<ul>
+<li><code>projectId</code> (string): Your <a href="https://docs.catalyst.zoho.com/en/getting-started/set-up-a-catalyst-project/general-settings" target="_blank" class="external">Catalyst Project ID</a></li>
+<li><code>projectKey</code> (string): Your Project Secret Key</li>
+<li><code>environment</code> (string, optional): <code>'development'</code> or <code>'production'</code></li>
+</ul>
+</li>
+<li><code>config</code> (object, optional): Additional configuration
+<ul>
+<li><code>type</code> (string): Authentication type (<code>'auto'</code>, etc.)</li>
+<li><code>appName</code> (string): Your application name</li>
+<li><code>scope</code> (string): <code>'user'</code> or <code>'admin'</code> (default: <code>'admin'</code>)</li>
+</ul>
+</li>
+</ul>
+<p><strong>Returns:</strong> Promise<unknown></p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { zcAuth } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/node&quot;</span><span class="hl-2">;</span><br/><br/><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">init</span><span class="hl-2">({</span><br/><span class="hl-2">  headers: req.headers</span><br/><span class="hl-2">}, {</span><br/><span class="hl-2">  type: </span><span class="hl-5">&#39;advancedio&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  appName: </span><span class="hl-5">&#39;my-app&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  scope: </span><span class="hl-5">&#39;admin&#39;</span><br/><span class="hl-2">});</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>getApp(name)</strong> - Get App Instance
+</summary>
+<p>Retrieves an app instance by name.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>name</code> (string): The name of the app</li>
+</ul>
+<p><strong>Returns:</strong> Promise<unknown></p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">app</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">getApp</span><span class="hl-2">(</span><span class="hl-5">&#39;your_app_name&#39;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<hr>
+<a id="md:browser-methods" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Browser Methods<a href="#md:browser-methods" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>These methods are available when running in a browser environment (client-side web applications, SPAs).</p>
+<blockquote>
+<p><strong>Note</strong>: For embedded authentication, you must specify a DOM element ID where the authentication iframe will be loaded.</p>
+</blockquote>
+<details>
+<summary>
+<strong>signIn(id, config)</strong> - Embedded Authentication Sign-In
+</summary>
+<p>Initiates <a href="https://docs.catalyst.zoho.com/en/cloud-scale/help/authentication/native-catalyst-authentication/embedded-authentication/introduction/" target="_blank" class="external">Embedded Authentication</a> by displaying an authentication iframe in the specified DOM element.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>id</code> (string): DOM element ID where the login iframe will be loaded (e.g., <code>'login-container'</code>)</li>
+<li><code>config</code> (object, optional): Sign-in configuration
+<ul>
+<li><code>redirectUrl</code> (string): URL to redirect after successful authentication</li>
+<li><code>serviceUrl</code> (string): Alternative service URL for authentication</li>
+<li><code>cssUrl</code> (string): Custom CSS URL for styling the login iframe</li>
+<li><code>signInProvidersOnly</code> (boolean): Show only social login providers (hide email/password)</li>
+<li><code>forgotPasswordId</code> (string): DOM element ID for forgot password iframe</li>
+<li><code>forgotPasswordCssUrl</code> (string): Custom CSS URL for forgot password page</li>
+</ul>
+</li>
+</ul>
+<p><strong>Returns:</strong> Promise<void></p>
+<p><strong>HTML Setup:</strong></p>
+<pre><code class="html"><span class="hl-0">&lt;!-- Create a container for the authentication iframe --&gt;</span><br/><span class="hl-2">&lt;</span><span class="hl-6">div</span><span class="hl-2"> </span><span class="hl-4">id</span><span class="hl-2">=</span><span class="hl-5">&quot;login-container&quot;</span><span class="hl-2">&gt;&lt;/</span><span class="hl-6">div</span><span class="hl-2">&gt;</span>
+</code><button type="button">Copy</button></pre>
+
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { zcAuth } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/web&quot;</span><span class="hl-2">;</span><br/><br/><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">signIn</span><span class="hl-2">(</span><span class="hl-5">&#39;login-container&#39;</span><span class="hl-2">, {</span><br/><span class="hl-2">  redirectUrl: </span><span class="hl-5">&#39;https://your-app.com/callback&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  serviceUrl: </span><span class="hl-5">&#39;https://your-app.com/service&#39;</span><br/><span class="hl-2">});</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>hostedSignIn(redirectUrl)</strong> - Hosted Authentication Sign-In
+</summary>
+<p>Redirects users to Catalyst's <a href="https://docs.catalyst.zoho.com/en/cloud-scale/help/authentication/native-catalyst-authentication/hosted-authentication-type/introduction/" target="_blank" class="external">Hosted Authentication</a> page for sign-in.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>redirectUrl</code> (string, optional): URL to redirect to after authentication (defaults to <code>'/'</code>)</li>
+</ul>
+<p><strong>Returns:</strong> Promise<void></p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { zcAuth } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/web&quot;</span><span class="hl-2">;</span><br/><br/><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">hostedSignIn</span><span class="hl-2">(</span><span class="hl-5">&#39;/index.html&#39;</span><span class="hl-2">); </span><span class="hl-0">// redirect url</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>signinWithJwt(callbackFn)</strong> - Sign In with JWT
+</summary>
+<p>Configures the browser auth protocol to use JWT and stores a callback function.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>callbackFn</code> (function): Callback function stored for JWT fetch handling</li>
+</ul>
+<p><strong>Returns:</strong> void</p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { zcAuth } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/web&quot;</span><span class="hl-2">;</span><br/><br/><span class="hl-2">zcAuth.</span><span class="hl-4">signinWithJwt</span><span class="hl-2">(() </span><span class="hl-1">=&gt;</span><span class="hl-2"> {</span><br/><span class="hl-2">  console.</span><span class="hl-4">log</span><span class="hl-2">(</span><span class="hl-5">&#39;JWT authentication configured&#39;</span><span class="hl-2">);</span><br/><span class="hl-2">});</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>signUp(body)</strong> - Register New User
+</summary>
+<p>Registers a new user to your application. Catalyst will send an email invite to the user containing a URL to set up their password.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>body</code> (object): User signup details
+<ul>
+<li><code>email_id</code> (string, required): User's email address</li>
+<li><code>last_name</code> (string, required): User's last name</li>
+<li><code>first_name</code> (string, optional): User's first name</li>
+<li><code>platform_type</code> (string, optional): Platform type (defaults to <code>'web'</code>)</li>
+<li><code>redirect_url</code> (string, optional): Redirect URL after signup completion</li>
+</ul>
+</li>
+</ul>
+<p><strong>Returns:</strong> Promise<unknown></p>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>User receives an email invitation to complete the signup process</li>
+<li>After setting their password, users are redirected to the specified URL</li>
+<li>Requires <a href="https://docs.catalyst.zoho.com/en/cloud-scale/help/authentication/public-signup/" target="_blank" class="external">Public Signup</a> to be enabled in your project</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { zcAuth } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/web&quot;</span><span class="hl-2">;</span><br/><br/><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">signUp</span><span class="hl-2">({</span><br/><span class="hl-2">  email_id: </span><span class="hl-5">&#39;user@example.com&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  first_name: </span><span class="hl-5">&#39;John&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  last_name: </span><span class="hl-5">&#39;Doe&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  platform_type: </span><span class="hl-5">&#39;web&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  redirect_url: </span><span class="hl-5">&#39;https://your-app.com/welcome&#39;</span><br/><span class="hl-2">});</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>signOut(redirectURL)</strong> - Sign Out User
+</summary>
+<p>Signs out the currently authenticated user and redirects to the specified URL.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>redirectURL</code> (string, optional): URL to redirect after sign out (defaults to '/')</li>
+</ul>
+<p><strong>Returns:</strong> Promise<void></p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { zcAuth } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/web&quot;</span><span class="hl-2">;</span><br/><br/><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">signOut</span><span class="hl-2">(</span><span class="hl-5">&#39;/login&#39;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>isUserAuthenticated(org_id)</strong> - Check User Authentication
+</summary>
+<p>Checks if a user is currently authenticated.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>org_id</code> (string, optional): Organization ID to check authentication for</li>
+</ul>
+<p><strong>Returns:</strong> Promise<unknown> - Returns user data if authenticated, false otherwise</p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { zcAuth } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/web&quot;</span><span class="hl-2">;</span><br/><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">isAuthenticated</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">isUserAuthenticated</span><span class="hl-2">();</span><br/><span class="hl-1">if</span><span class="hl-2"> (isAuthenticated) {</span><br/><span class="hl-2">  console.</span><span class="hl-4">log</span><span class="hl-2">(</span><span class="hl-5">&#39;User is authenticated&#39;</span><span class="hl-2">, isAuthenticated);</span><br/><span class="hl-2">}</span><br/><br/><span class="hl-0">// Check with organization ID</span><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">isAuthenticatedInOrg</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">isUserAuthenticated</span><span class="hl-2">(</span><span class="hl-5">&#39;org-id&#39;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>getProjectUserDetails(org_id)</strong> - Get Current User Details
+</summary>
+<p>Retrieves the details of the currently authenticated user.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>org_id</code> (string, optional): Organization ID to get user details for</li>
+</ul>
+<p><strong>Returns:</strong> Promise&lt;Record&lt;string, unknown&gt;&gt;</p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { zcAuth } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/web&quot;</span><span class="hl-2">;</span><br/><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">userDetails</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">getProjectUserDetails</span><span class="hl-2">();</span><br/><span class="hl-2">console.</span><span class="hl-4">log</span><span class="hl-2">(userDetails);</span><br/><br/><span class="hl-0">// With organization ID</span><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">userDetailsInOrg</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">getProjectUserDetails</span><span class="hl-2">(</span><span class="hl-5">&#39;org-id&#39;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>changePassword(oldPassword, newPassword)</strong> - Change User Password
+</summary>
+<p>Changes the password for the currently authenticated user.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>oldPassword</code> (string): Current password</li>
+<li><code>newPassword</code> (string): New password</li>
+</ul>
+<p><strong>Returns:</strong> Promise<string></p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { zcAuth } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/web&quot;</span><span class="hl-2">;</span><br/><br/><span class="hl-1">await</span><span class="hl-2"> zcAuth.</span><span class="hl-4">changePassword</span><span class="hl-2">(</span><span class="hl-5">&#39;oldPassword123&#39;</span><span class="hl-2">, </span><span class="hl-5">&#39;newPassword456&#39;</span><span class="hl-2">);</span><br/><span class="hl-2">console.</span><span class="hl-4">log</span><span class="hl-2">(</span><span class="hl-5">&#39;Password changed successfully&#39;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<hr>
+<a id="md:user-management" class="tsd-anchor"></a><h3 class="tsd-anchor-link">User Management<a href="#md:user-management" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>The <a href="https://docs.catalyst.zoho.com/en/cloud-scale/help/authentication/user-management/introduction/" target="_blank" class="external">User Management</a> feature enables you to manage application users, configure roles, and control access permissions. This SDK provides methods to add, update, delete, and retrieve user information.</p>
+<p><strong>Import User Management:</strong></p>
+<p><strong>Node.js Environment:</strong></p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { UserManagement, USER_STATUS } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/node&quot;</span><span class="hl-2">;</span>
+</code><button type="button">Copy</button></pre>
+
+<p><strong>Browser Environment:</strong></p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { UserManagement } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/web&quot;</span><span class="hl-2">;</span>
+</code><button type="button">Copy</button></pre>
+
+<blockquote>
+<p><strong>Note</strong>: <code>USER_STATUS</code> is only available from the node entry point (<code>@zcatalyst/auth/node</code>).</p>
+</blockquote>
+<p><strong>Key Capabilities:</strong></p>
+<ul>
+<li>Add and manage end-users</li>
+<li>Enable/disable user accounts</li>
+<li>Assign and manage <a href="https://docs.catalyst.zoho.com/en/cloud-scale/help/authentication/user-management/roles/introduction/" target="_blank" class="external">user roles</a></li>
+<li>Generate custom authentication tokens</li>
+<li>Send password reset emails</li>
+</ul>
+<a id="md:common-methods-available-in-both-environments" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Common Methods (Available in Both Environments)<a href="#md:common-methods-available-in-both-environments" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><details>
+<summary>
+<strong>getCurrentUser()</strong> - Get Current User Details
+</summary>
+<p>Retrieves the details of the currently authenticated user.</p>
+<p><strong>Returns:</strong> Promise<ICatalystUser></p>
+<p><strong>User Object Properties:</strong></p>
+<ul>
+<li><code>user_id</code>: Unique user identifier</li>
+<li><code>email_id</code>: User's email address</li>
+<li><code>first_name</code>, <code>last_name</code>: User's name</li>
+<li><code>role_id</code>: Assigned role ID</li>
+<li><code>status</code>: Account status (<code>'enabled'</code> or <code>'disabled'</code>)</li>
+<li><code>created_time</code>: Account creation timestamp</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">userManagement</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">new</span><span class="hl-2"> </span><span class="hl-4">UserManagement</span><span class="hl-2">();</span><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">user</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> userManagement.</span><span class="hl-4">getCurrentUser</span><span class="hl-2">();</span><br/><span class="hl-2">console.</span><span class="hl-4">log</span><span class="hl-2">(user.email_id);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>resetPassword(email, resetConfig)</strong> - Reset User Password
+</summary>
+<p>Sends a password reset request for the specified email.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>email</code> (string): User's email address</li>
+<li><code>resetConfig</code> (object): Configuration object
+<ul>
+<li><code>platform_type</code> (string, required): Platform type (e.g., 'web')</li>
+</ul>
+</li>
+</ul>
+<p><strong>Returns:</strong> Promise<string></p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">message</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> userManagement.</span><span class="hl-4">resetPassword</span><span class="hl-2">(</span><br/><span class="hl-2">  </span><span class="hl-5">&quot;user@example.com&quot;</span><span class="hl-2">,</span><br/><span class="hl-2">  { platform_type: </span><span class="hl-5">&quot;web&quot;</span><span class="hl-2"> }</span><br/><span class="hl-2">);</span><br/><span class="hl-2">console.</span><span class="hl-4">log</span><span class="hl-2">(message);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<a id="md:admin-methods-nodejs-only" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Admin Methods (Node.js Only)<a href="#md:admin-methods-nodejs-only" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><p>These methods provide administrative control over users and are only available in Node.js (server-side) with <strong>Admin scope</strong>. They allow you to programmatically manage users, roles, and permissions.</p>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>Node.js environment</li>
+<li>Admin scope initialization</li>
+<li>Appropriate <a href="https://docs.catalyst.zoho.com/en/cloud-scale/help/authentication/user-management/roles/implementation/" target="_blank" class="external">role permissions</a> configured</li>
+</ul>
+<p><strong>Usage:</strong></p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { UserManagement } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/node&quot;</span><span class="hl-2">;</span><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">userManagement</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">new</span><span class="hl-2"> </span><span class="hl-4">UserManagement</span><span class="hl-2">();</span>
+</code><button type="button">Copy</button></pre>
+
+<blockquote>
+<p><strong>Note</strong>: These methods perform operations that require elevated privileges. Ensure proper authentication and authorization before exposing these in your APIs.</p>
+</blockquote>
+<details>
+<summary>
+<strong>getAllUsers(orgId)</strong> - Get All Users
+</summary>
+<p>Retrieves all users in your Catalyst project or a specific organization.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>orgId</code> (string, optional): Organization ID to filter users by organization</li>
+</ul>
+<p><strong>Returns:</strong> Promise&lt;Array<ICatalystUser>&gt;</p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-0">// Get all users in project</span><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">users</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> userManagement.</span><span class="hl-4">getAllUsers</span><span class="hl-2">();</span><br/><span class="hl-2">console.</span><span class="hl-4">log</span><span class="hl-2">(users);</span><br/><br/><span class="hl-0">// Get all users in a specific organization</span><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">orgUsers</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> userManagement.</span><span class="hl-4">getAllUsers</span><span class="hl-2">(</span><span class="hl-5">&#39;123456789&#39;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>getUserDetails(id)</strong> - Get User Details
+</summary>
+<p>Retrieves details of a specific user by ID.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>id</code> (string): User ID</li>
+</ul>
+<p><strong>Returns:</strong> Promise<ICatalystUser></p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">userDetails</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> userManagement.</span><span class="hl-4">getUserDetails</span><span class="hl-2">(</span><span class="hl-5">&#39;987654321&#39;</span><span class="hl-2">);</span><br/><span class="hl-2">console.</span><span class="hl-4">log</span><span class="hl-2">(userDetails);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>deleteUser(id)</strong> - Delete User
+</summary>
+<p>Deletes a user from the project.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>id</code> (string): User ID</li>
+</ul>
+<p><strong>Returns:</strong> Promise<boolean> - Returns true if deletion was successful</p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">isDeleted</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> userManagement.</span><span class="hl-4">deleteUser</span><span class="hl-2">(</span><span class="hl-5">&#39;987654321&#39;</span><span class="hl-2">);</span><br/><span class="hl-2">console.</span><span class="hl-4">log</span><span class="hl-2">(isDeleted); </span><span class="hl-0">// true</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>registerUser(signupConfig, userDetails)</strong> - Register New User (Admin)
+</summary>
+<p>Programmatically registers a new user in your Catalyst project. The user receives an email invitation to set up their password.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>signupConfig</code> (object): Signup configuration
+<ul>
+<li><code>platform_type</code> (string, required): Platform type (<code>'web'</code>, <code>'ios'</code>, <code>'android'</code>)</li>
+</ul>
+</li>
+<li><code>userDetails</code> (object): User details
+<ul>
+<li><code>email_id</code> (string, required): User's email address</li>
+<li><code>first_name</code> (string, required): User's first name</li>
+<li><code>last_name</code> (string, optional): User's last name</li>
+<li><code>role_id</code> (string, optional): <a href="https://docs.catalyst.zoho.com/en/cloud-scale/help/authentication/user-management/roles/introduction/" target="_blank" class="external">Role ID</a> to assign</li>
+</ul>
+</li>
+</ul>
+<p><strong>Returns:</strong> Promise<ICatalystNewUser></p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">newUser</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> userManagement.</span><span class="hl-4">registerUser</span><span class="hl-2">(</span><br/><span class="hl-2">  { platform_type: </span><span class="hl-5">&#39;web&#39;</span><span class="hl-2"> },</span><br/><span class="hl-2">  {</span><br/><span class="hl-2">    email_id: </span><span class="hl-5">&#39;test@example.com&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">    first_name: </span><span class="hl-5">&#39;John&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">    role_id: </span><span class="hl-5">&#39;1234556&#39;</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">);</span><br/><span class="hl-2">console.</span><span class="hl-4">log</span><span class="hl-2">(newUser);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>getAllOrgs()</strong> - Get All Organizations
+</summary>
+<p>Retrieves all organization IDs associated with the project.</p>
+<p><strong>Returns:</strong> Promise&lt;Array<string>&gt;</p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">orgIds</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> userManagement.</span><span class="hl-4">getAllOrgs</span><span class="hl-2">();</span><br/><span class="hl-2">console.</span><span class="hl-4">log</span><span class="hl-2">(orgIds);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>addUserToOrg(signupConfig, userDetails)</strong> - Add User to Organization
+</summary>
+<p>Adds a user to a specific organization within your Catalyst project. Organizations in Catalyst allow you to segment users for multi-tenant applications.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>signupConfig</code> (object): Signup configuration
+<ul>
+<li><code>platform_type</code> (string, required): Platform type (<code>'web'</code>, <code>'ios'</code>, <code>'android'</code>)</li>
+</ul>
+</li>
+<li><code>userDetails</code> (object): User details
+<ul>
+<li><code>email_id</code> (string, required): User's email address</li>
+<li><code>first_name</code> (string, required): User's first name</li>
+<li><code>last_name</code> (string, optional): User's last name</li>
+<li><code>org_id</code> (string, required): Organization ID (also known as ZAAID)</li>
+</ul>
+</li>
+</ul>
+<p><strong>Returns:</strong> Promise<ICatalystNewUser></p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">user</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> userManagement.</span><span class="hl-4">addUserToOrg</span><span class="hl-2">(</span><br/><span class="hl-2">  { platform_type: </span><span class="hl-5">&#39;web&#39;</span><span class="hl-2"> },</span><br/><span class="hl-2">  {</span><br/><span class="hl-2">    email_id: </span><span class="hl-5">&#39;user@example.com&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">    first_name: </span><span class="hl-5">&#39;Jane&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">    org_id: </span><span class="hl-5">&#39;12345&#39;</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">);</span><br/><span class="hl-2">console.</span><span class="hl-4">log</span><span class="hl-2">(user);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>generateCustomToken(customTokenDetails)</strong> - Generate Custom Authentication Token
+</summary>
+<p>Generates a custom authentication token for a user. Used for implementing custom authentication flows or integrating with third-party systems.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>customTokenDetails</code> (object): Details for token generation
+<ul>
+<li><code>user_id</code> (string): User ID for whom to generate the token</li>
+</ul>
+</li>
+</ul>
+<p><strong>Returns:</strong> Promise<ICatalystCustomTokenResponse></p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">token</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> userManagement.</span><span class="hl-4">generateCustomToken</span><span class="hl-2">({ user_id: </span><span class="hl-5">&#39;12345&#39;</span><span class="hl-2"> });</span><br/><span class="hl-2">console.</span><span class="hl-4">log</span><span class="hl-2">(token);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>updateUserStatus(id, userStatus)</strong> - Enable/Disable User
+</summary>
+<p>Enables or disables a user account. Disabled users cannot access the application.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>id</code> (string): User ID</li>
+<li><code>userStatus</code> (USER_STATUS): Status to set
+<ul>
+<li><code>USER_STATUS.ENABLE</code>: Enable user account</li>
+<li><code>USER_STATUS.DISABLE</code>: Disable user account</li>
+</ul>
+</li>
+</ul>
+<p><strong>Returns:</strong> Promise<boolean> - Returns <code>true</code> if status was updated successfully</p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">import</span><span class="hl-2"> { UserManagement, USER_STATUS } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/auth/node&quot;</span><span class="hl-2">;</span><br/><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">userManagement</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">new</span><span class="hl-2"> </span><span class="hl-4">UserManagement</span><span class="hl-2">();</span><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">statusChanged</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> userManagement.</span><span class="hl-4">updateUserStatus</span><span class="hl-2">(</span><br/><span class="hl-2">  </span><span class="hl-5">&#39;12345&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  </span><span class="hl-3">USER_STATUS</span><span class="hl-2">.</span><span class="hl-3">ENABLE</span><br/><span class="hl-2">);</span><br/><span class="hl-2">console.</span><span class="hl-4">log</span><span class="hl-2">(statusChanged);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>updateUserDetails(id, userDetails)</strong> - Update User Details
+</summary>
+<p>Updates details for a specific user.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>id</code> (string): User ID</li>
+<li><code>userDetails</code> (object): Details to update
+<ul>
+<li><code>email_id</code> (string, required): User's email address</li>
+<li><code>role_id</code> (string): Role ID</li>
+<li>Other user properties</li>
+</ul>
+</li>
+</ul>
+<p><strong>Returns:</strong> Promise<ICatalystUser></p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">updatedUser</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> userManagement.</span><span class="hl-4">updateUserDetails</span><span class="hl-2">(</span><span class="hl-5">&#39;12345&#39;</span><span class="hl-2">, {</span><br/><span class="hl-2">  email_id: </span><span class="hl-5">&#39;newemail@example.com&#39;</span><span class="hl-2">,</span><br/><span class="hl-2">  role_id: </span><span class="hl-5">&#39;admin&#39;</span><br/><span class="hl-2">});</span><br/><span class="hl-2">console.</span><span class="hl-4">log</span><span class="hl-2">(updatedUser);</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<details>
+<summary>
+<strong>getSignupValidationRequest(bioReq)</strong> - Get Signup Validation Request
+</summary>
+<p>Retrieves signup validation request details from a Basic I/O request object.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>bioReq</code> (object): Basic I/O request object with <code>getArgument</code> method</li>
+</ul>
+<p><strong>Returns:</strong> ICatalystSignupValidationReq | undefined</p>
+<p><strong>Example:</strong></p>
+<pre><code class="js"><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">request</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> userManagement.</span><span class="hl-4">getSignupValidationRequest</span><span class="hl-2">(bioReq);</span><br/><span class="hl-1">if</span><span class="hl-2"> (request) {</span><br/><span class="hl-2">  console.</span><span class="hl-4">log</span><span class="hl-2">(request);</span><br/><span class="hl-2">}</span>
+</code><button type="button">Copy</button></pre>
+
+</details>
+<a id="md:resources" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Resources<a href="#md:resources" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
+<li><a href="https://docs.catalyst.zoho.com/en/cloud-scale/help/authentication/introduction/" target="_blank" class="external">Catalyst Authentication Documentation</a></li>
+<li><a href="https://docs.catalyst.zoho.com/en/cloud-scale/help/authentication/authentication-types/" target="_blank" class="external">Authentication Types</a></li>
+<li><a href="https://docs.catalyst.zoho.com/en/cloud-scale/help/authentication/user-management/introduction/" target="_blank" class="external">User Management</a></li>
+<li><a href="https://docs.catalyst.zoho.com/en/serverless/help/functions/introduction/" target="_blank" class="external">Functions</a></li>
+<li><a href="https://docs.catalyst.zoho.com/en/cloud-scale/help/authentication/user-management/roles/introduction/" target="_blank" class="external">User Roles</a></li>
+</ul>
+<a id="md:contributing" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Contributing<a href="#md:contributing" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>See <a href="media/CONTRIBUTING.md">CONTRIBUTING</a> for more information on how to get started.</p>
+<a id="md:license" class="tsd-anchor"></a><h2 class="tsd-anchor-link">License<a href="#md:license" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>This SDK is distributed under the Apache License 2.0. See <a href="media/LICENCE">LICENSE</a> file for more information.</p>
+</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="assets/icons.svg#icon-chevronDown"></use></svg>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="assets/icons.svg#icon-chevronDown"></use></svg>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#md:zcatalystauth"><span>@zcatalyst/auth</span></a><ul><li><a href="#md:overview"><span>Overview</span></a></li><li><a href="#md:operation-scope"><span>Operation <wbr/>Scope</span></a></li><li><ul><li><a href="#md:prerequisites"><span>Prerequisites</span></a></li></ul></li><li><a href="#md:installation"><span>Installation</span></a></li><li><a href="#md:getting-started"><span>Getting <wbr/>Started</span></a></li><li><ul><li><a href="#md:import"><span>Import</span></a></li><li><ul><li><a href="#md:environment-specific-imports"><span>Environment-<wbr/>Specific <wbr/>Imports</span></a></li><li><a href="#md:package-root-import"><span>Package <wbr/>Root <wbr/>Import</span></a></li></ul></li><li><a href="#md:usage"><span>Usage</span></a></li><li><ul><li><a href="#md:nodejs-environment-server-side"><span>Node.js <wbr/>Environment (<wbr/>Server-<wbr/>Side)</span></a></li><li><a href="#md:browser-environment-client-side"><span>Browser <wbr/>Environment (<wbr/>Client-<wbr/>Side)</span></a></li></ul></li><li><a href="#md:environment-support"><span>Environment <wbr/>Support</span></a></li><li><a href="#md:asyncawait"><span>Async/await</span></a></li><li><a href="#md:error-handling"><span>Error <wbr/>Handling</span></a></li></ul></li><li><a href="#md:method-details"><span>Method <wbr/>Details</span></a></li><li><ul><li><a href="#md:authentication-zcauth"><span>Authentication (zc<wbr/>Auth)</span></a></li><li><a href="#md:nodejs-methods"><span>Node.js <wbr/>Methods</span></a></li><li><a href="#md:browser-methods"><span>Browser <wbr/>Methods</span></a></li><li><a href="#md:user-management"><span>User <wbr/>Management</span></a></li><li><ul><li><a href="#md:common-methods-available-in-both-environments"><span>Common <wbr/>Methods (<wbr/>Available in <wbr/>Both <wbr/>Environments)</span></a></li><li><a href="#md:admin-methods-nodejs-only"><span>Admin <wbr/>Methods (<wbr/>Node.js <wbr/>Only)</span></a></li></ul></li></ul></li><li><a href="#md:resources"><span>Resources</span></a></li><li><a href="#md:contributing"><span>Contributing</span></a></li><li><a href="#md:license"><span>License</span></a></li></ul></div></details></div><div class="site-menu"><nav id="tsd-sidebar-links" class="tsd-navigation"><a href="https://catalyst.zoho.com/help/index.html">Catalyst Docs</a><a href="https://github.com/catalystbyzoho/zcatalyst-sdk-js" class="tsd-nav-link">GitHub</a><a href="https://www.npmjs.com/org/zcatalyst" class="tsd-nav-link">npm</a></nav><nav class="tsd-navigation"><a href="modules.html" class="current"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="assets/icons.svg#icon-1"></use></svg><span>Catalyst Authentication</span></a><ul class="tsd-small-nested-navigation" id="tsd-nav-container" data-base="."><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>

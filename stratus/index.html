@@ -1,169 +1,221 @@
-<!DOCTYPE html><html class="default" lang="en"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>@zcatalyst/stratus</title><meta name="description" content="Documentation for @zcatalyst/stratus"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><div class="table-cell" id="tsd-search" data-base="."><div class="field"><label for="tsd-search-field" class="tsd-widget tsd-toolbar-icon search no-caption"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="assets/icons.svg#icon-search"></use></svg></label><input type="text" id="tsd-search-field" aria-label="Search"/></div><div class="field"><div id="tsd-toolbar-links"></div></div><ul class="results"><li class="state loading">Preparing search index...</li><li class="state failure">The search index is not available</li></ul><a href="index.html" class="title">@zcatalyst/stratus</a></div><div class="table-cell" id="tsd-widgets"><a href="#" class="tsd-widget tsd-toolbar-icon menu no-caption" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h1>@zcatalyst/stratus</h1></div><div class="tsd-panel tsd-typography"><a id="md:zcatalyststratus" class="tsd-anchor"></a><h1 class="tsd-anchor-link">@zcatalyst/stratus<a href="#md:zcatalyststratus" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1><p>ZOHO CATALYST SDK for JavaScript stratus for Node.js and Browser.</p>
-<p></p>
-<a id="md:installing" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Installing<a href="#md:installing" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>To install this package, simply type add or install @zcatalyst/stratus
+<!DOCTYPE html><html class="default" lang="en"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>Catalyst Stratus</title><meta name="description" content="Documentation for Catalyst Stratus"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><link rel="stylesheet" href="assets/custom.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><div class="table-cell" id="tsd-search" data-base="."><div class="field"><label for="tsd-search-field" class="tsd-widget tsd-toolbar-icon search no-caption"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="assets/icons.svg#icon-search"></use></svg></label><input type="text" id="tsd-search-field" aria-label="Search"/></div><div class="field"><div id="tsd-toolbar-links"><a href="https://github.com/catalystbyzoho/zcatalyst-sdk-js">GitHub</a><a href="https://www.npmjs.com/org/zcatalyst">npm</a></div></div><ul class="results"><li class="state loading">Preparing search index...</li><li class="state failure">The search index is not available</li></ul><a href="index.html" class="title">Catalyst Stratus</a></div><div class="table-cell" id="tsd-widgets"><a href="#" class="tsd-widget tsd-toolbar-icon menu no-caption" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h1>Catalyst Stratus</h1></div><div class="tsd-panel tsd-typography"><a id="md:zcatalyststratus" class="tsd-anchor"></a><h1 class="tsd-anchor-link">@zcatalyst/stratus<a href="#md:zcatalyststratus" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1><p>JavaScript SDK for Catalyst Stratus - Object Storage</p>
+<a id="md:overview" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Overview<a href="#md:overview" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The <code>@zcatalyst/stratus</code> package provides JavaScript/TypeScript methods to interact with <a href="https://docs.catalyst.zoho.com/en/cloud-scale/help/stratus/introduction/" target="_blank" class="external">Catalyst Stratus</a> buckets, objects, and multipart uploads.</p>
+<a id="md:operation-scope" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Operation Scope<a href="#md:operation-scope" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Both the Node and browser entry points export the same class names (<code>Stratus</code>, <code>Bucket</code>). The Node entry point exposes the admin-augmented surface; the browser entry point exposes only the user surface.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Method</th>
+<th>Available in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Get a <code>Bucket</code> reference (no network call)</td>
+<td><code>Stratus.bucket(name)</code></td>
+<td>Node + Browser (user)</td>
+</tr>
+<tr>
+<td>Upload an object</td>
+<td><code>Bucket.putObject(key, body, opts?)</code></td>
+<td>Node + Browser (user)</td>
+</tr>
+<tr>
+<td>Download an object</td>
+<td><code>Bucket.getObject(key, opts?)</code></td>
+<td>Node + Browser (user)</td>
+</tr>
+<tr>
+<td>Check existence / fetch headers</td>
+<td><code>Bucket.headObject(key, throwErr?)</code></td>
+<td>Node + Browser (user)</td>
+</tr>
+<tr>
+<td>Delete an object</td>
+<td><code>Bucket.deleteObject(key, opts?)</code></td>
+<td>Node + Browser (user)</td>
+</tr>
+<tr>
+<td>Start a multipart upload</td>
+<td><code>Bucket.initiateMultipartUpload(key)</code></td>
+<td>Node + Browser (user)</td>
+</tr>
+<tr>
+<td>Upload one part</td>
+<td><code>Bucket.uploadPart(stream, partNumber, opts?)</code></td>
+<td>Node + Browser (user)</td>
+</tr>
+<tr>
+<td>Finalize a multipart upload</td>
+<td><code>Bucket.completeMultipartUpload(key, uploadId)</code></td>
+<td>Node + Browser (user)</td>
+</tr>
+<tr>
+<td>Fetch multipart upload summary</td>
+<td><code>Bucket.getMultipartUploadSummary(key, uploadId)</code></td>
+<td>Node + Browser (user)</td>
+</tr>
+<tr>
+<td>List every bucket in the project</td>
+<td><code>Stratus.listBuckets()</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Check if a bucket exists</td>
+<td><code>Stratus.headBucket(name, throwErr?)</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Fetch bucket metadata</td>
+<td><code>Bucket.getDetails()</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>List objects (paged)</td>
+<td><code>Bucket.listPagedObjects(opts)</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Truncate a bucket</td>
+<td><code>Bucket.truncate()</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Copy / rename / delete-by-path objects</td>
+<td><code>Bucket.copyObject</code>, <code>renameObject</code>, <code>deletePath</code>, <code>deleteObjects</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Generate pre-signed URL</td>
+<td><code>Bucket.generatePreSignedUrl(opts)</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Purge CDN cache</td>
+<td><code>Bucket.purgeCache(opts)</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Unzip an object / poll status</td>
+<td><code>Bucket.unzipObject(opts)</code>, <code>Bucket.getUnzipStatus(jobId)</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Inspect / configure CORS</td>
+<td><code>Bucket.getCors()</code></td>
+<td>Node only (admin)</td>
+</tr>
+<tr>
+<td>Get a <code>StratusObject</code> reference</td>
+<td><code>Bucket.object(key)</code></td>
+<td>Node only (admin)</td>
+</tr>
+</tbody>
+</table>
+<a id="md:prerequisites" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Prerequisites<a href="#md:prerequisites" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li>A <a href="https://docs.catalyst.zoho.com/en/getting-started/catalyst-projects" target="_blank" class="external">Catalyst project</a> set up</li>
+<li>Create bucket in <a href="https://console.catalyst.zoho.com/" target="_blank" class="external">Catalyst Console</a></li>
+<li>Understanding of <a href="https://docs.catalyst.zoho.com/en/cloud-scale/help/stratus/introduction/" target="_blank" class="external">object storage concepts</a></li>
+</ul>
+<a id="md:installation" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Installation<a href="#md:installation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>To install this package, simply type add or install @zcatalyst/stratus
 using your favorite package manager:</p>
 <ul>
 <li><code>npm install @zcatalyst/stratus</code></li>
 <li><code>yarn add @zcatalyst/stratus</code></li>
 <li><code>pnpm add @zcatalyst/stratus</code></li>
 </ul>
-<a id="md:getting-started" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Getting Started<a href="#md:getting-started" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><a id="md:import" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Import<a href="#md:import" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>The Catalyst SDK is modulized by Components.
-To send a request, you only need to import the <code>stratus</code>:</p>
-<pre><code class="js"><span class="hl-0">// ES5 example</span><br/><span class="hl-1">const</span><span class="hl-2"> { </span><span class="hl-3">Stratus</span><span class="hl-2"> } = </span><span class="hl-4">require</span><span class="hl-2">(</span><span class="hl-5">&quot;@zcatalyst/stratus&quot;</span><span class="hl-2">);</span>
+<a id="md:getting-started" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Getting Started<a href="#md:getting-started" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><a id="md:import" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Import<a href="#md:import" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>The Catalyst SDK is modularized by Components.
+To handle object storage, you only need to import the <code>Stratus</code>:</p>
+<pre><code class="js"><span class="hl-0">// ES5 example</span><br/><span class="hl-1">const</span><span class="hl-2"> { </span><span class="hl-3">Stratus</span><span class="hl-2">, </span><span class="hl-3">TransferManager</span><span class="hl-2"> } </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-4">require</span><span class="hl-2">(</span><span class="hl-5">&quot;@zcatalyst/stratus&quot;</span><span class="hl-2">);</span>
 </code><button type="button">Copy</button></pre>
 
-<pre><code class="ts"><span class="hl-0">// ES6+ example</span><br/><span class="hl-6">import</span><span class="hl-2"> { </span><span class="hl-7">Stratus</span><span class="hl-2"> } </span><span class="hl-6">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/stratus&quot;</span><span class="hl-2">;</span>
+<pre><code class="ts"><span class="hl-0">// ES6+ example</span><br/><span class="hl-1">import</span><span class="hl-2"> { Stratus, TransferManager } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&quot;@zcatalyst/stratus&quot;</span><span class="hl-2">;</span>
 </code><button type="button">Copy</button></pre>
 
-<a id="md:usage" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Usage<a href="#md:usage" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>To send a request, you:</p>
-<ul>
-<li>Create a stratus Instance.</li>
-<li>Call the stratus operation with input parameters.</li>
+<a id="md:usage" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Usage<a href="#md:usage" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><a id="md:nodejs-environment" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Node.js Environment<a href="#md:nodejs-environment" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><pre><code class="ts"><span class="hl-1">import</span><span class="hl-2"> { Stratus } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&#39;@zcatalyst/stratus&#39;</span><span class="hl-2">;</span><br/><span class="hl-1">import</span><span class="hl-2"> fs </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&#39;fs&#39;</span><span class="hl-2">;</span><br/><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">stratus</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">new</span><span class="hl-2"> </span><span class="hl-4">Stratus</span><span class="hl-2">(app);</span><br/><br/><span class="hl-0">// Get a Bucket instance (cheap — no network call)</span><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">bucket</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> stratus.</span><span class="hl-4">bucket</span><span class="hl-2">(</span><span class="hl-5">&#39;my-bucket&#39;</span><span class="hl-2">);</span><br/><br/><span class="hl-0">// Upload an object from a stream / Buffer / string</span><br/><span class="hl-1">await</span><span class="hl-2"> bucket.</span><span class="hl-4">putObject</span><span class="hl-2">(</span><span class="hl-5">&#39;reports/q1.pdf&#39;</span><span class="hl-2">, fs.</span><span class="hl-4">createReadStream</span><span class="hl-2">(</span><span class="hl-5">&#39;./q1.pdf&#39;</span><span class="hl-2">));</span><br/><br/><span class="hl-0">// Download — returns a Node Readable stream</span><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">stream</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> bucket.</span><span class="hl-4">getObject</span><span class="hl-2">(</span><span class="hl-5">&#39;reports/q1.pdf&#39;</span><span class="hl-2">);</span><br/><span class="hl-2">stream.</span><span class="hl-4">pipe</span><span class="hl-2">(fs.</span><span class="hl-4">createWriteStream</span><span class="hl-2">(</span><span class="hl-5">&#39;./local-q1.pdf&#39;</span><span class="hl-2">));</span><br/><br/><span class="hl-0">// Page through objects under a prefix</span><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">page</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> bucket.</span><span class="hl-4">listPagedObjects</span><span class="hl-2">({ prefix: </span><span class="hl-5">&#39;reports/&#39;</span><span class="hl-2">, maxKeys: </span><span class="hl-3">100</span><span class="hl-2"> });</span><br/><span class="hl-1">for</span><span class="hl-2"> (</span><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">obj</span><span class="hl-2"> </span><span class="hl-1">of</span><span class="hl-2"> page.contents) console.</span><span class="hl-4">log</span><span class="hl-2">(obj.key, obj.size);</span><br/><br/><span class="hl-0">// Delete</span><br/><span class="hl-1">await</span><span class="hl-2"> bucket.</span><span class="hl-4">deleteObject</span><span class="hl-2">(</span><span class="hl-5">&#39;reports/q1.pdf&#39;</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="md:browser-environment" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Browser Environment<a href="#md:browser-environment" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><pre><code class="ts"><span class="hl-1">import</span><span class="hl-2"> { Stratus } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&#39;@zcatalyst/stratus&#39;</span><span class="hl-2">;</span><br/><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">stratus</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">new</span><span class="hl-2"> </span><span class="hl-4">Stratus</span><span class="hl-2">();</span><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">bucket</span><span class="hl-2">  </span><span class="hl-1">=</span><span class="hl-2"> stratus.</span><span class="hl-4">bucket</span><span class="hl-2">(</span><span class="hl-5">&#39;my-bucket&#39;</span><span class="hl-2">);</span><br/><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">file</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> document.</span><span class="hl-4">querySelector</span><span class="hl-2">&lt;</span><span class="hl-4">HTMLInputElement</span><span class="hl-2">&gt;(</span><span class="hl-5">&#39;#file&#39;</span><span class="hl-2">).files</span><span class="hl-1">!</span><span class="hl-2">[</span><span class="hl-3">0</span><span class="hl-2">];</span><br/><br/><span class="hl-0">// putObject accepts a Browser File / Blob directly</span><br/><span class="hl-1">await</span><span class="hl-2"> bucket.</span><span class="hl-4">putObject</span><span class="hl-2">(</span><span class="hl-5">`uploads/${</span><span class="hl-2">file</span><span class="hl-5">.</span><span class="hl-2">name</span><span class="hl-5">}`</span><span class="hl-2">, file);</span><br/><br/><span class="hl-0">// getObject in the browser returns a Readable-like stream that resolves to bytes</span><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">data</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> bucket.</span><span class="hl-4">getObject</span><span class="hl-2">(</span><span class="hl-5">`uploads/${</span><span class="hl-2">file</span><span class="hl-5">.</span><span class="hl-2">name</span><span class="hl-5">}`</span><span class="hl-2">);</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="md:asyncawait" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Async/await<a href="#md:asyncawait" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>We recommend using <code>await</code> (or <code>.then(...)</code>) when calling object operations:</p>
+<pre><code class="ts"><span class="hl-1">try</span><span class="hl-2"> {</span><br/><span class="hl-2">  </span><span class="hl-1">await</span><span class="hl-2"> bucket.</span><span class="hl-4">putObject</span><span class="hl-2">(</span><span class="hl-5">&#39;destination.txt&#39;</span><span class="hl-2">, file);</span><br/><span class="hl-2">} </span><span class="hl-1">catch</span><span class="hl-2"> (error) {</span><br/><span class="hl-2">  </span><span class="hl-0">// error handling</span><br/><span class="hl-2">}</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="md:error-handling" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Error Handling<a href="#md:error-handling" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><pre><code class="ts"><span class="hl-1">try</span><span class="hl-2"> {</span><br/><span class="hl-2">  </span><span class="hl-1">await</span><span class="hl-2"> bucket.</span><span class="hl-4">putObject</span><span class="hl-2">(</span><span class="hl-5">&#39;destination.txt&#39;</span><span class="hl-2">, file);</span><br/><span class="hl-2">} </span><span class="hl-1">catch</span><span class="hl-2"> (error) {</span><br/><span class="hl-2">  </span><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">message</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> error.message;</span><br/><span class="hl-2">  </span><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">status</span><span class="hl-2">  </span><span class="hl-1">=</span><span class="hl-2"> error.statusCode;</span><br/><span class="hl-2">  console.</span><span class="hl-4">log</span><span class="hl-2">({ message, status });</span><br/><span class="hl-2">}</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="md:api-reference" class="tsd-anchor"></a><h2 class="tsd-anchor-link">API Reference<a href="#md:api-reference" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><a id="md:stratus" class="tsd-anchor"></a><h3 class="tsd-anchor-link"><code>Stratus</code><a href="#md:stratus" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bucket(name)</code></td>
+<td>Returns a <code>Bucket</code> instance — no network call.</td>
+</tr>
+</tbody>
+</table>
+<a id="md:bucket" class="tsd-anchor"></a><h3 class="tsd-anchor-link"><code>Bucket</code><a href="#md:bucket" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>getName()</code></td>
+<td>Returns the bucket name.</td>
+</tr>
+<tr>
+<td><code>putObject(key, body, options?)</code></td>
+<td>Upload an object. <code>body</code> can be a <code>Buffer</code>, string, <code>Readable</code>, <code>Blob</code>, or <code>File</code>.</td>
+</tr>
+<tr>
+<td><code>getObject(key, options?)</code></td>
+<td>Download as a <code>Readable</code> stream.</td>
+</tr>
+<tr>
+<td><code>headObject(key, throwErr?)</code></td>
+<td>Check existence / fetch headers.</td>
+</tr>
+<tr>
+<td><code>deleteObject(key, options?)</code></td>
+<td>Delete an object.</td>
+</tr>
+<tr>
+<td><code>initiateMultipartUpload(key)</code></td>
+<td>Start a multipart upload session. Returns <code>{ upload_id, ... }</code>.</td>
+</tr>
+<tr>
+<td><code>uploadPart(stream, partNumber, options?)</code></td>
+<td>Upload one part of a multipart upload.</td>
+</tr>
+<tr>
+<td><code>completeMultipartUpload(key, uploadId)</code></td>
+<td>Finalize a multipart upload.</td>
+</tr>
+<tr>
+<td><code>getMultipartUploadSummary(key, uploadId)</code></td>
+<td>Fetch multipart upload summary.</td>
+</tr>
+</tbody>
+</table>
+<a id="md:transfermanager" class="tsd-anchor"></a><h3 class="tsd-anchor-link"><code>TransferManager</code><a href="#md:transfermanager" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>Helper for multipart uploads.</p>
+<pre><code class="ts"><span class="hl-1">import</span><span class="hl-2"> { TransferManager } </span><span class="hl-1">from</span><span class="hl-2"> </span><span class="hl-5">&#39;@zcatalyst/stratus&#39;</span><span class="hl-2">;</span><br/><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">tm</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">new</span><span class="hl-2"> </span><span class="hl-4">TransferManager</span><span class="hl-2">(bucket);</span><br/><br/><span class="hl-0">// Upload a large file as parts (default part size: 10 MB)</span><br/><span class="hl-1">await</span><span class="hl-2"> tm.</span><span class="hl-4">putObjectAsParts</span><span class="hl-2">(</span><span class="hl-5">&#39;big.zip&#39;</span><span class="hl-2">, largeStream, </span><span class="hl-0">/* partSize MB */</span><span class="hl-2"> </span><span class="hl-3">10</span><span class="hl-2">);</span><br/><br/><span class="hl-0">// Or get a manual handle to drive your own loop</span><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">mp</span><span class="hl-2"> </span><span class="hl-1">=</span><span class="hl-2"> </span><span class="hl-1">await</span><span class="hl-2"> tm.</span><span class="hl-4">createMultipartInstance</span><span class="hl-2">(</span><span class="hl-5">&#39;big.zip&#39;</span><span class="hl-2">);</span><br/><span class="hl-0">// → mp.uploadPart(...), mp.completeUpload(), mp.getUploadSummary()</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="md:supported-payload-types" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Supported payload types<a href="#md:supported-payload-types" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><strong>Node.js</strong>: <code>Buffer</code>, <code>string</code>, <code>Readable</code> (file streams, network streams, etc.)</li>
+<li><strong>Browser</strong>: <code>Blob</code>, <code>File</code>, <code>ArrayBuffer</code>, <code>string</code></li>
 </ul>
-<pre><code class="js"><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">stratus</span><span class="hl-2"> = </span><span class="hl-1">new</span><span class="hl-2"> </span><span class="hl-4">Stratus</span><span class="hl-2">();</span><br/><br/><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">bucketDetails</span><span class="hl-2"> = </span><span class="hl-6">await</span><span class="hl-2"> </span><span class="hl-7">stratus</span><span class="hl-2">.</span><span class="hl-4">listAllBuckets</span><span class="hl-2">();</span>
-</code><button type="button">Copy</button></pre>
-
-<a id="md:asyncawait" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Async/await<a href="#md:asyncawait" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><p>We recommend using <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await" target="_blank" class="external">await</a>
-operator to wait for the promise returned by send operation as follows:</p>
-<pre><code class="js"><span class="hl-0">// async/await.</span><br/><span class="hl-6">try</span><span class="hl-2"> {</span><br/><span class="hl-2">  </span><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">bucket</span><span class="hl-2"> = </span><span class="hl-7">stratus</span><span class="hl-2">.</span><span class="hl-4">bucket</span><span class="hl-2">(</span><span class="hl-5">&quot;bucket_name&quot;</span><span class="hl-2">);</span><br/><span class="hl-2">  </span><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">data</span><span class="hl-2"> = </span><span class="hl-6">await</span><span class="hl-2"> </span><span class="hl-7">bucket</span><span class="hl-2">.</span><span class="hl-4">putObject</span><span class="hl-2">(</span><span class="hl-5">&#39;sample.csv&#39;</span><span class="hl-2">, </span><span class="hl-7">fs</span><span class="hl-2">.</span><span class="hl-4">createReadStream</span><span class="hl-2">(</span><span class="hl-5">&quot;sample.csv&quot;</span><span class="hl-2">));</span><br/><span class="hl-2">  </span><span class="hl-0">// process data.</span><br/><span class="hl-2">} </span><span class="hl-6">catch</span><span class="hl-2"> (</span><span class="hl-7">error</span><span class="hl-2">) {</span><br/><span class="hl-2">  </span><span class="hl-0">// error handling.</span><br/><span class="hl-2">} </span><span class="hl-6">finally</span><span class="hl-2"> {</span><br/><span class="hl-2">  </span><span class="hl-0">// finally.</span><br/><span class="hl-2">}</span>
-</code><button type="button">Copy</button></pre>
-
-<p>Async-await is clean, concise, intuitive, easy to debug and has better error handling
-as compared to using Promise chains or callbacks.</p>
-<a id="md:promises" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Promises<a href="#md:promises" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><p>You can also use <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises#chaining" target="_blank" class="external">Promise chaining</a>
-to execute send operation.</p>
-<pre><code class="js"><span class="hl-7">stratus</span><span class="hl-2">.</span><span class="hl-4">listAllBuckets</span><span class="hl-2">().</span><span class="hl-4">then</span><span class="hl-2">(</span><br/><span class="hl-2">  (</span><span class="hl-7">data</span><span class="hl-2">) </span><span class="hl-1">=&gt;</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-0">// process data.</span><br/><span class="hl-2">  },</span><br/><span class="hl-2">  (</span><span class="hl-7">error</span><span class="hl-2">) </span><span class="hl-1">=&gt;</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-0">// error handling.</span><br/><span class="hl-2">  }</span><br/><span class="hl-2">);</span>
-</code><button type="button">Copy</button></pre>
-
-<p>Promises can also be called using <code>.catch()</code> and <code>.finally()</code> as follows:</p>
-<pre><code class="js"><span class="hl-7">stratus</span><br/><span class="hl-2">  .</span><span class="hl-4">listAllBuckets</span><span class="hl-2">()</span><br/><span class="hl-2">  .</span><span class="hl-4">then</span><span class="hl-2">((</span><span class="hl-7">data</span><span class="hl-2">) </span><span class="hl-1">=&gt;</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-0">// process data.</span><br/><span class="hl-2">  })</span><br/><span class="hl-2">  .</span><span class="hl-4">catch</span><span class="hl-2">((</span><span class="hl-7">error</span><span class="hl-2">) </span><span class="hl-1">=&gt;</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-0">// error handling.</span><br/><span class="hl-2">  })</span><br/><span class="hl-2">  .</span><span class="hl-4">finally</span><span class="hl-2">(() </span><span class="hl-1">=&gt;</span><span class="hl-2"> {</span><br/><span class="hl-2">    </span><span class="hl-0">// finally.</span><br/><span class="hl-2">  });</span>
-</code><button type="button">Copy</button></pre>
-
-<a id="md:troubleshooting" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Troubleshooting<a href="#md:troubleshooting" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>When the service returns an exception, the error will include the exception information,
-as well as response metadata (e.g. request id).</p>
-<pre><code class="js"><span class="hl-6">try</span><span class="hl-2"> {</span><br/><span class="hl-2">  </span><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">data</span><span class="hl-2"> = </span><span class="hl-6">await</span><span class="hl-2"> </span><span class="hl-7">stratus</span><span class="hl-2">.</span><span class="hl-4">listAllBuckets</span><span class="hl-2">();</span><br/><span class="hl-2">  </span><span class="hl-0">// process data.</span><br/><span class="hl-2">} </span><span class="hl-6">catch</span><span class="hl-2"> (</span><span class="hl-7">error</span><span class="hl-2">) {</span><br/><span class="hl-2">  </span><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">message</span><span class="hl-2"> = </span><span class="hl-7">error</span><span class="hl-2">.</span><span class="hl-7">message</span><span class="hl-2">;</span><br/><span class="hl-2">  </span><span class="hl-1">const</span><span class="hl-2"> </span><span class="hl-3">status</span><span class="hl-2"> = </span><span class="hl-7">error</span><span class="hl-2">.</span><span class="hl-7">statusCode</span><span class="hl-2">;</span><br/><span class="hl-2">  </span><span class="hl-7">console</span><span class="hl-2">.</span><span class="hl-4">log</span><span class="hl-2">({ </span><span class="hl-7">message</span><span class="hl-2">, </span><span class="hl-7">status</span><span class="hl-2"> });</span><br/><span class="hl-2">}</span>
-</code><button type="button">Copy</button></pre>
-
-<a id="md:contributing" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Contributing<a href="#md:contributing" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Contributions to this library are always welcome and highly encouraged.</p>
-<p>See <a href="media/CONTRIBUTING.md">CONTRIBUTING</a> for more information on how to get started.</p>
+<a id="md:resources" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Resources<a href="#md:resources" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
+<li><a href="https://docs.catalyst.zoho.com/en/cloud-scale/help/stratus/introduction/" target="_blank" class="external">Catalyst Stratus Documentation</a></li>
+</ul>
+<a id="md:contributing" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Contributing<a href="#md:contributing" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>See <a href="media/CONTRIBUTING.md">CONTRIBUTING</a> for more information on how to get started.</p>
 <a id="md:license" class="tsd-anchor"></a><h2 class="tsd-anchor-link">License<a href="#md:license" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>This SDK is distributed under the Apache License 2.0. See <a href="media/LICENCE">LICENSE</a> file for more information.</p>
-<a id="md:stratus-operations" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Stratus operations<a href="#md:stratus-operations" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><details>
-<summary>
-ListAllBuckets
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/retrieve-folder-details/)[API References]() -->
-</details>
-<details>
-<summary>
-HeadBucket
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/upload-file/)[API References]() -->
-</details>
-<details>
-<summary>
-GetBucketDetails
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/download-file-from-folder/)[API References]() -->
-</details>
-<details>
-<summary>
-PutObject
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/delete-file/)[API References]() -->
-</details>
-<details>
-<summary>
-ListAllBuckets
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/retrieve-folder-details/)[API References]() -->
-</details>
-<details>
-<summary>
-HeadBucket
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/upload-file/)[API References]() -->
-</details>
-<details>
-<summary>
-GetBucketDetails
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/download-file-from-folder/)[API References]() -->
-</details>
-<details>
-<summary>
-PutObject
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/delete-file/)[API References]() -->
-</details>
-<details>
-<summary>
-ListAllObjects
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/retrieve-folder-details/)[API References]() -->
-</details>
-<details>
-<summary>
-ListAllObjectVersions
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/upload-file/)[API References]() -->
-</details>
-<details>
-<summary>
-GetObject
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/download-file-from-folder/)[API References]() -->
-</details>
-<details>
-<summary>
-CopyObject/MoveObject
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/delete-file/)[API References]() -->
-</details>
-<details>
-<summary>
-RenameObject
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/retrieve-folder-details/)[API References]() -->
-</details>
-<details>
-<summary>
-ExtractZipObject
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/upload-file/)[API References]() -->
-</details>
-<details>
-<summary>
-GetCORS
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/download-file-from-folder/)[API References]() -->
-</details>
-<details>
-<summary>
-PutObjectMeta
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/delete-file/)[API References]() -->
-</details>
-<details>
-<summary>
-Truncate
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/retrieve-folder-details/)[API References]() -->
-</details>
-<details>
-<summary>
-DeleteObject
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/upload-file/)[API References]() -->
-</details>
-<details>
-<summary>
-DeleteMultipleObjects
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/download-file-from-folder/)[API References]() -->
-</details>
-<details>
-<summary>
-HeadObject
-</summary>
-<!-- [SDK Samples](https://docs.catalyst.zoho.com/en/sdk/nodejs/v2/cloud-scale/file-store/delete-file/)[API References]() -->
-</details></div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="assets/icons.svg#icon-chevronDown"></use></svg>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="assets/icons.svg#icon-chevronDown"></use></svg>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#md:zcatalyststratus"><span>@zcatalyst/stratus</span></a><ul><li><a href="#md:installing"><span>Installing</span></a></li><li><a href="#md:getting-started"><span>Getting <wbr/>Started</span></a></li><li><ul><li><a href="#md:import"><span>Import</span></a></li><li><a href="#md:usage"><span>Usage</span></a></li><li><ul><li><a href="#md:asyncawait"><span>Async/await</span></a></li><li><a href="#md:promises"><span>Promises</span></a></li></ul></li><li><a href="#md:troubleshooting"><span>Troubleshooting</span></a></li></ul></li><li><a href="#md:contributing"><span>Contributing</span></a></li><li><a href="#md:license"><span>License</span></a></li><li><a href="#md:stratus-operations"><span>Stratus operations</span></a></li></ul></div></details></div><div class="site-menu"><nav class="tsd-navigation"><a href="modules.html" class="current"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="assets/icons.svg#icon-1"></use></svg><span>@zcatalyst/stratus</span></a><ul class="tsd-small-nested-navigation" id="tsd-nav-container" data-base="."><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>
+</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="assets/icons.svg#icon-chevronDown"></use></svg>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="assets/icons.svg#icon-chevronDown"></use></svg>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#md:zcatalyststratus"><span>@zcatalyst/stratus</span></a><ul><li><a href="#md:overview"><span>Overview</span></a></li><li><a href="#md:operation-scope"><span>Operation <wbr/>Scope</span></a></li><li><ul><li><a href="#md:prerequisites"><span>Prerequisites</span></a></li></ul></li><li><a href="#md:installation"><span>Installation</span></a></li><li><a href="#md:getting-started"><span>Getting <wbr/>Started</span></a></li><li><ul><li><a href="#md:import"><span>Import</span></a></li><li><a href="#md:usage"><span>Usage</span></a></li><li><ul><li><a href="#md:nodejs-environment"><span>Node.js <wbr/>Environment</span></a></li><li><a href="#md:browser-environment"><span>Browser <wbr/>Environment</span></a></li></ul></li><li><a href="#md:asyncawait"><span>Async/await</span></a></li><li><a href="#md:error-handling"><span>Error <wbr/>Handling</span></a></li></ul></li><li><a href="#md:api-reference"><span>API <wbr/>Reference</span></a></li><li><ul><li><a href="#md:stratus"><span>Stratus</span></a></li><li><a href="#md:bucket"><span>Bucket</span></a></li><li><a href="#md:transfermanager"><span>Transfer<wbr/>Manager</span></a></li><li><a href="#md:supported-payload-types"><span>Supported payload types</span></a></li></ul></li><li><a href="#md:resources"><span>Resources</span></a></li><li><a href="#md:contributing"><span>Contributing</span></a></li><li><a href="#md:license"><span>License</span></a></li></ul></div></details></div><div class="site-menu"><nav id="tsd-sidebar-links" class="tsd-navigation"><a href="https://catalyst.zoho.com/help/index.html">Catalyst Docs</a><a href="https://github.com/catalystbyzoho/zcatalyst-sdk-js" class="tsd-nav-link">GitHub</a><a href="https://www.npmjs.com/org/zcatalyst" class="tsd-nav-link">npm</a></nav><nav class="tsd-navigation"><a href="modules.html" class="current"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="assets/icons.svg#icon-1"></use></svg><span>Catalyst Stratus</span></a><ul class="tsd-small-nested-navigation" id="tsd-nav-container" data-base="."><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>

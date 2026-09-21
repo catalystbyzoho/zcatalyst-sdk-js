@@ -182,6 +182,31 @@
       margin: 0;
     }
 
+    .module-badge {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      vertical-align: middle;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .module-badge.admin {
+      background: #fdecea;
+      color: #c0392b;
+      border: 1px solid #f5c6c0;
+    }
+
+    .module-badge.admin-user {
+      background: #e8f6ee;
+      color: #1e8e5a;
+      border: 1px solid #bfe8d3;
+    }
+
     .module-description {
       color: #666;
       font-size: 14px;
@@ -279,162 +304,155 @@
     <main class="main-content">
       <div class="header">
         <h1>ZCATALYST Modules</h1>
-        <p>A comprehensive collection of cloud platform modules designed to accelerate your application development. Each module provides specific functionality with robust APIs and extensive documentation.</p>
+        <p>Modular JavaScript packages for building on Zoho Catalyst — each package exposes the APIs for one Catalyst component.</p>
       </div>
 
       <div class="modules-grid">
-        <a href="./cache" target="_blank"  class="module-card">
-          <div class="module-header">
-            <div class="module-icon">CA</div>
-            <h3 class="module-title">cache</h3>
-          </div>
-          <p class="module-description">Caching system for improved performance and faster data retrieval</p>
-          <span class="module-link">View documentation</span>
-        </a>
 
-        <a href="./connector" target="_blank"  class="module-card">
-          <div class="module-header">
-            <div class="module-icon">CO</div>
-            <h3 class="module-title">connector</h3>
-          </div>
-          <p class="module-description">External service connectors and third-party integrations</p>
-          <span class="module-link">View documentation</span>
-        </a>
-
-        <a href="./datastore" target="_blank"  class="module-card">
-          <div class="module-header">
-            <div class="module-icon">DS</div>
-            <h3 class="module-title">datastore</h3>
-          </div>
-          <p class="module-description">Data storage and management utilities for structured data</p>
-          <span class="module-link">View documentation</span>
-        </a>
-
-        <a href="./filestore" target="_blank"  class="module-card">
-          <div class="module-header">
-            <div class="module-icon">FS</div>
-            <h3 class="module-title">filestore</h3>
-          </div>
-          <p class="module-description">File storage and management system for digital assets</p>
-          <span class="module-link">View documentation</span>
-        </a>
-
-        <a href="./functions" target="_blank"  class="module-card">
-          <div class="module-header">
-            <div class="module-icon">FN</div>
-            <h3 class="module-title">functions</h3>
-          </div>
-          <p class="module-description">Serverless function execution platform for scalable computing</p>
-          <span class="module-link">View documentation</span>
-        </a>
-
-        <a href="./job-scheduling" target="_blank"  class="module-card">
-          <div class="module-header">
-            <div class="module-icon">JS</div>
-            <h3 class="module-title">job-scheduling</h3>
-          </div>
-          <p class="module-description">Task scheduling and job management for automated workflows</p>
-          <span class="module-link">View documentation</span>
-        </a>
-
-        <a href="./mail" target="_blank"  class="module-card">
-          <div class="module-header">
-            <div class="module-icon">MA</div>
-            <h3 class="module-title">mail</h3>
-          </div>
-          <p class="module-description">Email sending and management services with template support</p>
-          <span class="module-link">View documentation</span>
-        </a>
-
-        <a href="./nosql" target="_blank"  class="module-card">
-          <div class="module-header">
-            <div class="module-icon">NO</div>
-            <h3 class="module-title">nosql</h3>
-          </div>
-          <p class="module-description">NoSQL database operations and flexible data queries</p>
-          <span class="module-link">View documentation</span>
-        </a>
-
-        <a href="./pipeline" target="_blank"  class="module-card">
-          <div class="module-header">
-            <div class="module-icon">PI</div>
-            <h3 class="module-title">pipeline</h3>
-          </div>
-          <p class="module-description">Data processing pipelines and automated workflows</p>
-          <span class="module-link">View documentation</span>
-        </a>
-
-        <a href="./push-notification" target="_blank"  class="module-card">
-          <div class="module-header">
-            <div class="module-icon">PN</div>
-            <h3 class="module-title">push-notification</h3>
-          </div>
-          <p class="module-description">Push notification delivery system for mobile and web</p>
-          <span class="module-link">View documentation</span>
-        </a>
-
-        <a href="./quick-ml" target="_blank"  class="module-card">
-          <div class="module-header">
-            <div class="module-icon">ML</div>
-            <h3 class="module-title">quick-ml</h3>
-          </div>
-          <p class="module-description">Machine learning model deployment and inference platform</p>
-          <span class="module-link">View documentation</span>
-        </a>
-
-        <a href="./search" target="_blank"  class="module-card">
-          <div class="module-header">
-            <div class="module-icon">SE</div>
-            <h3 class="module-title">search</h3>
-          </div>
-          <p class="module-description">Full-text search and indexing capabilities for content discovery</p>
-          <span class="module-link">View documentation</span>
-        </a>
-
-        <a href="./smartbrowz" target="_blank"  class="module-card">
-          <div class="module-header">
-            <div class="module-icon">SB</div>
-            <h3 class="module-title">smartbrowz</h3>
-          </div>
-          <p class="module-description">Intelligent web browsing automation and data extraction</p>
-          <span class="module-link">View documentation</span>
-        </a>
-
-        <a href="./stratus" target="_blank"  class="module-card">
-          <div class="module-header">
-            <div class="module-icon">ST</div>
-            <h3 class="module-title">stratus</h3>
-          </div>
-          <p class="module-description">Cloud infrastructure management and deployment services</p>
-          <span class="module-link">View documentation</span>
-        </a>
-
-        <a href="./user-management" target="_blank"  class="module-card">
+        <a href="./auth" target="_blank" class="module-card">
           <div class="module-header">
             <div class="module-icon">UM</div>
-            <h3 class="module-title">user-management</h3>
+            <h3 class="module-title">auth<span class="module-badge admin-user">Admin + User</span></h3>
           </div>
-          <p class="module-description">User authentication, authorization, and profile management</p>
+          <p class="module-description">Authentication entry point and user-management APIs.</p>
           <span class="module-link">View documentation</span>
         </a>
 
-        <a href="./zcql" target="_blank"  class="module-card">
+        <a href="./cache" target="_blank" class="module-card">
           <div class="module-header">
-            <div class="module-icon">ZQ</div>
-            <h3 class="module-title">zcql</h3>
+            <div class="module-icon">CA</div>
+            <h3 class="module-title">cache<span class="module-badge admin">Admin-only</span></h3>
           </div>
-          <p class="module-description">Zoho Cloud Query Language interface for data operations</p>
+          <p class="module-description">Cache segment and key-value operations.</p>
           <span class="module-link">View documentation</span>
         </a>
 
-        <a href="./zia" target="_blank"  class="module-card">
+        <a href="./circuit" target="_blank" class="module-card">
+          <div class="module-header">
+            <div class="module-icon">CI</div>
+            <h3 class="module-title">circuit<span class="module-badge admin">Admin-only</span></h3>
+          </div>
+          <p class="module-description">Execute, inspect, and abort Catalyst Circuit executions.</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./connections" target="_blank" class="module-card">
+          <div class="module-header">
+            <div class="module-icon">CN</div>
+            <h3 class="module-title">connections<span class="module-badge admin">Admin-only</span></h3>
+          </div>
+          <p class="module-description">Integrate with Zoho and other third-party services via Connections.</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./connector" target="_blank" class="module-card">
+          <div class="module-header">
+            <div class="module-icon">CO</div>
+            <h3 class="module-title">connector<span class="module-badge admin">Admin-only</span></h3>
+          </div>
+          <p class="module-description">Create connector instances and manage OAuth access tokens.</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./datastore" target="_blank" class="module-card">
+          <div class="module-header">
+            <div class="module-icon">DS</div>
+            <h3 class="module-title">datastore<span class="module-badge admin-user">Admin + User</span></h3>
+          </div>
+          <p class="module-description">Table row operations, ZCQL queries, and Catalyst Search queries.</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./catalyst-functions" target="_blank" class="module-card">
+          <div class="module-header">
+            <div class="module-icon">FN</div>
+            <h3 class="module-title">functions<span class="module-badge admin-user">Admin + User</span></h3>
+          </div>
+          <p class="module-description">Invoke deployed Catalyst functions by ID or name.</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./job-scheduling" target="_blank" class="module-card">
+          <div class="module-header">
+            <div class="module-icon">JS</div>
+            <h3 class="module-title">job-scheduling<span class="module-badge admin">Admin-only</span></h3>
+          </div>
+          <p class="module-description">Job pool, cron, and job operations.</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./mail" target="_blank" class="module-card">
+          <div class="module-header">
+            <div class="module-icon">MA</div>
+            <h3 class="module-title">mail<span class="module-badge admin">Admin-only</span></h3>
+          </div>
+          <p class="module-description">Send email through Catalyst Mail.</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./nosql" target="_blank" class="module-card">
+          <div class="module-header">
+            <div class="module-icon">NO</div>
+            <h3 class="module-title">nosql<span class="module-badge admin">Admin-only</span></h3>
+          </div>
+          <p class="module-description">NoSQL table and item operations.</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./pipeline" target="_blank" class="module-card">
+          <div class="module-header">
+            <div class="module-icon">PI</div>
+            <h3 class="module-title">pipelines<span class="module-badge admin">Admin-only</span></h3>
+          </div>
+          <p class="module-description">Fetch pipeline details and trigger pipeline runs.</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./push-notification" target="_blank" class="module-card">
+          <div class="module-header">
+            <div class="module-icon">PN</div>
+            <h3 class="module-title">push-notification<span class="module-badge admin-user">Admin + User</span></h3>
+          </div>
+          <p class="module-description">Send mobile/web notifications and receive browser notifications.</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./quick-ml" target="_blank" class="module-card">
+          <div class="module-header">
+            <div class="module-icon">QM</div>
+            <h3 class="module-title">quick-ml<span class="module-badge admin">Admin-only</span></h3>
+          </div>
+          <p class="module-description">Invoke deployed QuickML prediction endpoints.</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./smartbrowz" target="_blank" class="module-card">
+          <div class="module-header">
+            <div class="module-icon">SB</div>
+            <h3 class="module-title">smartbrowz<span class="module-badge admin">Admin-only</span></h3>
+          </div>
+          <p class="module-description">Convert HTML/URLs, take screenshots, and query Dataverse helpers.</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./stratus" target="_blank" class="module-card">
+          <div class="module-header">
+            <div class="module-icon">ST</div>
+            <h3 class="module-title">stratus<span class="module-badge admin-user">Admin + User</span></h3>
+          </div>
+          <p class="module-description">Bucket, object, and multipart upload operations.</p>
+          <span class="module-link">View documentation</span>
+        </a>
+
+        <a href="./zia" target="_blank" class="module-card">
           <div class="module-header">
             <div class="module-icon">ZI</div>
-            <h3 class="module-title">zia</h3>
+            <h3 class="module-title">zia<span class="module-badge admin">Admin-only</span></h3>
           </div>
-          <p class="module-description">AI-powered business intelligence and analytics platform</p>
+          <p class="module-description">OCR, barcode, image, face, AutoML, and text-analysis methods.</p>
           <span class="module-link">View documentation</span>
         </a>
+
       </div>
 
       <div class="footer">
