@@ -84,8 +84,14 @@ async function objectToBlob(data: unknown, contentType?: string): Promise<Blob> 
 const data = await bucket.getObject(key);
 const blob = await objectToBlob(data, 'application/octet-stream');
 const url = URL.createObjectURL(blob);
-// use url in <a download> or window.open; revoke when done
-URL.revokeObjectURL(url);
+
+const link = document.createElement('a');
+link.href = url;
+link.download = key;
+link.click();
+
+// Revoke only after the browser has started consuming the URL.
+setTimeout(() => URL.revokeObjectURL(url), 0);
 ```
 
 Node: treat the result as a Readable and pipe to a file.
