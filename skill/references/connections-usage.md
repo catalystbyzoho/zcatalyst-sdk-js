@@ -1,6 +1,6 @@
 # Connections usage (`@zcatalyst/connections`)
 
-Fetch OAuth/connection credentials by **console link name**. Node + browser.
+Fetch OAuth/connection credentials by **connection link name**. Node + browser.
 
 ## Install
 

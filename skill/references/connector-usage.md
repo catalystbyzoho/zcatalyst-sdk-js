@@ -1,7 +1,7 @@
 # Connector usage (`@zcatalyst/connector`)
 
 Node-only OAuth connector access-token lifecycle (uses cache + Node crypto).
-Prefer `@zcatalyst/connections` when you only need credentials by console link name.
+Prefer `@zcatalyst/connections` when you only need credentials by connection link name.
 
 ## Install
 
