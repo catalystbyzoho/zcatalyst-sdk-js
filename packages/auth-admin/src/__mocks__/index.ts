@@ -19,7 +19,12 @@ const {
 	ENVIRONMENT,
 	DEFAULT_APP_NAME,
 	CREDENTIAL_USER,
-	CATALYST_ORIGIN
+	CATALYST_ORIGIN,
+	ACCOUNTS_PORTAL_ORIGIN,
+	STRATUS_SUFFIX,
+	DOMAIN_HEADER,
+	SERVED_BY_CLI_HEADER,
+	IS_LOCAL
 } = CONSTANTS;
 
 let appOptions: Record<string, string | number | Credential | Object> = {};
@@ -172,7 +177,7 @@ export class ZCAuth {
 		return this.#appCollection[appName];
 	}
 
-	#loadOptionsFromObj(obj: Record<string, string>): Record<string, string | number> {
+	#loadOptionsFromObj(obj: Record<string, string>): Record<string, string | number | boolean> {
 		const projectId = obj[PROJECT_HEADER.id];
 		const projectKey = obj[PROJECT_HEADER.key];
 		const environment = obj[PROJECT_HEADER.environment] || DEFAULT_ENV;
@@ -190,7 +195,20 @@ export class ZCAuth {
 			projectKey,
 			environment,
 			projectDomain,
-			projectSecretKey
+			projectSecretKey,
+			apiDomain:
+				process.env.X_ZOHO_CATALYST_CONSOLE_URL ||
+				obj[DOMAIN_HEADER.api] ||
+				CATALYST_ORIGIN,
+			authPortalDomain:
+				process.env.CATALYST_PORTAL_DOMAIN ||
+				obj[DOMAIN_HEADER.authPortal] ||
+				ACCOUNTS_PORTAL_ORIGIN,
+			stratusSuffix:
+				process.env.X_ZOHO_STRATUS_RESOURCE_SUFFIX ||
+				obj[DOMAIN_HEADER.stratusSuffix] ||
+				STRATUS_SUFFIX,
+			servedByCLI: IS_LOCAL === 'true' || obj[SERVED_BY_CLI_HEADER] === 'true'
 		};
 	}
 

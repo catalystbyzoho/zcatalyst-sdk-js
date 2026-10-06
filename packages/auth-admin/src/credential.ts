@@ -281,6 +281,7 @@ export class RefreshTokenCredential extends Credential {
 	refreshToken: string;
 	clientId: string;
 	clientSecret: string;
+	accountsUrl: string;
 	cachedToken: { access_token: string; expires_in: number } | null;
 	/**
 	 * Creates a RefreshTokenCredential instance.
@@ -291,6 +292,7 @@ export class RefreshTokenCredential extends Credential {
 		this.clientId = getAttr(refreshObj, 'clientId', 'client_id');
 		this.clientSecret = getAttr(refreshObj, 'clientSecret', 'client_secret');
 		this.refreshToken = getAttr(refreshObj, 'refreshToken', 'refresh_token');
+		this.accountsUrl = refreshObj.accountsUrl || refreshObj.accounts_url || ACCOUNTS_ORIGIN;
 		this.cachedToken = null;
 	}
 
@@ -310,7 +312,7 @@ export class RefreshTokenCredential extends Credential {
 		if (this.cachedToken === null || this.cachedToken['expires_in'] <= Date.now()) {
 			const token = await requestAccessToken({
 				method: REQ_METHOD.post,
-				origin: ACCOUNTS_ORIGIN,
+				origin: this.accountsUrl,
 				path: '/oauth/v2/token',
 				qs: {
 					client_id: this.clientId,
