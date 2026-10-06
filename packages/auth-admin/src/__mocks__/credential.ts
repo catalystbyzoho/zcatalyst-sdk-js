@@ -6,7 +6,7 @@ import {
 	CatalystAppError,
 	CatalystError,
 	CONSTANTS,
-	ICatalystAppConfig,
+	ICatalystResolvedAppConfig,
 	isNonEmptyString,
 	isNonEmptyStringOrNumber,
 	isNonNullObject,
@@ -23,7 +23,11 @@ const {
 	AUTH_HEADER,
 	COOKIE_HEADER,
 	CSRF_TOKEN_NAME,
-	ACCOUNTS_ORIGIN
+	ACCOUNTS_ORIGIN,
+	CATALYST_ORIGIN,
+	ACCOUNTS_PORTAL_ORIGIN,
+	STRATUS_SUFFIX,
+	IS_LOCAL
 } = CONSTANTS;
 
 export const globalValue = {};
@@ -126,12 +130,14 @@ export class RefreshTokenCredential extends Credential {
 	refreshToken: string;
 	clientId: string;
 	clientSecret: string;
+	accountsUrl: string;
 	cachedToken: { access_token: string; expires_in: number } | null;
 	constructor(refreshObj: { [x: string]: string }) {
 		super();
 		this.clientId = getAttr(refreshObj, 'clientId', 'client_id');
 		this.clientSecret = getAttr(refreshObj, 'clientSecret', 'client_secret');
 		this.refreshToken = getAttr(refreshObj, 'refreshToken', 'refresh_token');
+		this.accountsUrl = refreshObj.accountsUrl || refreshObj.accounts_url || ACCOUNTS_ORIGIN;
 		this.cachedToken = null;
 	}
 
@@ -139,7 +145,7 @@ export class RefreshTokenCredential extends Credential {
 		if (this.cachedToken === null || this.cachedToken['expires_in'] <= Date.now()) {
 			const token = await requestAccessToken({
 				method: REQ_METHOD.post,
-				origin: ACCOUNTS_ORIGIN,
+				origin: this.accountsUrl,
 				path: '/oauth/v2/token',
 				data: {
 					client_id: this.clientId,
@@ -353,7 +359,7 @@ export class ApplicationDefaultCredential extends Credential {
 
 export class CatalystApp {
 	credential: Credential;
-	config: ICatalystAppConfig;
+	config: ICatalystResolvedAppConfig;
 	resd: Record<string, unknown> = {};
 	constructor(options: Record<string, string | number | Credential | Object>) {
 		try {
@@ -379,7 +385,11 @@ export class CatalystApp {
 			projectKey: (options.project_key || options.projectKey) as string,
 			projectDomain: (options.project_domain || options.projectDomain) as string,
 			environment: options.environment as string, // || DEFAULT_ENV,
-			projectSecretKey: (options.project_secret_key || options.projectSecretKey) as string
+			projectSecretKey: (options.project_secret_key || options.projectSecretKey) as string,
+			apiDomain: (options.apiDomain as string) || CATALYST_ORIGIN,
+			authPortalDomain: (options.authPortalDomain as string) || ACCOUNTS_PORTAL_ORIGIN,
+			stratusSuffix: (options.stratusSuffix as string) || STRATUS_SUFFIX,
+			servedByCLI: (options.servedByCLI as boolean | undefined) ?? IS_LOCAL === 'true'
 		};
 	}
 

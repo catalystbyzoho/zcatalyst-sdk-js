@@ -10,6 +10,10 @@ import {
 	CatalystError,
 	CONSTANTS,
 	ICatalystAppConfig,
+	ICatalystResolvedAppConfig,
+	isCatalystApiDomain,
+	isCatalystAuthPortalDomain,
+	isCatalystStratusSuffix,
 	isNonEmptyObject,
 	isNonEmptyString,
 	isNonEmptyStringOrNumber,
@@ -35,6 +39,11 @@ const {
 	DEFAULT_APP_NAME,
 	CREDENTIAL_USER,
 	CATALYST_ORIGIN,
+	ACCOUNTS_PORTAL_ORIGIN,
+	STRATUS_SUFFIX,
+	DOMAIN_HEADER,
+	SERVED_BY_CLI_HEADER,
+	IS_LOCAL,
 	AUTH_HEADER,
 	COOKIE_HEADER,
 	CREDENTIAL_HEADER,
@@ -69,7 +78,7 @@ export class ZCAuth {
 	 * ```
 	 */
 	init(
-		options: Record<string, string | number>,
+		options: Record<string, string | number | boolean>,
 		{ type, appName, scope }: { type?: string; appName?: string; scope?: 'admin' | 'user' } = {
 			type: 'auto'
 		}
@@ -229,7 +238,7 @@ export class ZCAuth {
 		return this.#appCollection[appName];
 	}
 
-	#loadOptionsFromObj(obj: Record<string, string>): Record<string, string | number> {
+	#loadOptionsFromObj(obj: Record<string, string>): Record<string, string | number | boolean> {
 		const projectId = obj[PROJECT_HEADER.id];
 		const projectKey = obj[PROJECT_HEADER.key];
 		const environment = obj[PROJECT_HEADER.environment] || DEFAULT_ENV;
@@ -253,7 +262,26 @@ export class ZCAuth {
 			environment,
 			projectDomain,
 			projectSecretKey,
-			origin
+			origin,
+			apiDomain: resolveDomain(
+				obj[DOMAIN_HEADER.api],
+				isCatalystApiDomain,
+				'X_ZOHO_CATALYST_CONSOLE_URL',
+				CATALYST_ORIGIN
+			),
+			authPortalDomain: resolveDomain(
+				obj[DOMAIN_HEADER.authPortal],
+				isCatalystAuthPortalDomain,
+				'CATALYST_PORTAL_DOMAIN',
+				ACCOUNTS_PORTAL_ORIGIN
+			),
+			stratusSuffix: resolveDomain(
+				obj[DOMAIN_HEADER.stratusSuffix],
+				isCatalystStratusSuffix,
+				'X_ZOHO_STRATUS_RESOURCE_SUFFIX',
+				STRATUS_SUFFIX
+			),
+			servedByCLI: (obj[SERVED_BY_CLI_HEADER] ?? IS_LOCAL) === 'true'
 		};
 	}
 
@@ -285,9 +313,21 @@ export class ZCAuth {
 	}
 }
 
+function resolveDomain(
+	headerValue: string | undefined,
+	isKnownDomain: (value: string) => boolean,
+	envName: string,
+	fallback: string
+): string {
+	if (headerValue && isKnownDomain(headerValue)) {
+		return headerValue;
+	}
+	return process.env[envName] || fallback;
+}
+
 export class CatalystApp {
 	credential: Credential;
-	config: ICatalystAppConfig;
+	config: ICatalystResolvedAppConfig;
 	/**
 	 * Creates a CatalystApp instance.
 	 * @param options - The options value.
@@ -317,7 +357,11 @@ export class CatalystApp {
 			projectDomain: (options.project_domain || options.projectDomain) as string,
 			environment: (options.environment as string) || DEFAULT_ENV,
 			projectSecretKey: (options.project_secret_key || options.projectSecretKey) as string,
-			origin: (options.origin as string) || CATALYST_ORIGIN
+			origin: (options.origin as string) || CATALYST_ORIGIN,
+			apiDomain: (options.apiDomain as string) || CATALYST_ORIGIN,
+			authPortalDomain: (options.authPortalDomain as string) || ACCOUNTS_PORTAL_ORIGIN,
+			stratusSuffix: (options.stratusSuffix as string) || STRATUS_SUFFIX,
+			servedByCLI: (options.servedByCLI as boolean | undefined) ?? IS_LOCAL === 'true'
 		};
 	}
 

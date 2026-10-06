@@ -6,7 +6,7 @@ import { IRequestConfig } from '../utils/interfaces.js';
 import { AuthorizedHttpClient, DefaultHttpResponse } from './http-handler.js';
 
 export class Handler {
-	app?: CatalystApp;
+	app: CatalystApp;
 	/**
 	 * @param app - The app used to fetch access tokens to sign API requests.
 	 * @param component - Optional component metadata.

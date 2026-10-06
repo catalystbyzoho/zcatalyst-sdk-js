@@ -2,6 +2,7 @@ import { Handler, IRequestConfig, RequestType, ResponseType } from '@zcatalyst/t
 import { CatalystService, CONSTANTS } from '@zcatalyst/utils';
 
 import { Bucket } from '../bucket.js';
+import { getNodeApp } from './node-app.js';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 
@@ -58,10 +59,7 @@ export class Util {
 	 * ```
 	 */
 	isAdmin(): boolean {
-		return (
-			typeof window === 'undefined' &&
-			this._requester.app?.credential.getCurrentUserType() === 'admin'
-		);
+		return getNodeApp(this._requester)?.credential.getCurrentUserType() === 'admin';
 	}
 
 	/**

@@ -78,6 +78,12 @@ export const CONSTANTS = {
 		environment: 'x-zc-environment',
 		projectSecretKey: 'x-zc-project-secret-key'
 	},
+	DOMAIN_HEADER: {
+		api: 'zc-api-domain',
+		authPortal: 'za-portal-domain',
+		stratusSuffix: 'zc-stratus-suffix'
+	},
+	SERVED_BY_CLI_HEADER: 'zc-served-by-cli',
 	ENVIRONMENT_KEY_NAME: 'X-Catalyst-Environment',
 	ENVIRONMENT: 'Environment',
 	USER_KEY_NAME: 'X-CATALYST-USER',
