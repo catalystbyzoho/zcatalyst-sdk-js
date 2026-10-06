@@ -1,6 +1,7 @@
 /**
  * Catalyst Mail — send transactional and bulk email from your Catalyst app.
  *
+ * @module @zcatalyst/mail
  * @packageDocumentation
  */
 
@@ -17,9 +18,9 @@ import {
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { CatalystEmailError } from './utils/error';
-import { ICatalystMail } from './utils/interface';
-import { getFormData } from './utils/validators';
+import { CatalystEmailError } from './utils/error.js';
+import { ICatalystMail } from './utils/interface.js';
+import { getFormData } from './utils/validators.js';
 
 const { REQ_METHOD, COMPONENT, CREDENTIAL_USER } = CONSTANTS;
 

@@ -1,6 +1,6 @@
 import { ICatalystGResponse } from '@zcatalyst/utils';
 
-import { StratusObject } from '../object';
+import { StratusObject } from '../object.js';
 
 export interface IStratusObjectDetails {
 	/** Type of the object, whether it is a folder or file. */

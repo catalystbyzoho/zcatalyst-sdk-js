@@ -8,11 +8,11 @@ import {
 } from '@zcatalyst/utils';
 import { Readable } from 'stream';
 
-import { BucketAdmin as Bucket } from '../bucket';
-import { CatalystStratusError } from '../utils/error';
-import { IStratusMultipartSummaryRes } from '../utils/interface';
-import { StratusObjectRequest } from '../utils/types';
-import { MultipartUpload } from './multipart-upload';
+import { BucketAdmin as Bucket } from '../bucket.js';
+import { CatalystStratusError } from '../utils/error.js';
+import { IStratusMultipartSummaryRes } from '../utils/interface.js';
+import { StratusObjectRequest } from '../utils/types.js';
+import { MultipartUpload } from './multipart-upload.js';
 
 /**
  * Provides helpers for multipart Stratus uploads and downloads.

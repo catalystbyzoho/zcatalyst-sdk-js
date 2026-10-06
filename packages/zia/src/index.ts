@@ -1,6 +1,7 @@
 /**
  * Catalyst Zia — AI services such as OCR, object detection, sentiment analysis and more.
  *
+ * @module @zcatalyst/zia
  * @packageDocumentation
  */
 
@@ -18,7 +19,7 @@ import fs from 'fs';
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { CatalystZiaError } from './utils/errors';
+import { CatalystZiaError } from './utils/errors.js';
 import {
 	ICatalsytZiaKeywordExtraction,
 	ICatalystZiaAutoML,
@@ -31,18 +32,19 @@ import {
 	ICatalystZiaOCR,
 	ICatalystZiaSentimentAnalysis,
 	ICatalystZiaTextAnalytics
-} from './utils/interfaces';
+} from './utils/interfaces.js';
 import {
 	_getKeywordExtraction,
 	_getNERPrediction,
 	_getSentimentAnalysis,
 	_getTextAnalytics
-} from './zia-text-analysis';
+} from './zia-text-analysis.js';
 
 const { REQ_METHOD, COMPONENT, CREDENTIAL_USER } = CONSTANTS;
 
 /**
  * Provides Catalyst Zia AI and ML service operations.
+ * @category Zia AI
  */
 export class Zia implements Component {
 	requester: Handler;
@@ -52,6 +54,7 @@ export class Zia implements Component {
 
 	/**
 	 * getComponentName operation.
+	 * @category Component Info
 	 */
 	getComponentName(): string {
 		return COMPONENT.zia;
@@ -59,6 +62,7 @@ export class Zia implements Component {
 
 	/**
 	 * getComponentVersion operation.
+	 * @category Component Info
 	 */
 	getComponentVersion(): string {
 		return version;
@@ -72,6 +76,7 @@ export class Zia implements Component {
 	 * ```ts
 	 * const result = await zia.detectObject(fs.createReadStream('image.png'));
 	 * ```
+	 * @category Vision
 	 */
 	async detectObject(file: fs.ReadStream): Promise<ICatalystZiaObject> {
 		const fileData = { image: file };
@@ -104,6 +109,7 @@ export class Zia implements Component {
 	 * ```ts
 	 * const result = await zia.extractOpticalCharacters(fs.createReadStream('image.png'), { language: 'eng' });
 	 * ```
+	 * @category Vision
 	 */
 	async extractOpticalCharacters(
 		file: fs.ReadStream,
@@ -134,6 +140,7 @@ export class Zia implements Component {
 	 * ```ts
 	 * const result = await zia.extractAadhaarCharacters(front, back, 'eng');
 	 * ```
+	 * @category Vision
 	 */
 	async extractAadhaarCharacters(
 		frontImg: fs.ReadStream,
@@ -179,6 +186,7 @@ export class Zia implements Component {
 	 * ```ts
 	 * const result = await zia.scanBarcode(fs.createReadStream('barcode.png'));
 	 * ```
+	 * @category Vision
 	 */
 	async scanBarcode(
 		image: fs.ReadStream,
@@ -218,6 +226,7 @@ export class Zia implements Component {
 	 * ```ts
 	 * const result = await zia.moderateImage(fs.createReadStream('image.png'));
 	 * ```
+	 * @category Vision
 	 */
 	async moderateImage(
 		image: fs.ReadStream,
@@ -260,6 +269,7 @@ export class Zia implements Component {
 	 * ```ts
 	 * const result = await zia.analyseFace(fs.createReadStream('face.png'), { emotion: true });
 	 * ```
+	 * @category Vision
 	 */
 	async analyseFace(
 		image: fs.ReadStream,
@@ -300,6 +310,7 @@ export class Zia implements Component {
 	 * ```ts
 	 * const result = await zia.compareFace(sourceImage, queryImage);
 	 * ```
+	 * @category Vision
 	 */
 	async compareFace(
 		sourceImage: fs.ReadStream,
@@ -333,6 +344,7 @@ export class Zia implements Component {
 	 * ```ts
 	 * const result = await zia.automl('model-id', { field: 'value' });
 	 * ```
+	 * @category AutoML
 	 */
 	async automl(
 		modelId: string,
@@ -365,6 +377,7 @@ export class Zia implements Component {
 	 * ```ts
 	 * const result = await zia.getSentimentAnalysis(['Catalyst is great']);
 	 * ```
+	 * @category Text Analysis
 	 */
 	async getSentimentAnalysis(
 		listOfDocuments: Array<string>,
@@ -381,6 +394,7 @@ export class Zia implements Component {
 	 * ```ts
 	 * const result = await zia.getKeywordExtraction(['Catalyst provides serverless tools']);
 	 * ```
+	 * @category Text Analysis
 	 */
 	async getKeywordExtraction(
 		listOfDocuments: Array<string>
@@ -396,6 +410,7 @@ export class Zia implements Component {
 	 * ```ts
 	 * const result = await zia.getNERPrediction(['Zoho Catalyst is a platform']);
 	 * ```
+	 * @category Text Analysis
 	 */
 	async getNERPrediction(listOfDocuments: Array<string>): Promise<ICatalystZiaNERPrediction> {
 		return _getNERPrediction(this.requester, listOfDocuments);
@@ -410,6 +425,7 @@ export class Zia implements Component {
 	 * ```ts
 	 * const result = await zia.getTextAnalytics(['Zoho Catalyst is great']);
 	 * ```
+	 * @category Text Analysis
 	 */
 	async getTextAnalytics(
 		listOfDocuments: Array<string>,

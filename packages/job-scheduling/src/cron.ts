@@ -8,10 +8,10 @@ import {
 	wrapValidatorsWithPromise
 } from '@zcatalyst/utils';
 
-import LOCAL_CONSTANTS from './utils/constants';
-import { CRON_EXECUTION_TYPE, JOB_SOURCE_TYPE } from './utils/enum';
-import { CatalystJobSchedulingError } from './utils/error';
-import { ICatalystCronDetails, ICatalystJobDetails, TCatalystJobs } from './utils/types';
+import LOCAL_CONSTANTS from './utils/constants.js';
+import { CRON_EXECUTION_TYPE, JOB_SOURCE_TYPE } from './utils/enum.js';
+import { CatalystJobSchedulingError } from './utils/error.js';
+import { ICatalystCronDetails, ICatalystJobDetails, TCatalystJobs } from './utils/types.js';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 

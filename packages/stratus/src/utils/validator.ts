@@ -1,4 +1,4 @@
-import { CatalystStratusError } from './error';
+import { CatalystStratusError } from './error.js';
 
 /**
  * Allowed bucket name pattern. Only alphanumeric characters and hyphens are
@@ -42,7 +42,7 @@ export function assertValidBucketName(bucketName: unknown): asserts bucketName i
  * reintroduce an authority-injection bypass.
  * @param bucketUrl - The constructed bucket URL to verify.
  * @param bucketName - The bucket name used to construct the URL.
- * @param suffix - The expected hostname suffix (environment + Stratus domain suffix).
+ * @param suffix - The expected hostname suffix after the bucket name
  * @throws {CatalystStratusError} when the URL does not match the expected authority.
  */
 export function assertValidBucketUrl(bucketUrl: string, bucketName: string, suffix: string): void {
@@ -56,7 +56,7 @@ export function assertValidBucketUrl(bucketUrl: string, bucketName: string, suff
 			bucketName
 		);
 	}
-	const expectedHost = `${bucketName}-${suffix}`.toLowerCase();
+	const expectedHost = `${bucketName}${suffix}`.toLowerCase();
 	if (
 		parsed.protocol !== 'https:' ||
 		parsed.username !== '' ||

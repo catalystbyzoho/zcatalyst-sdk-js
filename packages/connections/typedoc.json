@@ -1,0 +1,13 @@
+{
+  "extends": [
+    "../../typedoc.base.json"
+  ],
+  "name": "Catalyst Connections",
+  "entryPoints": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "src/__mocks__/**/*"
+  ],
+  "out": "../../docs/connections"
+}

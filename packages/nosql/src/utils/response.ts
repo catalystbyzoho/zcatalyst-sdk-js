@@ -1,7 +1,7 @@
-import { CatalystNoSQLError } from '../utils/error';
-import { NoSQLCrudOperation } from './enum';
-import { NoSQLItem } from './item';
-import { INoSQLData, INoSQLResponse } from './types';
+import { CatalystNoSQLError } from '../utils/error.js';
+import { NoSQLCrudOperation } from './enum.js';
+import { NoSQLItem } from './item.js';
+import { INoSQLData, INoSQLResponse } from './types.js';
 
 /** Represents one data entry returned by a NoSQL operation. */
 export class NoSQLData {

@@ -1,6 +1,6 @@
 import { CatalystService } from '@zcatalyst/utils';
 
-import { RequestType, ResponseType } from './enums';
+import { RequestType, ResponseType } from './enums.js';
 
 export interface Component {
 	getComponentName(): string;

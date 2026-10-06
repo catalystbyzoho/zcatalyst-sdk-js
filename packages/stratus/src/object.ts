@@ -6,14 +6,14 @@ import {
 	wrapValidatorsWithPromise
 } from '@zcatalyst/utils';
 
-import { BucketAdmin as Bucket } from './bucket';
-import { CatalystStratusError } from './utils/error';
+import { BucketAdmin as Bucket } from './bucket.js';
+import { CatalystStratusError } from './utils/error.js';
 import {
 	IStratusObjectDetails,
 	IStratusObjectVersionDetails,
 	IStratusObjectVersions,
 	IStratusSignedURLRes
-} from './utils/interface';
+} from './utils/interface.js';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 

@@ -1,8 +1,8 @@
 import { Handler, IRequestConfig } from '@zcatalyst/transport';
 import { CatalystService, CONSTANTS } from '@zcatalyst/utils';
 
-import { Bucket } from '../bucket';
-import { IJWTResponse } from './interface';
+import { Bucket } from '../bucket.js';
+import { IJWTResponse } from './interface.js';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 
@@ -109,8 +109,28 @@ export class JWTAuthHandler {
 		}
 		await this.initializeConfig();
 		if (typeof window !== 'undefined') {
-			const { setToken, getToken, isStratusJwtFresh, setStratusJwtExpiry, clearStratusJwt } =
-				await import('@zcatalyst/auth-client');
+			const {
+				setToken,
+				getToken,
+				isStratusJwtFresh,
+				setStratusJwtExpiry,
+				clearStratusJwt,
+				Auth_Protocol,
+				ConfigStore,
+				getOAuthTokenFromIDB
+			} = await import('@zcatalyst/auth-client');
+
+			// Popup sign-in already stored an OAuth token that covers bucket
+			// operations. Minting a Stratus token needs the custom-token
+			// exchange, which is unavailable inside an iframe, so reuse the
+			// stored token rather than starting a second token flow.
+			if (ConfigStore.get('AUTH_PROTOCOL') === Auth_Protocol.OAuthTokenProtocol) {
+				const stored = await getOAuthTokenFromIDB().catch(() => null);
+				if (stored?.token && stored.exp > Date.now()) {
+					return stored.token;
+				}
+			}
+
 			const fresh = isStratusJwtFresh();
 			const jwt = fresh ? getToken('stratus_jwt') : '';
 			if (!jwt) {

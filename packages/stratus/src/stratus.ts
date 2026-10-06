@@ -9,9 +9,9 @@ import { CatalystService, Component, CONSTANTS } from '@zcatalyst/utils';
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { Bucket, BucketAdmin } from './bucket';
-import { IStratusBucket } from './utils/interface';
-import { assertValidBucketName } from './utils/validator';
+import { Bucket, BucketAdmin } from './bucket.js';
+import { IStratusBucket } from './utils/interface.js';
+import { assertValidBucketName } from './utils/validator.js';
 
 const { COMPONENT, REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 
@@ -140,4 +140,4 @@ export class StratusAdmin extends Stratus {
 		return new BucketAdmin(this.requester, bucketName);
 	}
 }
-export { TransferManager } from './transfer-manager';
+export { TransferManager } from './transfer-manager/index.js';

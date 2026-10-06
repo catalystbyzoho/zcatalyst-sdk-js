@@ -1,8 +1,8 @@
 import { Handler, IRequestConfig, RequestType, ResponseType } from '@zcatalyst/transport';
 import { CatalystService, CONSTANTS } from '@zcatalyst/utils';
 
-import { Bucket } from './bucket';
-import { IStratusCorsRes } from './utils/interface';
+import { Bucket } from './bucket.js';
+import { IStratusCorsRes } from './utils/interface.js';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 

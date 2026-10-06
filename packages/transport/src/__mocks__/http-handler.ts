@@ -2,9 +2,9 @@ import http, { IncomingMessage } from 'http';
 import { Readable } from 'stream';
 import { inspect } from 'util';
 
-import { IRequestConfig, ResponseType } from '..';
-import { IAPIResponse } from '../http-handler';
-import { CatalystAPIError } from '../utils/errors';
+import { IAPIResponse } from '../http-handler.js';
+import { IRequestConfig, ResponseType } from '../index.js';
+import { CatalystAPIError } from '../utils/errors.js';
 
 export type MockedIAPIResponse = Omit<IAPIResponse, 'request'>;
 

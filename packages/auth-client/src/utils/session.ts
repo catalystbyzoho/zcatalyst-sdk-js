@@ -12,7 +12,7 @@
  * @packageDocumentation
  */
 
-import type { CatalystConfig } from './interfaces';
+import type { CatalystConfig } from './interfaces.js';
 
 const PROJECT_CONTEXT_KEY = '__catalyst_last_project_ctx';
 

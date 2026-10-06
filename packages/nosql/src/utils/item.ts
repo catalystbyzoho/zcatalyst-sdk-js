@@ -1,15 +1,15 @@
-import { NoSQLByte } from './byte';
-import { DataType } from './enum';
-import { MarshallOptions, NoSQLMarshall } from './marshall';
-import { NoSQLByteSet, NoSQLNumberSet, NoSQLStringSet } from './set';
+import { NoSQLByte } from './byte.js';
+import { DataType } from './enum.js';
+import { MarshallOptions, NoSQLMarshall } from './marshall.js';
+import { NoSQLByteSet, NoSQLNumberSet, NoSQLStringSet } from './set.js';
 import {
 	TNoSQLAttribute,
 	TNoSQLAttributeResponse,
 	TNoSQLByte,
 	TNoSQLItem,
 	TNoSQLValues
-} from './types';
-import { NoSQLUnMarshall } from './unmarshall';
+} from './types.js';
+import { NoSQLUnMarshall } from './unmarshall.js';
 
 /** * Implementation of a NoSQL Item */
 export class NoSQLItem {

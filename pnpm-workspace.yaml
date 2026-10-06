@@ -1,3 +1,11 @@
 packages:
   - "packages/*"
   - "tools/*"
+
+overrides:
+  typescript: "~5.8.3"
+  js-yaml: ">=4.2.0"
+
+onlyBuiltDependencies:
+  - esbuild
+  - sharp

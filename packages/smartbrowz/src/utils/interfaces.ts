@@ -101,3 +101,20 @@ export interface IDataverseTechStack {
 	website_status: string;
 	technographic_data: Record<string, string>;
 }
+
+export interface IBrowserGridDetails {
+	browser_version: Record<string, string>;
+	config_type: number;
+	endpoint_type: number;
+	id: string;
+	max_nodes_count: number;
+	max_session_count: number;
+	memory: number;
+	name: string;
+}
+
+export interface IBrowserGridNode {
+	node_count: number;
+	session_count: number;
+	session_queue_size: number;
+}

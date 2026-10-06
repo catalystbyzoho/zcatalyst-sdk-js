@@ -1,7 +1,7 @@
 import { Handler, IRequestConfig, RequestType, ResponseType } from '@zcatalyst/transport';
 import { CatalystService, CONSTANTS } from '@zcatalyst/utils';
 
-import { IDataverseLead, IDataverseTechStack } from './utils/interfaces';
+import { IDataverseLead, IDataverseTechStack } from './utils/interfaces.js';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 
