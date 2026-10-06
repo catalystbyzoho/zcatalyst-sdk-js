@@ -894,6 +894,96 @@ exports.responses = {
 			}
 		}
 	},
+	// Document Search
+	'/genai/endpoints/rag/search': {
+		POST: {
+			statusCode: 200,
+			data: {
+				data: {
+					status: 'success',
+					response:'[" prediction results "]'
+				}
+			}
+		}
+	},
+
+	// Generate RAG Response
+	'/genai/endpoints/rag/generate': {
+		POST: {
+			statusCode: 200,
+			data: {
+				data: {
+					status: 'success',
+					response: '[" prediction results "]'
+				}
+			}
+		}
+	},
+
+	// Chat with RAG Agent
+	'/genai/endpoints/rag/agent': {
+		POST: {
+			statusCode: 200,
+			data: {
+				data: {
+					status: 'success',
+					response: '[" prediction results "]'
+				}
+			}
+		}
+	},
+	'/genai/endpoints/glm-flash-47/chat': {
+		POST: {
+			statusCode: 200,
+			data: {
+				data: {
+					status: 'success',
+					conversationId: 'conv123',
+					response: '[" prediction results "]'
+				}
+			}
+		}
+	},
+
+	// Chat with RAG Agent with History
+	'/genai/endpoints/rag/agent/chat': {
+		POST: {
+			statusCode: 200,
+			data: {
+				data: {
+					status: 'success',
+					conversationId: 'conv123',
+					response: '[" prediction results "]'
+				}
+			}
+		}
+	},
+
+	// Predict LLM
+	'/genai/endpoints/glm-flash-47/generate': {
+		POST: {
+			statusCode: 200,
+			data: {
+				data: {
+					status: 'success',
+					response: '[" prediction results "]'
+				}
+			}
+		}
+	},
+
+	// Predict VLM
+	'/genai/endpoints/vlm/generate': {
+		POST: {
+			statusCode: 200,
+			data: {
+				data: {
+					status: 'success',
+					response: '[" prediction results "]'
+				}
+			}
+		}
+	},
 
 	// Push Notification
 	'/push-notification/12345/project-user/notify': {
