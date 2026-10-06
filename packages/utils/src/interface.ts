@@ -37,6 +37,12 @@ export interface ICatalystResolvedAppConfig extends ICatalystAppConfig {
 	servedByCLI: boolean;
 }
 
+export interface ICatalystDataCenter {
+	apiDomain: string;
+	stratusSuffix: string;
+	authPortalDomain: string;
+}
+
 export interface ICatalystProject {
 	id: string;
 	project_name: string;

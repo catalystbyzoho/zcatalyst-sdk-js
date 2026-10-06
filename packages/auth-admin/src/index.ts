@@ -11,13 +11,14 @@ import {
 	CONSTANTS,
 	ICatalystAppConfig,
 	ICatalystResolvedAppConfig,
+	isCatalystApiDomain,
+	isCatalystAuthPortalDomain,
+	isCatalystStratusSuffix,
 	isNonEmptyObject,
 	isNonEmptyString,
 	isNonEmptyStringOrNumber,
 	isNonNullObject,
 	isValidType,
-	isZohoDomain,
-	isZohoDomainSuffix,
 	ObjectHasProperties
 } from '@zcatalyst/utils';
 
@@ -264,19 +265,19 @@ export class ZCAuth {
 			origin,
 			apiDomain: resolveDomain(
 				obj[DOMAIN_HEADER.api],
-				isZohoDomain,
+				isCatalystApiDomain,
 				'X_ZOHO_CATALYST_CONSOLE_URL',
 				CATALYST_ORIGIN
 			),
 			authPortalDomain: resolveDomain(
 				obj[DOMAIN_HEADER.authPortal],
-				isZohoDomain,
+				isCatalystAuthPortalDomain,
 				'CATALYST_PORTAL_DOMAIN',
 				ACCOUNTS_PORTAL_ORIGIN
 			),
 			stratusSuffix: resolveDomain(
 				obj[DOMAIN_HEADER.stratusSuffix],
-				isZohoDomainSuffix,
+				isCatalystStratusSuffix,
 				'X_ZOHO_STRATUS_RESOURCE_SUFFIX',
 				STRATUS_SUFFIX
 			),
@@ -314,11 +315,11 @@ export class ZCAuth {
 
 function resolveDomain(
 	headerValue: string | undefined,
-	isTrusted: (value: string) => boolean,
+	isKnownDomain: (value: string) => boolean,
 	envName: string,
 	fallback: string
 ): string {
-	if (headerValue && isTrusted(headerValue)) {
+	if (headerValue && isKnownDomain(headerValue)) {
 		return headerValue;
 	}
 	return process.env[envName] || fallback;

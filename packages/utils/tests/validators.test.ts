@@ -1,9 +1,10 @@
 import { CatalystAppError } from '../src/errors';
 import {
+	isCatalystApiDomain,
+	isCatalystAuthPortalDomain,
+	isCatalystStratusSuffix,
 	isNonEmptyString,
 	isValidInputString,
-	isZohoDomain,
-	isZohoDomainSuffix,
 	wrapValidatorsWithPromise
 } from '../src/validators';
 
@@ -60,40 +61,49 @@ describe('Validators', () => {
 		});
 	});
 
-	describe('isZohoDomain', () => {
+	describe('isCatalystApiDomain', () => {
 		it.each([
 			'https://api.catalyst.zoho.com',
-			'https://api.catalyst.zoho.com.au',
-			'https://accounts.zohoportal.in',
-			'https://accounts.zohocloud.ca'
-		])('accepts %s', (url: string) => {
-			expect(isZohoDomain(url)).toBe(true);
+			'https://api.catalyst.zohocloud.ca',
+			'https://api.catalyst.zoho.ae'
+		])('accepts %s', (value: string) => {
+			expect(isCatalystApiDomain(value)).toBe(true);
 		});
 
 		it.each([
 			'http://api.catalyst.zoho.com',
-			'https://evil.example.com',
+			'https://api.catalyst.zoho.com/',
+			'https://api.catalyst.zoho.ca',
 			'https://api.catalyst.zoho.com.evil.com',
-			'https://evilzoho.com',
-			'https://evil.com@zoho.com.evil.com',
-			'not a url'
-		])('rejects %s', (url: string) => {
-			expect(isZohoDomain(url)).toBe(false);
+			'https://accounts.zohoportal.com'
+		])('rejects %s', (value: string) => {
+			expect(isCatalystApiDomain(value)).toBe(false);
 		});
 	});
 
-	describe('isZohoDomainSuffix', () => {
-		it.each(['.zohostratus.com', '.zohostratus.in'])('accepts %s', (suffix: string) => {
-			expect(isZohoDomainSuffix(suffix)).toBe(true);
+	describe('isCatalystAuthPortalDomain', () => {
+		it('accepts a data center portal domain', () => {
+			expect(isCatalystAuthPortalDomain('https://accounts.zohoportal.com.au')).toBe(true);
 		});
 
-		it.each([
-			'.evil.com',
-			'zohostratus.com',
-			'.zohostratus.com/path',
-			'.zohostratus.com@evil.com'
-		])('rejects %s', (suffix: string) => {
-			expect(isZohoDomainSuffix(suffix)).toBe(false);
+		it.each(['https://user@accounts.zohoportal.com', 'https://api.catalyst.zoho.com'])(
+			'rejects %s',
+			(value: string) => {
+				expect(isCatalystAuthPortalDomain(value)).toBe(false);
+			}
+		);
+	});
+
+	describe('isCatalystStratusSuffix', () => {
+		it('accepts a data center stratus suffix', () => {
+			expect(isCatalystStratusSuffix('.zohostratus.jp')).toBe(true);
 		});
+
+		it.each(['.zohostratus.uk', '.zohostratus.com/path', 'zohostratus.com'])(
+			'rejects %s',
+			(value: string) => {
+				expect(isCatalystStratusSuffix(value)).toBe(false);
+			}
+		);
 	});
 });

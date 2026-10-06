@@ -1,10 +1,11 @@
 import {
 	CatalystAppError,
 	CONSTANTS,
+	isCatalystApiDomain,
+	isCatalystAuthPortalDomain,
+	isCatalystStratusSuffix,
 	isNonEmptyObject,
-	isNonEmptyString,
-	isZohoDomain,
-	isZohoDomainSuffix
+	isNonEmptyString
 } from '../../../utils/src/index.js';
 import {
 	ApplicationDefaultCredential,
@@ -200,19 +201,19 @@ export class ZCAuth {
 			projectSecretKey,
 			apiDomain: resolveDomain(
 				obj[DOMAIN_HEADER.api],
-				isZohoDomain,
+				isCatalystApiDomain,
 				'X_ZOHO_CATALYST_CONSOLE_URL',
 				CATALYST_ORIGIN
 			),
 			authPortalDomain: resolveDomain(
 				obj[DOMAIN_HEADER.authPortal],
-				isZohoDomain,
+				isCatalystAuthPortalDomain,
 				'CATALYST_PORTAL_DOMAIN',
 				ACCOUNTS_PORTAL_ORIGIN
 			),
 			stratusSuffix: resolveDomain(
 				obj[DOMAIN_HEADER.stratusSuffix],
-				isZohoDomainSuffix,
+				isCatalystStratusSuffix,
 				'X_ZOHO_STRATUS_RESOURCE_SUFFIX',
 				STRATUS_SUFFIX
 			),
@@ -271,11 +272,11 @@ export { CatalystAppError };
 
 function resolveDomain(
 	headerValue: string | undefined,
-	isTrusted: (value: string) => boolean,
+	isKnownDomain: (value: string) => boolean,
 	envName: string,
 	fallback: string
 ): string {
-	if (headerValue && isTrusted(headerValue)) {
+	if (headerValue && isKnownDomain(headerValue)) {
 		return headerValue;
 	}
 	return process.env[envName] || fallback;

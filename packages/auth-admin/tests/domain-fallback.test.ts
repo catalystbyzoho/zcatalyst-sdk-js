@@ -6,7 +6,11 @@ const DOMAINS = [
 		env: 'X_ZOHO_CATALYST_CONSOLE_URL',
 		header: 'zc-api-domain',
 		trusted: 'https://api.catalyst.zoho.eu',
-		untrusted: ['https://evil.example.com', 'http://api.catalyst.zoho.eu'],
+		untrusted: [
+			'https://evil.example.com',
+			'http://api.catalyst.zoho.eu',
+			'https://api.catalyst.zoho.ca'
+		],
 		fallback: 'https://api.catalyst.zoho.com'
 	},
 	{
