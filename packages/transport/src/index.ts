@@ -5,7 +5,6 @@
  * @packageDocumentation
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { CatalystApp, ZCAuth } from '@zcatalyst/auth-admin';
 
 import { AuthorizedHttpClient, DefaultHttpResponse } from './http-handler.js';
@@ -18,7 +17,7 @@ export { PrefixedCatalystError } from '@zcatalyst/utils';
 
 export class Handler {
 	component?: Component;
-	app?: any;
+	app: CatalystApp;
 	/**
 	 * Creates a Handler instance.
 	 * @param app - The app value.
@@ -51,7 +50,7 @@ export class Handler {
 	 * ```
 	 */
 	async send(options: IRequestConfig): Promise<DefaultHttpResponse> {
-		const _httpRequester = new AuthorizedHttpClient(this.app as CatalystApp, this.component);
+		const _httpRequester = new AuthorizedHttpClient(this.app, this.component);
 		return (await _httpRequester.send(options)) as DefaultHttpResponse;
 	}
 }
