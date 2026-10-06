@@ -2,7 +2,9 @@ import {
 	CatalystAppError,
 	CONSTANTS,
 	isNonEmptyObject,
-	isNonEmptyString
+	isNonEmptyString,
+	isZohoDomain,
+	isZohoDomainSuffix
 } from '../../../utils/src/index.js';
 import {
 	ApplicationDefaultCredential,
@@ -196,19 +198,25 @@ export class ZCAuth {
 			environment,
 			projectDomain,
 			projectSecretKey,
-			apiDomain:
-				process.env.X_ZOHO_CATALYST_CONSOLE_URL ||
-				obj[DOMAIN_HEADER.api] ||
-				CATALYST_ORIGIN,
-			authPortalDomain:
-				process.env.CATALYST_PORTAL_DOMAIN ||
-				obj[DOMAIN_HEADER.authPortal] ||
-				ACCOUNTS_PORTAL_ORIGIN,
-			stratusSuffix:
-				process.env.X_ZOHO_STRATUS_RESOURCE_SUFFIX ||
-				obj[DOMAIN_HEADER.stratusSuffix] ||
-				STRATUS_SUFFIX,
-			servedByCLI: IS_LOCAL === 'true' || obj[SERVED_BY_CLI_HEADER] === 'true'
+			apiDomain: resolveDomain(
+				obj[DOMAIN_HEADER.api],
+				isZohoDomain,
+				'X_ZOHO_CATALYST_CONSOLE_URL',
+				CATALYST_ORIGIN
+			),
+			authPortalDomain: resolveDomain(
+				obj[DOMAIN_HEADER.authPortal],
+				isZohoDomain,
+				'CATALYST_PORTAL_DOMAIN',
+				ACCOUNTS_PORTAL_ORIGIN
+			),
+			stratusSuffix: resolveDomain(
+				obj[DOMAIN_HEADER.stratusSuffix],
+				isZohoDomainSuffix,
+				'X_ZOHO_STRATUS_RESOURCE_SUFFIX',
+				STRATUS_SUFFIX
+			),
+			servedByCLI: (obj[SERVED_BY_CLI_HEADER] ?? IS_LOCAL) === 'true'
 		};
 	}
 
@@ -260,3 +268,15 @@ export {
 } from '../../src/credential.js';
 export { CatalystApp } from './credential.js';
 export { CatalystAppError };
+
+function resolveDomain(
+	headerValue: string | undefined,
+	isTrusted: (value: string) => boolean,
+	envName: string,
+	fallback: string
+): string {
+	if (headerValue && isTrusted(headerValue)) {
+		return headerValue;
+	}
+	return process.env[envName] || fallback;
+}

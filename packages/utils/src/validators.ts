@@ -640,3 +640,43 @@ export function isValidInputString(value: unknown, name?: string, throwErr?: boo
 	}
 	return false;
 }
+
+const ZOHO_HOST =
+	/(^|\.)(zoho|zohoportal|zohostratus|zohocloud)\.(com|eu|in|com\.au|jp|ca|sa|com\.cn|uk)$/;
+
+/**
+ * Checks that a URL is an https URL on a Zoho data center host.
+ *
+ * @param url - The URL to check.
+ * @returns Whether the URL is an https Zoho URL or not.
+ *
+ * @example
+ * ```ts
+ * import { isZohoDomain } from '@zcatalyst/utils';
+ * const result = isZohoDomain('https://api.catalyst.zoho.com');
+ * ```
+ */
+export function isZohoDomain(url: string): boolean {
+	try {
+		const { protocol, hostname } = new URL(url);
+		return protocol === 'https:' && ZOHO_HOST.test(hostname);
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Checks that a host suffix, such as `.zohostratus.com`, is a Zoho data center host.
+ *
+ * @param suffix - The host suffix to check.
+ * @returns Whether the suffix is a Zoho host suffix or not.
+ *
+ * @example
+ * ```ts
+ * import { isZohoDomainSuffix } from '@zcatalyst/utils';
+ * const result = isZohoDomainSuffix('.zohostratus.com');
+ * ```
+ */
+export function isZohoDomainSuffix(suffix: string): boolean {
+	return /^[a-z0-9.-]+$/i.test(suffix) && isZohoDomain(`https://bucket${suffix}`);
+}

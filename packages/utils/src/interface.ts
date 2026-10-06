@@ -28,6 +28,9 @@ export interface ICatalystAppConfig {
 	environment?: string;
 	projectSecretKey?: string;
 	origin?: string;
+}
+
+export interface ICatalystResolvedAppConfig extends ICatalystAppConfig {
 	apiDomain: string;
 	authPortalDomain: string;
 	stratusSuffix: string;

@@ -6,7 +6,7 @@ import {
 	CatalystAppError,
 	CatalystError,
 	CONSTANTS,
-	ICatalystAppConfig,
+	ICatalystResolvedAppConfig,
 	isNonEmptyString,
 	isNonEmptyStringOrNumber,
 	isNonNullObject,
@@ -359,7 +359,7 @@ export class ApplicationDefaultCredential extends Credential {
 
 export class CatalystApp {
 	credential: Credential;
-	config: ICatalystAppConfig;
+	config: ICatalystResolvedAppConfig;
 	resd: Record<string, unknown> = {};
 	constructor(options: Record<string, string | number | Credential | Object>) {
 		try {

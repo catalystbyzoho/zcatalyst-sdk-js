@@ -5,18 +5,24 @@ const DOMAINS = [
 		field: 'apiDomain',
 		env: 'X_ZOHO_CATALYST_CONSOLE_URL',
 		header: 'zc-api-domain',
+		trusted: 'https://api.catalyst.zoho.eu',
+		untrusted: ['https://evil.example.com', 'http://api.catalyst.zoho.eu'],
 		fallback: 'https://api.catalyst.zoho.com'
 	},
 	{
 		field: 'authPortalDomain',
 		env: 'CATALYST_PORTAL_DOMAIN',
 		header: 'za-portal-domain',
+		trusted: 'https://accounts.zohoportal.eu',
+		untrusted: ['https://accounts.zohoportal.eu.evil.com', 'http://accounts.zohoportal.eu'],
 		fallback: 'https://accounts.zohoportal.com'
 	},
 	{
 		field: 'stratusSuffix',
 		env: 'X_ZOHO_STRATUS_RESOURCE_SUFFIX',
 		header: 'zc-stratus-suffix',
+		trusted: '.zohostratus.eu',
+		untrusted: ['.evil.com', '.zohostratus.eu/path'],
 		fallback: '.zohostratus.com'
 	}
 ];
@@ -37,22 +43,32 @@ describe('domain resolution from headers', () => {
 		DOMAINS.forEach(({ env }) => delete process.env[env]);
 	});
 
-	describe.each(DOMAINS)('$field', ({ field, env, header, fallback }) => {
-		it('prefers the env value over the header', () => {
+	describe.each(DOMAINS)('$field', ({ field, env, header, trusted, untrusted, fallback }) => {
+		it('prefers the header over the env value', () => {
 			process.env[env] = 'from-env';
 			const app = new ZCAuth().init(
-				{ headers: catalystHeaders({ [header]: 'from-header' }) },
+				{ headers: catalystHeaders({ [header]: trusted }) },
 				{ type: 'advancedio' }
+			);
+			expect(app.config[field]).toBe(trusted);
+		});
+
+		it('falls back to the env value when the header is unset', () => {
+			process.env[env] = 'from-env';
+			const app = new ZCAuth().init(
+				{ catalystHeaders: catalystHeaders() },
+				{ type: 'basicio' }
 			);
 			expect(app.config[field]).toBe('from-env');
 		});
 
-		it('falls back to the header when env is unset', () => {
+		it.each(untrusted)('ignores the untrusted header %s', (value: string) => {
+			process.env[env] = 'from-env';
 			const app = new ZCAuth().init(
-				{ catalystHeaders: catalystHeaders({ [header]: 'from-header' }) },
-				{ type: 'basicio' }
+				{ headers: catalystHeaders({ [header]: value }) },
+				{ type: 'advancedio' }
 			);
-			expect(app.config[field]).toBe('from-header');
+			expect(app.config[field]).toBe('from-env');
 		});
 
 		it('falls back to the default when env and header are unset', () => {
@@ -77,6 +93,19 @@ describe('servedByCLI resolution', () => {
 			{ type: 'advancedio' }
 		);
 		expect(app.config.servedByCLI).toBe(true);
+	});
+
+	it('is false when the served-by-cli header is false and env is true', () => {
+		jest.isolateModules(() => {
+			process.env.X_ZOHO_CATALYST_IS_LOCAL = 'true';
+			const { ZCAuth: IsolatedZCAuth } = jest.requireActual('../src');
+			const app = new IsolatedZCAuth().init(
+				{ headers: catalystHeaders({ 'zc-served-by-cli': 'false' }) },
+				{ type: 'advancedio' }
+			);
+			expect(app.config.servedByCLI).toBe(false);
+		});
+		delete process.env.X_ZOHO_CATALYST_IS_LOCAL;
 	});
 
 	it('is false when the header and env are unset', () => {

@@ -10,11 +10,14 @@ import {
 	CatalystError,
 	CONSTANTS,
 	ICatalystAppConfig,
+	ICatalystResolvedAppConfig,
 	isNonEmptyObject,
 	isNonEmptyString,
 	isNonEmptyStringOrNumber,
 	isNonNullObject,
 	isValidType,
+	isZohoDomain,
+	isZohoDomainSuffix,
 	ObjectHasProperties
 } from '@zcatalyst/utils';
 
@@ -74,7 +77,7 @@ export class ZCAuth {
 	 * ```
 	 */
 	init(
-		options: Record<string, string | number>,
+		options: Record<string, string | number | boolean>,
 		{ type, appName, scope }: { type?: string; appName?: string; scope?: 'admin' | 'user' } = {
 			type: 'auto'
 		}
@@ -260,21 +263,24 @@ export class ZCAuth {
 			projectSecretKey,
 			origin,
 			apiDomain: resolveDomain(
-				'X_ZOHO_CATALYST_CONSOLE_URL',
 				obj[DOMAIN_HEADER.api],
+				isZohoDomain,
+				'X_ZOHO_CATALYST_CONSOLE_URL',
 				CATALYST_ORIGIN
 			),
 			authPortalDomain: resolveDomain(
-				'CATALYST_PORTAL_DOMAIN',
 				obj[DOMAIN_HEADER.authPortal],
+				isZohoDomain,
+				'CATALYST_PORTAL_DOMAIN',
 				ACCOUNTS_PORTAL_ORIGIN
 			),
 			stratusSuffix: resolveDomain(
-				'X_ZOHO_STRATUS_RESOURCE_SUFFIX',
 				obj[DOMAIN_HEADER.stratusSuffix],
+				isZohoDomainSuffix,
+				'X_ZOHO_STRATUS_RESOURCE_SUFFIX',
 				STRATUS_SUFFIX
 			),
-			servedByCLI: IS_LOCAL === 'true' || obj[SERVED_BY_CLI_HEADER] === 'true'
+			servedByCLI: (obj[SERVED_BY_CLI_HEADER] ?? IS_LOCAL) === 'true'
 		};
 	}
 
@@ -306,13 +312,21 @@ export class ZCAuth {
 	}
 }
 
-function resolveDomain(envName: string, headerValue: string | undefined, fallback: string): string {
-	return process.env[envName] || headerValue || fallback;
+function resolveDomain(
+	headerValue: string | undefined,
+	isTrusted: (value: string) => boolean,
+	envName: string,
+	fallback: string
+): string {
+	if (headerValue && isTrusted(headerValue)) {
+		return headerValue;
+	}
+	return process.env[envName] || fallback;
 }
 
 export class CatalystApp {
 	credential: Credential;
-	config: ICatalystAppConfig;
+	config: ICatalystResolvedAppConfig;
 	/**
 	 * Creates a CatalystApp instance.
 	 * @param options - The options value.

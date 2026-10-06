@@ -1,5 +1,11 @@
 import { CatalystAppError } from '../src/errors';
-import { isNonEmptyString, isValidInputString, wrapValidatorsWithPromise } from '../src/validators';
+import {
+	isNonEmptyString,
+	isValidInputString,
+	isZohoDomain,
+	isZohoDomainSuffix,
+	wrapValidatorsWithPromise
+} from '../src/validators';
 
 describe('Validators', () => {
 	describe('isNonEmptyString', () => {
@@ -51,6 +57,43 @@ describe('Validators', () => {
 				isNonEmptyString('', 'field', true);
 			};
 			await expect(wrapValidatorsWithPromise(validator, CatalystAppError)).rejects.toThrow();
+		});
+	});
+
+	describe('isZohoDomain', () => {
+		it.each([
+			'https://api.catalyst.zoho.com',
+			'https://api.catalyst.zoho.com.au',
+			'https://accounts.zohoportal.in',
+			'https://accounts.zohocloud.ca'
+		])('accepts %s', (url: string) => {
+			expect(isZohoDomain(url)).toBe(true);
+		});
+
+		it.each([
+			'http://api.catalyst.zoho.com',
+			'https://evil.example.com',
+			'https://api.catalyst.zoho.com.evil.com',
+			'https://evilzoho.com',
+			'https://evil.com@zoho.com.evil.com',
+			'not a url'
+		])('rejects %s', (url: string) => {
+			expect(isZohoDomain(url)).toBe(false);
+		});
+	});
+
+	describe('isZohoDomainSuffix', () => {
+		it.each(['.zohostratus.com', '.zohostratus.in'])('accepts %s', (suffix: string) => {
+			expect(isZohoDomainSuffix(suffix)).toBe(true);
+		});
+
+		it.each([
+			'.evil.com',
+			'zohostratus.com',
+			'.zohostratus.com/path',
+			'.zohostratus.com@evil.com'
+		])('rejects %s', (suffix: string) => {
+			expect(isZohoDomainSuffix(suffix)).toBe(false);
 		});
 	});
 });
