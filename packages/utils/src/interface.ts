@@ -28,6 +28,10 @@ export interface ICatalystAppConfig {
 	environment?: string;
 	projectSecretKey?: string;
 	origin?: string;
+	apiDomain: string;
+	authPortalDomain: string;
+	stratusSuffix: string;
+	servedByCLI: boolean;
 }
 
 export interface ICatalystProject {
