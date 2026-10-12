@@ -1,5 +1,10 @@
 # @zcatalyst/datastore
 
+## [1.0.0](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v1.0.0) - 2026-09-21
+
+### Features
+- Added OLAP query support.[`#46`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/46)
+
 ## [0.0.3](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v0.0.3) - 2026-06-30
 
 ### Features

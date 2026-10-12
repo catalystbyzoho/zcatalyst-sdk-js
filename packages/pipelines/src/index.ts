@@ -1,6 +1,7 @@
 /**
  * Catalyst Pipelines — build and deployment automation primitives.
  *
+ * @module @zcatalyst/pipelines
  * @packageDocumentation
  */
 
@@ -15,8 +16,8 @@ import {
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { CatalystPipelineError } from './utils/error';
-import { IPipelineDetails, IPipelineRunResponse } from './utils/interface';
+import { CatalystPipelineError } from './utils/error.js';
+import { IPipelineDetails, IPipelineRunResponse } from './utils/interface.js';
 
 const { CREDENTIAL_USER, REQ_METHOD, COMPONENT } = CONSTANTS;
 

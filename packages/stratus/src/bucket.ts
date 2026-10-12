@@ -16,9 +16,9 @@ import {
 } from '@zcatalyst/utils';
 import { Readable } from 'stream';
 
-import { Cors } from './cors';
-import { StratusObject } from './object';
-import { CatalystStratusError } from './utils/error';
+import { Cors } from './cors.js';
+import { StratusObject } from './object.js';
+import { CatalystStratusError } from './utils/error.js';
 import {
 	IStratusBucket,
 	IStratusCorsRes,
@@ -34,11 +34,11 @@ import {
 	IStratusPutObjectOptions,
 	IStratusUnzipRes,
 	IStratusUnzipStatus
-} from './utils/interface';
-import { JWTAuthHandler } from './utils/jwt-auth-handler';
-import { Util } from './utils/signature-auth-handler';
-import { StratusObjectRequest } from './utils/types';
-import { assertValidBucketName, assertValidBucketUrl } from './utils/validator';
+} from './utils/interface.js';
+import { JWTAuthHandler } from './utils/jwt-auth-handler.js';
+import { Util } from './utils/signature-auth-handler.js';
+import { StratusObjectRequest } from './utils/types.js';
+import { assertValidBucketName, assertValidBucketUrl } from './utils/validator.js';
 
 const { REQ_METHOD, CREDENTIAL_USER, STRATUS_SUFFIX, IS_LOCAL } = CONSTANTS;
 
@@ -55,13 +55,22 @@ export class Bucket {
 		this.#jwtAuth = new JWTAuthHandler(this);
 		if (typeof bucket === 'string') {
 			assertValidBucketName(bucket);
-			const suffix =
+			const environment =
 				typeof window === 'undefined'
-					? `${(this._requester.app?.config?.environment as string).toLowerCase()}${STRATUS_SUFFIX}`
-					: (window.__catalyst?.environment as string)?.toLowerCase() +
-						'' +
-						window.__catalyst?.stratus_suffix;
-			const bucketUrl = `https://${bucket}-${suffix}`;
+					? (this._requester.app?.config?.environment as string)?.toLowerCase()
+					: (window.__catalyst?.environment as string)?.toLowerCase();
+			const domainSuffix =
+				typeof window === 'undefined' ? STRATUS_SUFFIX : window.__catalyst?.stratus_suffix;
+			if (!domainSuffix) {
+				throw new CatalystStratusError(
+					'invalid-argument',
+					'Unable to resolve Stratus domain suffix for bucket URL construction.',
+					bucket
+				);
+			}
+			const suffix =
+				environment === 'development' ? `-development${domainSuffix}` : domainSuffix;
+			const bucketUrl = `https://${bucket}${suffix}`;
 			assertValidBucketUrl(bucketUrl, bucket, suffix);
 			this._bucketDetails = {
 				bucket_name: bucket,

@@ -15,7 +15,7 @@ export enum CRON_EXECUTION_TYPE {
 /** * Type of the cron */
 export enum CRON_TYPE {
 	/** Repetitive cron that's executed during a calendar time */
-	CALENDER = 'Calender',
+	CALENDAR = 'Calendar',
 	/** Repetitive cron that's executed in a particular period of time */
 	PERIODIC = 'Periodic',
 	/** Cron that's executed only once on the scheduled time */

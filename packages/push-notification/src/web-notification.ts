@@ -7,8 +7,8 @@ import {
 	wrapValidatorsWithPromise
 } from '@zcatalyst/utils';
 
-import { PushNotification } from '.';
-import { CatalystPushNotificationError } from './utils/error';
+import { PushNotification } from './index.js';
+import { CatalystPushNotificationError } from './utils/error.js';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 

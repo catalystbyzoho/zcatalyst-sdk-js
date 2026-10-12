@@ -10,12 +10,12 @@ import { inspect } from 'util';
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { RequestType, ResponseType } from './utils/enums';
-import { CatalystAPIError } from './utils/errors';
-import FORM from './utils/form-data';
-import { isHttps } from './utils/helpers';
-import { Component, IRequestConfig } from './utils/interfaces';
-import RequestAgent from './utils/request-agent';
+import { RequestType, ResponseType } from './utils/enums.js';
+import { CatalystAPIError } from './utils/errors.js';
+import FORM from './utils/form-data.js';
+import { isHttps } from './utils/helpers.js';
+import { Component, IRequestConfig } from './utils/interfaces.js';
+import RequestAgent from './utils/request-agent.js';
 
 const {
 	IS_LOCAL,
@@ -583,7 +583,8 @@ export class HttpClient {
 			if (req.track && apmTrackerName && IS_APM === 'true') {
 				try {
 					// @ts-ignore
-					const apminsight = await import('apminsight');
+					const optionalApmModule = 'apminsight';
+					const apminsight = await import(optionalApmModule);
 					resp = await apminsight.startTracker(
 						APM_INSIGHT.tracker_name,
 						apmTrackerName,

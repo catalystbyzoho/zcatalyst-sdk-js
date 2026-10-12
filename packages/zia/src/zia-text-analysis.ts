@@ -6,13 +6,13 @@ import {
 	wrapValidatorsWithPromise
 } from '@zcatalyst/utils';
 
-import { CatalystZiaError } from './utils/errors';
+import { CatalystZiaError } from './utils/errors.js';
 import {
 	ICatalsytZiaKeywordExtraction,
 	ICatalystZiaNERPrediction,
 	ICatalystZiaSentimentAnalysis,
 	ICatalystZiaTextAnalytics
-} from './utils/interfaces';
+} from './utils/interfaces.js';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 /**

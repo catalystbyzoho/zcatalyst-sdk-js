@@ -1,4 +1,5 @@
 export enum Auth_Protocol {
-	ZcrfTokenProtocol,
-	JwtTokenProtocol
+	ZcrfTokenProtocol = 'ZcrfTokenProtocol',
+	JwtTokenProtocol = 'JwtTokenProtocol',
+	OAuthTokenProtocol = 'OAuthTokenProtocol'
 }

@@ -1,5 +1,13 @@
 {
-  "entryPoints": ["src/**/*"],
-  "exclude": ["src/__mocks__/**/*"],
+  "extends": [
+    "../../typedoc.base.json"
+  ],
+  "name": "Catalyst Mail",
+  "entryPoints": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "src/__mocks__/**/*"
+  ],
   "out": "../../docs/mail"
 }

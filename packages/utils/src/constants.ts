@@ -1,4 +1,4 @@
-import { envOverride } from './helpers';
+import { envOverride } from './helpers.js';
 
 // move constants local to the package
 export const CONSTANTS = {
@@ -19,6 +19,7 @@ export const CONSTANTS = {
 	COMPONENT: {
 		cache: 'Cache',
 		circuit: 'Circuit',
+		connections: 'Connections',
 		connector: 'Connector',
 		cron: 'Cron',
 		datastore: 'DataStore',

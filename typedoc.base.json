@@ -1,0 +1,27 @@
+{
+	"$schema": "https://typedoc.org/schema.json",
+	"customCss": "./typedoc-theme.css",
+	"cleanOutputDir": true,
+	"githubPages": true,
+	"hideGenerator": false,
+	"searchInComments": true,
+	"excludeReferences": true,
+	"categorizeByGroup": false,
+	"defaultCategory": "Other",
+	"categoryOrder": ["Component Info", "*", "Other"],
+	"navigation": {
+		"includeGroups": true,
+		"includeCategories": true,
+		"compactFolders": true
+	},
+	"sort": ["static-first", "alphabetical"],
+	"lightHighlightTheme": "github-light",
+	"darkHighlightTheme": "github-dark",
+	"navigationLinks": {
+		"GitHub": "https://github.com/catalystbyzoho/zcatalyst-sdk-js",
+		"npm": "https://www.npmjs.com/org/zcatalyst"
+	},
+	"sidebarLinks": {
+		"Catalyst Docs": "https://catalyst.zoho.com/help/index.html"
+	}
+}

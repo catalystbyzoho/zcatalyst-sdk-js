@@ -41,6 +41,7 @@ The SDK includes the following services:
 | **Cache**           | Cache segment and key-value operations. |
 | **Datastore**       | Table row operations, ZCQL queries, and Catalyst Search queries. |
 | **Circuit**         | Execute, inspect, and abort Catalyst Circuit executions. |
+| **Connections**     | Connections allows you to integrate with Zoho and other third-party services |
 | **Connector**       | Create connector instances and manage OAuth access tokens. |
 | **Functions**       | Invoke deployed Catalyst functions by ID or name. |
 | **Job Scheduling**  | Job pool, cron, and job operations. |
@@ -67,6 +68,7 @@ Each Catalyst service package belongs to one of two scopes:
 | `@zcatalyst/auth` | Admin + User | Node + Browser |
 | `@zcatalyst/cache` | Admin-only | Node |
 | `@zcatalyst/circuit` | Admin-only | Node |
+| `@zcatalyst/connections` | Admin-only | Node |
 | `@zcatalyst/connector` | Admin-only | Node |
 | `@zcatalyst/datastore` | Admin + User | Node + Browser |
 | `@zcatalyst/functions` | Admin + User | Node + Browser |

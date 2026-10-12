@@ -8,9 +8,9 @@ import {
 	wrapValidatorsWithPromise
 } from '@zcatalyst/utils';
 
-import { Cache } from '.';
-import { CatalystCacheError } from './utils/error';
-import { ICatalystCache, ICatalystSegment } from './utils/interface';
+import { Cache } from './index.js';
+import { CatalystCacheError } from './utils/error.js';
+import { ICatalystCache, ICatalystSegment } from './utils/interface.js';
 
 type ICatalystCacheRes = ICatalystCache &
 	Omit<ICatalystGResponse, 'created_time' | 'created_by' | 'modified_time' | 'modified_by'>;

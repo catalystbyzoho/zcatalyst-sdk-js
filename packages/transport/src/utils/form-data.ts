@@ -3,7 +3,7 @@ import { basename } from 'path';
 import { PassThrough, Readable, Stream } from 'stream';
 import { inspect } from 'util';
 
-import CloneableStream from './clonable-stream';
+import CloneableStream from './clonable-stream.js';
 
 export type formDataType =
 	string | Buffer | Readable | IncomingMessage | PassThrough | Record<string, string>;

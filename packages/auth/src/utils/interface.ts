@@ -79,6 +79,25 @@ export interface ICatalystCustomTokenResponse {
 	scopes: Array<string>;
 }
 
+/**
+ * Configuration for the embedded IAM sign-in flow.
+ *
+ * When `signIn` is called from within an iframe context, the SDK renders a
+ * button in the DOM to satisfy the browser's trusted-gesture requirement for
+ * `window.open()`. That button is always rendered with the fixed element id
+ * **`"zc-signin-button"`** — use this id to target and style the button from
+ * your own stylesheet.
+ *
+ * @example
+ * ```css
+ * #zc-signin-button {
+ *   background: #0070f3;
+ *   color: #fff;
+ *   border-radius: 6px;
+ *   padding: 10px 24px;
+ * }
+ * ```
+ */
 export interface ICatalystSignInConfig {
 	signInProvidersOnly?: boolean;
 	cssUrl?: string;
@@ -87,6 +106,52 @@ export interface ICatalystSignInConfig {
 	forgotPasswordCssUrl?: string;
 	serviceUrl?: string;
 	redirectUrl?: string;
+	isHosted?: boolean;
+	/**
+	 * Custom label text for the "Sign In" button rendered when `signIn()` is
+	 * called from inside an iframe. Defaults to `'Sign In'`.
+	 *
+	 * @example
+	 * ```ts
+	 * await zcAuth.signIn('login-container', { signinButtonLabel: 'Log in to continue' });
+	 * ```
+	 */
+	signinButtonLabel?: string;
+}
+
+export interface ICatalystPopupSignInConfig {
+	width?: number;
+	height?: number;
+	timeoutMs?: number;
+	/** Forwarded to the popup login page via URL hash — never sent to the server. */
+	isHosted?: boolean;
+	/** Forwarded to the popup login page via URL hash — never sent to the server. */
+	cssUrl?: string;
+	/** Forwarded to the popup login page via URL hash — never sent to the server. */
+	signInProvidersOnly?: boolean;
+	/** Forwarded to the popup login page via URL hash — never sent to the server. */
+	forgotPasswordCssUrl?: string;
+	/** Forwarded to the popup login page via URL hash — never sent to the server. */
+	forgotPasswordId?: string;
+	/** Forwarded to the popup login page via URL hash — never sent to the server. */
+	is_customize_forgot_password?: boolean;
+	/** Forwarded to the popup login page via URL hash — never sent to the server. */
+	redirectUrl?: string;
+	/** Forwarded to the popup login page via URL hash — never sent to the server. */
+	serviceUrl?: string;
+}
+
+export interface ICatalystPopupSignInResult {
+	access_token: string;
+	expires_at: number;
+	event_id: string;
+}
+
+export interface IPopupAuthOperation {
+	eventId: string;
+	status: 'waiting' | 'completed' | 'cancelled' | 'expired';
+	popup: Window | null;
+	createdAt: number;
 }
 
 export interface ICatalystAuthResponse {
@@ -129,3 +194,8 @@ export interface ICatalystSignUpConfig {
 	last_name: string;
 	email_id: string;
 }
+
+export type TokenResponse = {
+	expires_in_sec: number;
+	access_token: string;
+};

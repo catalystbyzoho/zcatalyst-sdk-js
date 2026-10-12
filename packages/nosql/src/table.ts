@@ -9,9 +9,9 @@ import {
 	wrapValidatorsWithPromise
 } from '@zcatalyst/utils';
 
-import { NoSQLCrudOperation } from './utils/enum';
-import { CatalystNoSQLError } from './utils/error';
-import NoSQLResponse from './utils/response';
+import { NoSQLCrudOperation } from './utils/enum.js';
+import { CatalystNoSQLError } from './utils/error.js';
+import NoSQLResponse from './utils/response.js';
 import {
 	INoSQLDeleteItem,
 	INoSQLFetchItem,
@@ -20,7 +20,7 @@ import {
 	INoSQLResponse,
 	INoSQLTable,
 	INoSQLUpdateItem
-} from './utils/types';
+} from './utils/types.js';
 
 const { COMPONENT, REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 

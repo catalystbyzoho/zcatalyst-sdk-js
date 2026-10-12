@@ -1,5 +1,5 @@
-import { CONSTANTS } from './constants';
-import { CatalystService } from './enums';
+import { CONSTANTS } from './constants.js';
+import { CatalystService } from './enums.js';
 
 const { PRODUCT_NAME, API_VERSION } = CONSTANTS;
 

@@ -14,6 +14,18 @@ export const URL_DIVIDER = {
 	LOGIN: 'login'
 };
 
+export const POPUP_LOGIN_PATH = '/__catalyst/auth/login/popup';
+export const POPUP_LOGOUT_PATH = '/__catalyst/auth/logout/popup';
+export const POPUP_MSG_AUTH_REQUEST = 'catalyst-auth-request';
+export const POPUP_MSG_AUTH_TOKEN = 'catalyst-auth-token';
+export const POPUP_MSG_SIGNOUT_DONE = 'catalyst-signout-done';
+export const POPUP_MSG_AUTH_ERROR = 'catalyst-auth-error';
+export const POPUP_POLL_INTERVAL_MS = 500;
+export const POPUP_DEFAULT_TIMEOUT_MS = 120_000;
+export const POPUP_DEFAULT_IS_HOSTED = false;
+export const POPUP_DEFAULT_WIDTH = 600;
+export const POPUP_DEFAULT_HEIGHT = 700;
+
 export const UM_QUERY_STRING = {
 	EMAIL_ID: 'emailId'
 };

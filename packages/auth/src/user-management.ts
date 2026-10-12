@@ -13,7 +13,7 @@ import {
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { CatalystUserManagementError } from './utils/error';
+import { CatalystUserManagementError } from './utils/error.js';
 import {
 	ICatalystCustomTokenDetails,
 	ICatalystCustomTokenResponse,
@@ -21,7 +21,7 @@ import {
 	ICatalystSignupUserConfig,
 	ICatalystSignupValidationReq,
 	ICatalystUser
-} from './utils/interface';
+} from './utils/interface.js';
 
 type ICatalystNewUser = ICatalystSignupConfig & { user_details: ICatalystUser };
 
@@ -33,7 +33,10 @@ export enum USER_STATUS {
 	DISABLE = 'disable'
 }
 
-/** Provides user-scoped Catalyst user management operations such as current-user lookup and password reset. */
+/**
+ * Provides user-scoped Catalyst user management operations such as current-user lookup and password reset.
+ * @category User Management
+ */
 export class UserManagement implements Component {
 	requester: Handler;
 	/** Creates a user management client for the provided Catalyst app. */
@@ -44,12 +47,15 @@ export class UserManagement implements Component {
 	/**
 	 * Retrieves the name of the current component.
 	 * @returns The name of the user management component.
+	 * @category Component Info
 	 */
 	getComponentName(): string {
 		return COMPONENT.user_management;
 	}
 
-	/** Retrieves the package version used by this component. */
+	/** Retrieves the package version used by this component.
+	 * @category Component Info
+	 */
 	getComponentVersion(): string {
 		return version;
 	}
@@ -61,6 +67,7 @@ export class UserManagement implements Component {
 	 * @example
 	 * const user = await userManagement.getCurrentUser();
 	 * console.log(user.email);
+	 * @category User Lookup
 	 */
 	async getCurrentUser(): Promise<ICatalystUser> {
 		const request: IRequestConfig = {
@@ -87,6 +94,7 @@ export class UserManagement implements Component {
 	 * };
 	 * const message = await userManagement.resetPassword("user@example.com", resetConfig);
 	 * console.log(message);
+	 * @category Account Management
 	 */
 	async resetPassword(email: string, resetConfig: ICatalystSignupConfig): Promise<string> {
 		await wrapValidatorsWithPromise(() => {
@@ -109,7 +117,10 @@ export class UserManagement implements Component {
 	}
 }
 
-/** Provides admin-scoped Catalyst user management operations for project users and organizations. */
+/**
+ * Provides admin-scoped Catalyst user management operations for project users and organizations.
+ * @category User Management
+ */
 export class UserManagementAdmin extends UserManagement {
 	/** Creates an admin user management client for the provided Catalyst app. */
 	constructor(app?: unknown) {
@@ -124,6 +135,7 @@ export class UserManagementAdmin extends UserManagement {
 	 * const users = await userManagement.getAllUsers();
 	 * console.log(users);
 	 * ```
+	 * @category User Lookup
 	 */
 	async getAllUsers(): Promise<Array<ICatalystUser>>;
 	/**
@@ -147,6 +159,7 @@ export class UserManagementAdmin extends UserManagement {
 	 * ```ts
 	 * const users = await userManagement.getAllUsers('123456789');
 	 * ```
+	 * @category User Lookup
 	 */
 	async getAllUsers(orgId?: string): Promise<Array<ICatalystUser>> {
 		const request: IRequestConfig = {
@@ -171,6 +184,7 @@ export class UserManagementAdmin extends UserManagement {
 	 * const userDetails = await userManagement.getUserDetails('987654321');
 	 * console.log(userDetails);
 	 * ```
+	 * @category User Lookup
 	 */
 	async getUserDetails(id: string): Promise<ICatalystUser> {
 		await wrapValidatorsWithPromise(() => {
@@ -197,6 +211,7 @@ export class UserManagementAdmin extends UserManagement {
 	 * const isDeleted = await userManagement.deleteUser('987654321');
 	 * console.log(isDeleted); // true
 	 * ```
+	 * @category Account Management
 	 */
 	async deleteUser(id: string): Promise<boolean> {
 		await wrapValidatorsWithPromise(() => {
@@ -228,6 +243,7 @@ export class UserManagementAdmin extends UserManagement {
 	 * );
 	 * console.log(newUser);
 	 * ```
+	 * @category Registration
 	 */
 	async registerUser(
 		signupConfig: ICatalystSignupConfig,
@@ -261,6 +277,7 @@ export class UserManagementAdmin extends UserManagement {
 	 * const orgIds = await userManagement.getAllOrgs();
 	 * console.log(orgIds);
 	 * ```
+	 * @category Organization
 	 */
 	async getAllOrgs(): Promise<Array<string>> {
 		const request: IRequestConfig = {
@@ -290,6 +307,7 @@ export class UserManagementAdmin extends UserManagement {
 	 * );
 	 * console.log(user);
 	 * ```
+	 * @category Registration
 	 */
 	async addUserToOrg(
 		signupConfig: ICatalystSignupConfig,
@@ -333,6 +351,7 @@ export class UserManagementAdmin extends UserManagement {
 	 * const request = userManagement.getSignupValidationRequest(bioReq);
 	 * console.log(request);
 	 * ```
+	 * @category Registration
 	 */
 	getSignupValidationRequest(bioReq: {
 		getArgument: (arg0: string) => unknown;
@@ -366,6 +385,7 @@ export class UserManagementAdmin extends UserManagement {
 	 * const token = await userManagement.generateCustomToken({ user_id: '12345' });
 	 * console.log(token);
 	 * ```
+	 * @category Registration
 	 */
 	async generateCustomToken(
 		customTokenDetails: ICatalystCustomTokenDetails
@@ -399,6 +419,7 @@ export class UserManagementAdmin extends UserManagement {
 	 * const statusChanged = await userManagement.updateUserStatus('12345', USER_STATUS.ACTIVE);
 	 * console.log(statusChanged);
 	 * ```
+	 * @category Account Management
 	 */
 	async updateUserStatus(id: string, userStatus: USER_STATUS): Promise<boolean> {
 		await wrapValidatorsWithPromise(() => {
@@ -430,6 +451,7 @@ export class UserManagementAdmin extends UserManagement {
 	 * const updatedUser = await userManagement.updateUserDetails('12345', { email_id: 'new@example.com', role_id: 'admin' });
 	 * console.log(updatedUser);
 	 * ```
+	 * @category Account Management
 	 */
 	async updateUserDetails(
 		id: string,

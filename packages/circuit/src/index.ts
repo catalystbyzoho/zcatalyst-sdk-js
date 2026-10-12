@@ -1,6 +1,7 @@
 /**
  * Catalyst Circuit — orchestrate workflows that span multiple Catalyst components.
  *
+ * @module @zcatalyst/circuit
  * @packageDocumentation
  */
 
@@ -16,7 +17,7 @@ import {
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { CatalystCircuitError } from './utils/error';
+import { CatalystCircuitError } from './utils/error.js';
 
 const { REQ_METHOD, COMPONENT, CREDENTIAL_USER } = CONSTANTS;
 

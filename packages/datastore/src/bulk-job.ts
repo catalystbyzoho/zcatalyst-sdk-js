@@ -11,14 +11,14 @@ import {
 import { IncomingMessage } from 'http';
 import { Readable } from 'stream';
 
-import { Table } from './table';
-import { CatalystDataStoreError } from './utils/error';
+import { Table } from './table.js';
+import { CatalystDataStoreError } from './utils/error.js';
 import {
 	ICatalystBulkCallback,
 	ICatalystBulkJob,
 	ICatalystBulkReadQuery,
 	ICatalystBulkWriteInput
-} from './utils/interface';
+} from './utils/interface.js';
 
 const { REQ_METHOD, COMPONENT, CREDENTIAL_USER } = CONSTANTS;
 

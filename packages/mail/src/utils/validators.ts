@@ -1,4 +1,4 @@
-import { ICatalystMail } from './interface';
+import { ICatalystMail } from './interface.js';
 
 //TODO: complete validating the email object
 /**

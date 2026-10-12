@@ -52,7 +52,7 @@ describe('bucket url validation', () => {
 			assertValidBucketUrl(
 				'https://sample-development.zohostratus.com',
 				'sample',
-				'development.zohostratus.com'
+				'-development.zohostratus.com'
 			)
 		).not.toThrow();
 	});
@@ -62,13 +62,13 @@ describe('bucket url validation', () => {
 			assertValidBucketUrl(
 				'https://capture.example/#-development.zohostratus.com',
 				'capture.example/#',
-				'development.zohostratus.com'
+				'-development.zohostratus.com'
 			)
 		).toThrow();
 	});
 
 	it('rejects a URL with userinfo, port, query, or hash', () => {
-		const suffix = 'development.zohostratus.com';
+		const suffix = '-development.zohostratus.com';
 		expect(() =>
 			assertValidBucketUrl(
 				'https://user:pass@sample-development.zohostratus.com',
@@ -100,8 +100,14 @@ describe('bucket url validation', () => {
 			assertValidBucketUrl(
 				'http://sample-development.zohostratus.com',
 				'sample',
-				'development.zohostratus.com'
+				'-development.zohostratus.com'
 			)
 		).toThrow();
+	});
+
+	it('accepts a URL formed with just the bucket name for non-development environments', () => {
+		expect(() =>
+			assertValidBucketUrl('https://sample.zohostratus.com', 'sample', '.zohostratus.com')
+		).not.toThrow();
 	});
 });

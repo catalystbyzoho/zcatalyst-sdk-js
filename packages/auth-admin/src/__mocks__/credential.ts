@@ -12,8 +12,8 @@ import {
 	isNonNullObject,
 	isValidType,
 	ObjectHasProperties
-} from '../../../utils/src';
-import { CatalystAuthError } from '../errors';
+} from '../../../utils/src/index.js';
+import { CatalystAuthError } from '../errors.js';
 const {
 	CREDENTIAL_SUFFIX,
 	REQ_METHOD,

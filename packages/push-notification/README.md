@@ -388,4 +388,4 @@ See [CONTRIBUTING](../../CONTRIBUTING.md) for more information on how to get sta
 
 ## License
 
-This SDK is distributed under the Apache License 2.0. See [LICENSE](../../LICENCE) file for more information.
+This SDK is distributed under the Apache License 2.0. See [LICENSE](./LICENCE) file for more information.

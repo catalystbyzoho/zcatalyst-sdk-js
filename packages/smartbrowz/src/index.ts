@@ -1,6 +1,7 @@
 /**
  * Catalyst SmartBrowz — cloud-hosted headless browser automation.
  *
+ * @module @zcatalyst/smartbrowz
  * @packageDocumentation
  */
 
@@ -18,14 +19,15 @@ import { Readable } from 'stream';
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { Dataverse } from './dataverse';
-import { CatalystSmartbrowzError } from './utils/error';
+import { BrowserGrid } from './browser-grid.js';
+import { Dataverse } from './dataverse.js';
+import { CatalystSmartbrowzError } from './utils/error.js';
 import {
 	ICatalystSmartbrowzPdf,
 	ICatalystSmartbrowzReq,
 	ICatalystSmartbrowzScrShot,
 	ICatalystSmartbrowzTemplate
-} from './utils/interfaces';
+} from './utils/interfaces.js';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 
@@ -34,17 +36,21 @@ type ICatalystSmartbrowzTemplateOptions = ICatalystSmartbrowzTemplate &
 
 /**
  * Runs SmartBrowz browser automation and Dataverse lookups.
+ * @category SmartBrowz
  */
 export class Smartbrowz implements Component {
 	readonly requester: Handler;
 	readonly #dataverse: Dataverse;
+	readonly #browserGrid: BrowserGrid;
 	constructor(app?: unknown) {
 		this.requester = new Handler(app, this);
 		this.#dataverse = new Dataverse({ requester: this.requester });
+		this.#browserGrid = new BrowserGrid({ requester: this.requester });
 	}
 
 	/**
 	 * getComponentName operation.
+	 * @category Component Info
 	 */
 	getComponentName(): string {
 		return 'smartbrowz';
@@ -52,6 +58,7 @@ export class Smartbrowz implements Component {
 
 	/**
 	 * getComponentVersion operation.
+	 * @category Component Info
 	 */
 	getComponentVersion(): string {
 		return version;
@@ -94,6 +101,7 @@ export class Smartbrowz implements Component {
 	 * ```ts
 	 * const pdf = await smartbrowz.convertToPdf('https://example.com');
 	 * ```
+	 * @category Rendering
 	 */
 	async convertToPdf(source: string, options?: ICatalystSmartbrowzPdf): Promise<Readable> {
 		await wrapValidatorsWithPromise(() => {
@@ -126,6 +134,7 @@ export class Smartbrowz implements Component {
 	 * ```ts
 	 * const screenshot = await smartbrowz.takeScreenshot('https://example.com');
 	 * ```
+	 * @category Rendering
 	 */
 	async takeScreenshot(source: string, options?: ICatalystSmartbrowzScrShot): Promise<Readable> {
 		await wrapValidatorsWithPromise(() => {
@@ -158,6 +167,7 @@ export class Smartbrowz implements Component {
 	 * ```ts
 	 * const output = await smartbrowz.generateFromTemplate('template-id', { output_options: { output_type: 'pdf' } });
 	 * ```
+	 * @category Rendering
 	 */
 	async generateFromTemplate(
 		id: string,
@@ -184,6 +194,7 @@ export class Smartbrowz implements Component {
 	 * ```ts
 	 * const leads = await smartbrowz.getEnrichedLead({ websiteUrl: 'https://example.com' });
 	 * ```
+	 * @category Dataverse
 	 */
 	async getEnrichedLead({
 		email,
@@ -201,6 +212,7 @@ export class Smartbrowz implements Component {
 	 * ```ts
 	 * const stack = await smartbrowz.findTechStack('https://example.com');
 	 * ```
+	 * @category Dataverse
 	 */
 	async findTechStack(
 		websiteUrl: Parameters<Dataverse['findTechStack']>[0]
@@ -218,6 +230,7 @@ export class Smartbrowz implements Component {
 	 * ```ts
 	 * const companies = await smartbrowz.getSimilarCompanies({ leadName: 'Example Inc' });
 	 * ```
+	 * @category Dataverse
 	 */
 	async getSimilarCompanies({
 		leadName,
@@ -226,5 +239,18 @@ export class Smartbrowz implements Component {
 		Dataverse['getSimilarCompanies']
 	> {
 		return this.#dataverse.getSimilarCompanies({ leadName, websiteUrl });
+	}
+
+	/**
+	 * Provides admin-only access to SmartBrowz Browser Grid management APIs.
+	 * @returns The BrowserGrid instance.
+	 * @example
+	 * ```ts
+	 * const grids = await smartbrowz.browserGrid().getGrid();
+	 * ```
+	 * @category Browser Grid
+	 */
+	browserGrid(): BrowserGrid {
+		return this.#browserGrid;
 	}
 }

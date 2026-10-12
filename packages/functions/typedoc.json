@@ -1,5 +1,13 @@
 {
-  "entryPoints": ["src/**/*"],
-  "exclude": ["src/__mocks__/**/*"],
-  "out": "../../docs/functions"
+  "extends": [
+    "../../typedoc.base.json"
+  ],
+  "name": "Catalyst Functions",
+  "entryPoints": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "src/__mocks__/**/*"
+  ],
+  "out": "../../docs/catalyst-functions"
 }

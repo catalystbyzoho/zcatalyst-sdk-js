@@ -1,6 +1,6 @@
 import { ICatalystGResponse, ICatalystJSON } from '@zcatalyst/utils';
 
-import { NoSQLByte } from './byte';
+import { NoSQLByte } from './byte.js';
 import {
 	AttribType,
 	DataType,
@@ -9,9 +9,9 @@ import {
 	NoSQLOperator,
 	NoSQLReturnValue,
 	NoSQLUpdateOperationType
-} from './enum';
-import { NoSQLItem } from './item';
-import { NoSQLByteSet, NoSQLNumberSet, NoSQLStringSet } from './set';
+} from './enum.js';
+import { NoSQLItem } from './item.js';
+import { NoSQLByteSet, NoSQLNumberSet, NoSQLStringSet } from './set.js';
 
 export interface INoSQLBase extends ICatalystGResponse {
 	id: string;
