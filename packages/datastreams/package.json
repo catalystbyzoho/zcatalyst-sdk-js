@@ -74,7 +74,9 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "typedoc": "npx typedoc",
+    "docs": "pnpm run typedoc"
   },
   "dependencies": {
     "@zcatalyst/utils": "workspace:*",

@@ -54,7 +54,7 @@ const ALLOWED_DATASTREAM_HOSTS = new Set(
 /**
  * Validates that a value is one of the known, allow-listed DataStreams (DMS)
  * hostnames before it is used to open a connection. Any host that is not an
- * exact match for an entry in {@link ALLOWED_DATASTREAM_HOSTS} is rejected,
+ * exact match for an entry in `ALLOWED_DATASTREAM_HOSTS` is rejected,
  * regardless of whether it is otherwise a syntactically valid hostname --
  * this closes the request-forgery (SSRF) gap where a syntactically valid but
  * unintended/internal host (e.g. a metadata endpoint or private IP) could

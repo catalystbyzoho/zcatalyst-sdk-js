@@ -5,7 +5,7 @@
  * Node.js and browser environments without requiring Node.js built-in modules.
  */
 
-type EventListener = (...args: Array<any>) => void;
+export type EventListener = (...args: Array<any>) => void;
 type EventMap = Map<string, Set<EventListener>>;
 
 /**
