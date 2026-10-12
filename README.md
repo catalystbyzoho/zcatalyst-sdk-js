@@ -1,7 +1,7 @@
 # CATALYST SDK for JavaScript
 
 ![catalyst](https://img.shields.io/badge/%E2%9A%A1-catalyst-blue.svg)
-[![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://opensource.org/license/Apache-2.0)
 
 JavaScript packages for working with Zoho Catalyst services. Each package exposes the APIs for one Catalyst component.
 
@@ -43,6 +43,7 @@ The SDK includes the following services:
 | **Circuit**         | Execute, inspect, and abort Catalyst Circuit executions. |
 | **Connections**     | Connections allows you to integrate with Zoho and other third-party services |
 | **Connector**       | Create connector instances and manage OAuth access tokens. |
+| **Data Streams**    | Real-time WebSocket publish/subscribe channels. |
 | **Functions**       | Invoke deployed Catalyst functions by ID or name. |
 | **Job Scheduling**  | Job pool, cron, and job operations. |
 | **Mail**            | Send email through Catalyst Mail. |
@@ -71,18 +72,19 @@ Each Catalyst service package belongs to one of two scopes:
 | `@zcatalyst/connections` | Admin-only | Node |
 | `@zcatalyst/connector` | Admin-only | Node |
 | `@zcatalyst/datastore` | Admin + User | Node + Browser |
+| `@zcatalyst/datastreams` | Admin + User | Node + Browser |
 | `@zcatalyst/functions` | Admin + User | Node + Browser |
 | `@zcatalyst/job-scheduling` | Admin-only | Node |
 | `@zcatalyst/mail` | Admin-only | Node |
 | `@zcatalyst/nosql` | Admin-only | Node |
 | `@zcatalyst/pipelines` | Admin-only | Node |
 | `@zcatalyst/push-notification` | Admin + User | Node + Browser |
-| `@zcatalyst/quick-ml` | Admin-only | Node |
+| `@zcatalyst/quickml` | Admin-only | Node |
 | `@zcatalyst/smartbrowz` | Admin-only | Node |
 | `@zcatalyst/stratus` | Admin + User | Node + Browser |
 | `@zcatalyst/zia` | Admin-only | Node |
 
-> Internal infrastructure packages — `@zcatalyst/auth-admin`, `@zcatalyst/auth-client`, `@zcatalyst/transport`, and `@zcatalyst/utils`
+> Internal infrastructure packages: `@zcatalyst/auth-admin`, `@zcatalyst/auth-client`, `@zcatalyst/transport`, and `@zcatalyst/utils`.
 
 
 ## Usage in Serverless Functions
@@ -100,13 +102,11 @@ export async function handler(req, res) {
 
     // Use services
     const queryResult = await datastore.executeZCQLQuery("SELECT * FROM users");
-    const usersTable = datastore.getTableDetails('users');
 
     return {
         statusCode: 200,
         body: JSON.stringify({
-            users: queryResult,
-            table: usersTable
+            users: queryResult
         })
     };
 }
@@ -115,7 +115,7 @@ export async function handler(req, res) {
 ## API Reference
 
 Detailed API documentation for each service is available at:
-[API Documentation](https://catalyst.zoho.com/help/api/introduction/overview.html)
+[API Documentation](https://docs.catalyst.zoho.com/en/api/introduction/overview-and-prerequisites/)
 
 ## Contributing
 
@@ -123,7 +123,7 @@ Please see our [contributing guide](./CONTRIBUTING.md) for details.
 
 ## Security
 
-Please report any security issues to [security@catalyst.zoho.com](mailto:security@catalyst.zoho.com)
+Please report any security issues to the [bugs portal](https://bugs.zohosecurity.in/). See [SECURITY.md](./SECURITY.md)
 
 ## License
 

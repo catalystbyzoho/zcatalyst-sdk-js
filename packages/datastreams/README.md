@@ -34,8 +34,8 @@ The `@zcatalyst/datastreams` package provides JavaScript/TypeScript methods to i
 
 - A [Catalyst project](https://docs.catalyst.zoho.com/en/getting-started/catalyst-projects) set up
 - Data Stream channels created
-- Understanding of [WebSocket communication](https://docs.catalyst.zoho.com/en/cloud-scale/help/data-streams/websocket/)
-- Token pair generation for authentication
+- Understanding of [WebSocket subscription](https://docs.catalyst.zoho.com/en/cloud-scale/help/data-streams/implementation/subscribe-websocket/)
+- A [token pair](https://docs.catalyst.zoho.com/en/cloud-scale/help/data-streams/implementation/generate-token-pair/) for authentication
 
 ## Installation
 
@@ -95,21 +95,21 @@ const result = await dataStreams.publishData('channel-id', 'Hello subscribers!')
 For client-side real-time data consumption:
 
 ```js
-// Get token pair first (from server API)
+// Get token pair first (from your server API, or DataStreams.getTokenPair)
 const tokenPair = await fetch('/api/get-token-pair').then(res => res.json());
 
 // Create WebSocket connection
 const ws = new DataStreamsWebSocket({
   url: tokenPair.url,
   key: tokenPair.key,
-  zuid: tokenPair.zuid,
+  zuid: tokenPair['wss-id'],
   enableLogging: true
 });
 
 // Handle connection events
 ws.on('open', (event) => {
   console.log('Connected to data stream');
-  // Subscribe to live events
+  // Subscribe to live events (must be called after 'open')
   ws.subscribe('0'); // 0 = live events
 });
 
@@ -137,36 +137,23 @@ The `DataStreamsWebSocket` class provides low-level WebSocket access:
 ```js
 import { DataStreamsWebSocket } from '@zcatalyst/datastreams';
 
-// Create WebSocket connection
-const ws = new DataStreamsWebSocket('ws://localhost:8080/stream');
+// The connection (wss) starts as soon as the object is created.
+// `url` is a host name (e.g. the `url` returned by getTokenPair), not a full URL.
+const ws = new DataStreamsWebSocket({ url, key, zuid });
 
-// Handle connection events
-ws.on('open', () => {
-  console.log('Connected to data stream');
+ws.on('open', () => ws.subscribe('0'));
+ws.on('message', (event) => {
+  console.log('Received message:', event.data);
+  ws.sendAck();
 });
-
-ws.on('message', (data) => {
-  console.log('Received message:', data);
-});
-
-ws.on('error', (error) => {
-  console.error('WebSocket error:', error);
-});
-
-ws.on('close', () => {
-  console.log('Disconnected from data stream');
-});
-
-// Send message
-ws.send(JSON.stringify({ type: 'ping' }));
+ws.on('error', (error) => console.error('WebSocket error:', error.code, error.message));
+ws.on('close', () => console.log('Disconnected from data stream'));
 ```
 
 ### Environment Support
 
-This package automatically detects the environment and uses appropriate WebSocket implementations:
-
-- **Node.js**: Uses `ws` WebSocket library
-- **Browser**: Uses native WebSocket API
+- **Node.js**: `DataStreams` exposes the admin methods (`getAllChannels`, `getChannelDetails`, `getLiveCount`, `publishData`) in addition to `getTokenPair`. The `ws` library is used for WebSocket connections.
+- **Browser**: `DataStreams` exposes only `getTokenPair`. Native WebSocket API is used.
 
 ## Async/await
 
@@ -176,8 +163,8 @@ operator to wait for the promise returned by data stream operations:
 ```js
 // async/await.
 try {
-  const stream = await dataStreams.create(config);
-  // process stream creation.
+  const result = await dataStreams.publishData('channel-id', 'Hello subscribers!');
+  // process result.
 } catch (error) {
   // error handling.
 } finally {
@@ -192,8 +179,7 @@ as well as response metadata (e.g. request id).
 
 ```js
 try {
-  const stream = await dataStreams.create(config);
-  // process stream.
+  await dataStreams.publishData('channel-id', 'Hello subscribers!');
 } catch (error) {
   const message = error.message;
   const status = error.statusCode;
@@ -203,7 +189,9 @@ try {
 
 ## API Reference
 
-### DataStreams Admin Methods
+### DataStreams Methods
+
+`getTokenPair` is available in Node.js and the browser. The remaining methods are Node.js (admin) only.
 
 <details>
 <summary>
@@ -217,7 +205,9 @@ const tokenPair = await dataStreams.getTokenPair('channel-id', {
 
 // Response format
 console.log(tokenPair.key);     // WebSocket authentication key
-console.log(tokenPair.zuid);    // User ID for WebSocket connection
+console.log(tokenPair.url);     // WebSocket host
+console.log(tokenPair['wss-id']);      // WebSocket session ID
+console.log(tokenPair['channel-id']);  // Channel ID
 ```
 
 </details>
@@ -234,7 +224,7 @@ const channels = await dataStreams.getAllChannels();
 channels.forEach(channel => {
   console.log('Channel ID:', channel.id);
   console.log('Channel Name:', channel.name);
-  console.log('Channel Description:', channel.description);
+  console.log('Channel Status:', channel.status);
 });
 ```
 
@@ -251,9 +241,9 @@ const channelDetails = await dataStreams.getChannelDetails('channel-id');
 console.log('Channel info:', {
   id: channelDetails.id,
   name: channelDetails.name,
-  description: channelDetails.description,
-  created_at: channelDetails.created_at,
-  status: channelDetails.status
+  status: channelDetails.status,
+  retention: channelDetails.retention,
+  created_time: channelDetails.created_time
 });
 ```
 
@@ -267,8 +257,7 @@ Get Live Connection Count
 ```js
 const liveCount = await dataStreams.getLiveCount('channel-id');
 
-console.log('Active connections:', liveCount.count);
-console.log('Last updated:', liveCount.timestamp);
+console.log('Active connections:', liveCount);
 ```
 
 </details>
@@ -300,7 +289,7 @@ Create WebSocket Connection
 
 ```js
 const ws = new DataStreamsWebSocket({
-  url: 'us4-dms.zoho.com',
+  url: 'websocket-host', // host name from getTokenPair
   key: 'websocket-auth-key',
   zuid: 'user-id',
   enableLogging: true    // Optional: enable debug logging
@@ -318,7 +307,7 @@ Subscribe to Channel Events
 // Subscribe to live events (0 = live, -1 = earliest, -2 = resume, streaming-id = specific)
 ws.subscribe('0');
 
-// Subscribe after connection is established
+// subscribe() throws if the connection is not open yet, so call it from the 'open' handler
 ws.on('open', () => {
   ws.subscribe('0');
 });
@@ -422,7 +411,7 @@ if (ws.isConnected()) {
 
 // Get connection state
 const state = ws.getConnectionState();
-console.log('Connection state:', state); // 'connected', 'connecting', 'closing', 'closed'
+console.log('Connection state:', state); // 'connected', 'connecting', 'closing', 'closed', 'disconnected'
 
 // Get session info
 const session = ws.getSessionInfo();
@@ -449,8 +438,10 @@ ws.close();
 
 ```js
 {
+  "wss-id": "websocket-session-id",
+  "channel-id": "channel-id",
   key: "websocket-authentication-key",
-  zuid: "user-identifier"
+  url: "websocket-host"
 }
 ```
 
@@ -460,9 +451,13 @@ ws.close();
 {
   id: "channel-id",
   name: "channel-name",
-  description: "channel-description",
-  created_at: "2023-01-01T00:00:00.000Z",
-  status: "active"
+  status: "channel-status",
+  retention: 0,
+  created_time: "...",
+  modified_time: "...",
+  created_by: { zuid, email_id, user_type },
+  modified_by: { zuid, email_id, user_type }
+  // also: parentId, service, project_id, control_type, control_ids, source
 }
 ```
 
@@ -493,6 +488,8 @@ ws.close();
 - **1013** - Connection blocked, contact support
 - **1011** - Server down, retry after a minute
 - **1014** - Missing key parameter
+- **1006** - Failed to create the WebSocket connection
+- **1007** - Invalid host received in a switch-URL message
 
 ### Subscribe Types
 
@@ -504,9 +501,9 @@ ws.close();
 ## Resources
 
 - [Catalyst Data Streams Documentation](https://docs.catalyst.zoho.com/en/cloud-scale/help/data-streams/introduction/)
-- [WebSocket Communication](https://docs.catalyst.zoho.com/en/cloud-scale/help/data-streams/websocket/)
-- [Channel Management](https://docs.catalyst.zoho.com/en/cloud-scale/help/data-streams/channel-management/)
-- [Data Streams SDK Reference](https://docs.catalyst.zoho.com/en/sdk/server-side-sdks/node-js-sdk/data-streams/)
+- [Subscribe via WebSocket](https://docs.catalyst.zoho.com/en/cloud-scale/help/data-streams/implementation/subscribe-websocket/)
+- [Manage Channels](https://docs.catalyst.zoho.com/en/cloud-scale/help/data-streams/implementation/manage-channels/)
+- [Data Streams JavaScript SDK Reference](https://docs.catalyst.zoho.com/en/sdk/javascript/v1/cloudscale/data-streams/get-component-instance/)
 - [SDK Documentation](https://docs.catalyst.zoho.com/en/sdk/)
 
 ## Contributing
