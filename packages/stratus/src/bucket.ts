@@ -36,11 +36,12 @@ import {
 	IStratusUnzipStatus
 } from './utils/interface.js';
 import { JWTAuthHandler } from './utils/jwt-auth-handler.js';
+import { getNodeApp } from './utils/node-app.js';
 import { Util } from './utils/signature-auth-handler.js';
 import { StratusObjectRequest } from './utils/types.js';
 import { assertValidBucketName, assertValidBucketUrl } from './utils/validator.js';
 
-const { REQ_METHOD, CREDENTIAL_USER, STRATUS_SUFFIX, IS_LOCAL } = CONSTANTS;
+const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 
 /**
  * Represents a Stratus bucket for user-scope object operations.
@@ -55,12 +56,11 @@ export class Bucket {
 		this.#jwtAuth = new JWTAuthHandler(this);
 		if (typeof bucket === 'string') {
 			assertValidBucketName(bucket);
-			const environment =
-				typeof window === 'undefined'
-					? (this._requester.app?.config?.environment as string)?.toLowerCase()
-					: (window.__catalyst?.environment as string)?.toLowerCase();
-			const domainSuffix =
-				typeof window === 'undefined' ? STRATUS_SUFFIX : window.__catalyst?.stratus_suffix;
+			const app = getNodeApp(this._requester);
+			const environment = (
+				app ? app.config.environment : window.__catalyst?.environment
+			)?.toLowerCase();
+			const domainSuffix = app ? app.config.stratusSuffix : window.__catalyst?.stratus_suffix;
 			if (!domainSuffix) {
 				throw new CatalystStratusError(
 					'invalid-argument',
@@ -497,7 +497,10 @@ export class Bucket {
 				...((await this.#util.getBucketSignature()) as Record<string, string>)
 			};
 			return { headers, params, url: `${url}/_signed`, auth: false };
-		} else if (typeof window !== 'undefined' || IS_LOCAL === 'true') {
+		} else if (
+			typeof window !== 'undefined' ||
+			getNodeApp(this._requester)?.config.servedByCLI
+		) {
 			const accessToken = await this.#jwtAuth.getJWTAccessToken();
 
 			if (!accessToken) {

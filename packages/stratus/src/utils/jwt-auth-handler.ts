@@ -3,6 +3,7 @@ import { CatalystService, CONSTANTS } from '@zcatalyst/utils';
 
 import { Bucket } from '../bucket.js';
 import { IJWTResponse } from './interface.js';
+import { getNodeApp } from './node-app.js';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 
@@ -14,13 +15,12 @@ const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
  */
 export class JWTAuthHandler {
 	bucket: Bucket;
-	_requester: Handler;
 	zaid: string = '';
 	projectDomain: string = '';
 	authPortal: string = '';
-	cookie?: Record<string, string>;
 	accessTokenObj: { access_token?: string; expires_in?: number } = {};
 	private sessionVersion: string = '';
+	private requester: Handler;
 
 	/**
 	 * @param bucket - The `Bucket` instance that owns this auth handler.
@@ -28,7 +28,7 @@ export class JWTAuthHandler {
 	 */
 	constructor(bucket: Bucket) {
 		this.bucket = bucket;
-		this._requester = this.bucket.getAuthorizationClient();
+		this.requester = this.bucket.getAuthorizationClient();
 	}
 
 	/**
@@ -40,30 +40,16 @@ export class JWTAuthHandler {
 	 * ```
 	 */
 	async initializeConfig(): Promise<void> {
-		if (typeof window !== 'undefined') {
+		const app = getNodeApp(this.requester);
+		if (app) {
+			this.zaid = app.config.projectKey;
+			this.projectDomain = app.config.origin as string;
+			this.authPortal = app.config.authPortalDomain;
+		} else {
 			this.projectDomain = sessionStorage.getItem('PROJECT_DOMAIN') as string;
 			this.zaid = sessionStorage.getItem('ZAID') as string;
 			this.authPortal = sessionStorage.getItem('IAM_DOMAIN') as string;
-		} else {
-			this.zaid = this._requester.app?.config.projectKey as string;
-			this.projectDomain = this._requester.app?.config.origin as string;
-			this.authPortal = process.env.CATALYST_PORTAL_DOMAIN as string;
 		}
-	}
-
-	/**
-	 * Loads the credential cookie from the active app credential.
-	 * @returns A promise that resolves to void.
-	 * @example
-	 * ```ts
-	 * await authHandler.setCookie();
-	 * ```
-	 */
-	async setCookie(): Promise<void> {
-		this.cookie = (await (this._requester as Handler).app?.credential.getToken()) as Record<
-			string,
-			string
-		>;
 	}
 
 	/**
@@ -164,7 +150,7 @@ export class JWTAuthHandler {
 			service: CatalystService.BAAS,
 			user: CREDENTIAL_USER.user
 		};
-		return (await (this._requester ? this._requester : new Handler()).send(option)).data.data;
+		return (await (this.requester ? this.requester : new Handler()).send(option)).data.data;
 	}
 
 	/**

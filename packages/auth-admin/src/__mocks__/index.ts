@@ -1,6 +1,9 @@
 import {
 	CatalystAppError,
 	CONSTANTS,
+	isCatalystApiDomain,
+	isCatalystAuthPortalDomain,
+	isCatalystStratusSuffix,
 	isNonEmptyObject,
 	isNonEmptyString
 } from '../../../utils/src/index.js';
@@ -19,7 +22,12 @@ const {
 	ENVIRONMENT,
 	DEFAULT_APP_NAME,
 	CREDENTIAL_USER,
-	CATALYST_ORIGIN
+	CATALYST_ORIGIN,
+	ACCOUNTS_PORTAL_ORIGIN,
+	STRATUS_SUFFIX,
+	DOMAIN_HEADER,
+	SERVED_BY_CLI_HEADER,
+	IS_LOCAL
 } = CONSTANTS;
 
 let appOptions: Record<string, string | number | Credential | Object> = {};
@@ -172,7 +180,7 @@ export class ZCAuth {
 		return this.#appCollection[appName];
 	}
 
-	#loadOptionsFromObj(obj: Record<string, string>): Record<string, string | number> {
+	#loadOptionsFromObj(obj: Record<string, string>): Record<string, string | number | boolean> {
 		const projectId = obj[PROJECT_HEADER.id];
 		const projectKey = obj[PROJECT_HEADER.key];
 		const environment = obj[PROJECT_HEADER.environment] || DEFAULT_ENV;
@@ -190,7 +198,26 @@ export class ZCAuth {
 			projectKey,
 			environment,
 			projectDomain,
-			projectSecretKey
+			projectSecretKey,
+			apiDomain: resolveDomain(
+				obj[DOMAIN_HEADER.api],
+				isCatalystApiDomain,
+				'X_ZOHO_CATALYST_CONSOLE_URL',
+				CATALYST_ORIGIN
+			),
+			authPortalDomain: resolveDomain(
+				obj[DOMAIN_HEADER.authPortal],
+				isCatalystAuthPortalDomain,
+				'CATALYST_PORTAL_DOMAIN',
+				ACCOUNTS_PORTAL_ORIGIN
+			),
+			stratusSuffix: resolveDomain(
+				obj[DOMAIN_HEADER.stratusSuffix],
+				isCatalystStratusSuffix,
+				'X_ZOHO_STRATUS_RESOURCE_SUFFIX',
+				STRATUS_SUFFIX
+			),
+			servedByCLI: (obj[SERVED_BY_CLI_HEADER] ?? IS_LOCAL) === 'true'
 		};
 	}
 
@@ -242,3 +269,15 @@ export {
 } from '../../src/credential.js';
 export { CatalystApp } from './credential.js';
 export { CatalystAppError };
+
+function resolveDomain(
+	headerValue: string | undefined,
+	isKnownDomain: (value: string) => boolean,
+	envName: string,
+	fallback: string
+): string {
+	if (headerValue && isKnownDomain(headerValue)) {
+		return headerValue;
+	}
+	return process.env[envName] || fallback;
+}

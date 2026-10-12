@@ -61,6 +61,7 @@ jest.mock('@zcatalyst/auth-admin', () => {
 	const original = jest.requireActual('@zcatalyst/auth-admin');
 	return {
 		...original,
+		addDefaultAppHeaders: (headers: Record<string, string>) => headers,
 		CatalystApp: jest.fn().mockImplementation(() => ({
 			credential: {
 				getCurrentUser: jest.fn().mockReturnValue('admin'),
@@ -329,6 +330,65 @@ describe('HttpClient', () => {
 			}
 
 			expect(request.qs).toBeDefined();
+		});
+
+		it('should send catalyst requests to the app api domain', async () => {
+			mockApp.config.apiDomain = 'https://api.catalyst.zoho.in';
+			const request: IRequestConfig = {
+				method: 'GET',
+				path: '/test',
+				service: CatalystService.BAAS,
+				headers: {}
+			};
+
+			await httpClient.send(request).catch(() => undefined);
+
+			expect(request.origin).toBe('https://api.catalyst.zoho.in');
+		});
+
+		it('should keep an explicit request origin over the app api domain', async () => {
+			mockApp.config.apiDomain = 'https://api.catalyst.zoho.in';
+			const request: IRequestConfig = {
+				method: 'GET',
+				path: '/test',
+				origin: 'https://custom.example.com',
+				service: CatalystService.BAAS,
+				headers: {}
+			};
+
+			await httpClient.send(request).catch(() => undefined);
+
+			expect(request.origin).toBe('https://custom.example.com');
+		});
+
+		it('should send admin requests to the https api domain when served by CLI', async () => {
+			mockApp.config.apiDomain = 'http://api.catalyst.zoho.in';
+			mockApp.config.servedByCLI = true;
+			const request: IRequestConfig = {
+				method: 'GET',
+				path: '/test',
+				service: CatalystService.BAAS,
+				headers: {}
+			};
+
+			await httpClient.send(request).catch(() => undefined);
+
+			expect(request.origin).toBe('https://api.catalyst.zoho.in');
+		});
+
+		it('should send user requests to the project domain when served by CLI', async () => {
+			mockApp.config.servedByCLI = true;
+			(mockApp.credential.getCurrentUser as jest.Mock).mockReturnValue(CREDENTIAL_USER.user);
+			const request: IRequestConfig = {
+				method: 'GET',
+				path: '/test',
+				service: CatalystService.BAAS,
+				headers: {}
+			};
+
+			await httpClient.send(request).catch(() => undefined);
+
+			expect(request.origin).toBe('https://test-domain.com');
 		});
 
 		it('should throw CatalystAPIError on request failure', async () => {
