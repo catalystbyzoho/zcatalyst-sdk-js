@@ -1,4 +1,4 @@
-import { CatalystDataStreamError } from './errors';
+import { CatalystDataStreamError } from './errors.js';
 
 /**
  * Fixed allow-list of the only DataStreams (DMS) hostnames the SDK is permitted

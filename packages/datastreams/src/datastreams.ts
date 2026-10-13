@@ -17,14 +17,14 @@ import {
 
 import pkg from '../package.json';
 const { version } = pkg;
-import { CatalystDataStreamError } from './utils/errors';
+import { CatalystDataStreamError } from './utils/errors.js';
 import {
 	ApiResponse,
 	ChannelLiveCountResponse,
 	GetAllChannelsResponse,
 	GetChannelResponse,
 	TokenResponse
-} from './utils/interfaces';
+} from './utils/interfaces.js';
 
 const { COMPONENT, REQ_METHOD, CREDENTIAL_USER, X_ZOHO_CATALYST_RESOURCE_ID } = CONSTANTS;
 
@@ -66,23 +66,23 @@ export class DataStreams implements Component {
 	 * and authorize access to the specified datastream channel.
 	 *
 	 * @param channelId - The unique identifier or name of the datastream channel
-	 * @param user - The user identifier, can be a user ID (number) or connection name (string)
+	 * @param user - An object with either `userId` or `connectionName`
 	 * @returns Response containing the token pair information
 	 * @throws CatalystDataStreamError if channelId is invalid or the request fails
 	 *
 	 * @example
 	 * ```typescript
 	 * const datastream = app.datastream();
-	 * const tokenPair = await datastream.getTokenPair("12345", "user123"); // Using ID and user ID
+	 * const tokenPair = await datastream.getTokenPair("12345", { userId: "user123" }); // Using ID and user ID
 	 * // or
-	 * const tokenPair = await datastream.getTokenPair("my_channel", "connection_name"); // Using name and connection name
+	 * const tokenPair = await datastream.getTokenPair("my_channel", { connectionName: "connection_name" }); // Using name and connection name
 	 * console.log('token pair::', tokenPair);
 	 * ```
 	 */
 	async getTokenPair(
 		channelId: string | number,
 		{ userId, connectionName }: { userId?: string; connectionName?: string }
-	): Promise<ApiResponse<TokenResponse>> {
+	): Promise<TokenResponse> {
 		await wrapValidatorsWithPromise(() => {
 			isValidInputString(channelId, 'channelId', true);
 		}, CatalystDataStreamError);
@@ -155,7 +155,7 @@ export class DataStreamsAdmin extends DataStreams {
 	 * console.log('channels::', res);
 	 * ```
 	 */
-	async getAllChannels(): Promise<ApiResponse<GetAllChannelsResponse>> {
+	async getAllChannels(): Promise<GetAllChannelsResponse> {
 		const request: IRequestConfig = {
 			method: REQ_METHOD.get,
 			path: '/datastreams/channel',
@@ -187,7 +187,7 @@ export class DataStreamsAdmin extends DataStreams {
 	 * console.log('channel details::', channelDetails);
 	 * ```
 	 */
-	async getChannelDetails(channelId: string): Promise<ApiResponse<GetChannelResponse>> {
+	async getChannelDetails(channelId: string): Promise<GetChannelResponse> {
 		await wrapValidatorsWithPromise(() => {
 			isValidInputString(channelId, 'channelId', true);
 		}, CatalystDataStreamError);

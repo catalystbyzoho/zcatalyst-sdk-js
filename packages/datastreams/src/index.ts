@@ -5,5 +5,5 @@
  * @packageDocumentation
  */
 
-export { DataStreamsAdmin as DataStreams } from './datastreams';
-export { DataStreamsWebSocket } from './web-socket';
+export { DataStreamsAdmin as DataStreams } from './datastreams.js';
+export { DataStreamsWebSocket } from './web-socket.js';

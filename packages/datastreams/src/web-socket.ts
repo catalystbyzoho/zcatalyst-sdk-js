@@ -7,8 +7,8 @@
 
 import { isNonEmptyString, ObjectHasProperties } from '@zcatalyst/utils';
 
-import { MessageType } from './utils/enum';
-import { EventEmitter } from './utils/event-emitter';
+import { MessageType } from './utils/enum.js';
+import { EventEmitter } from './utils/event-emitter.js';
 import {
 	AckPayload,
 	CustomEvent,
@@ -18,8 +18,8 @@ import {
 	SubscribePayload,
 	UnsubscribePayload,
 	WebSocketLike
-} from './utils/interfaces';
-import { assertValidHost, assertValidWebSocketUrl } from './utils/validators';
+} from './utils/interfaces.js';
+import { assertValidHost, assertValidWebSocketUrl } from './utils/validators.js';
 
 /**
  * Enhanced DataStreams WebSocket client with modern TypeScript features
@@ -430,7 +430,7 @@ export class DataStreamsWebSocket extends EventEmitter {
 					// First time ping and reconnection will be called here
 					this.startPing();
 					this.startPingToServer();
-					// this.startCloseAndReconnect(); // Uncomment if needed
+					this.startCloseAndReconnect();
 					break;
 				}
 
@@ -556,7 +556,7 @@ export class DataStreamsWebSocket extends EventEmitter {
 	private makeNewConnection(): void {
 		if (this.sid && this.uid) {
 			this.finalUrl = `wss://${this.url}${this.path}?key=${this.keyValue}&i=${this.sid}&c=${this.uid}`;
-			this.log(`New connection URL: ${this.finalUrl}`);
+			this.log(`Reconnecting to ${this.url}${this.path}`);
 
 			this.createWebSocketConnection();
 		}
