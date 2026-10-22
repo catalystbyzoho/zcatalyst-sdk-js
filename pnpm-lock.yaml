@@ -289,6 +289,18 @@ importers:
         specifier: workspace:^
         version: link:../utils
 
+  packages/postgres:
+    dependencies:
+      '@zcatalyst/auth-client':
+        specifier: workspace:^
+        version: link:../auth-client
+      '@zcatalyst/transport':
+        specifier: workspace:^
+        version: link:../transport
+      '@zcatalyst/utils':
+        specifier: workspace:^
+        version: link:../utils
+
   packages/push-notification:
     dependencies:
       '@zcatalyst/auth-client':
