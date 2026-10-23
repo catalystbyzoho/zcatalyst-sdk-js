@@ -6,6 +6,7 @@
  */
 
 export * from './constants.js';
+export * from './data-centers.js';
 export * from './enums.js';
 export * from './errors.js';
 export * from './interface.js';

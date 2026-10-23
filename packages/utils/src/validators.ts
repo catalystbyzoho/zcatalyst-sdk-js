@@ -1,3 +1,4 @@
+import { CATALYST_DATA_CENTERS } from './data-centers.js';
 import { CatalystAppError, CatalystError } from './errors.js';
 
 /**
@@ -639,4 +640,58 @@ export function isValidInputString(value: unknown, name?: string, throwErr?: boo
 		});
 	}
 	return false;
+}
+
+/**
+ * Checks that a value is the API domain of a Catalyst data center.
+ *
+ * @param value - The value to check.
+ * @returns Whether the value exactly matches the API domain of a Catalyst data center.
+ *
+ * @example
+ * ```ts
+ * import { isCatalystApiDomain } from '@zcatalyst/utils';
+ * const result = isCatalystApiDomain('https://api.catalyst.zoho.eu');
+ * ```
+ */
+export function isCatalystApiDomain(value: string): boolean {
+	return Object.values(CATALYST_DATA_CENTERS).some(
+		(dataCenter) => dataCenter.apiDomain === value
+	);
+}
+
+/**
+ * Checks that a value is the accounts portal domain of a Catalyst data center.
+ *
+ * @param value - The value to check.
+ * @returns Whether the value exactly matches the accounts portal domain of a Catalyst data center.
+ *
+ * @example
+ * ```ts
+ * import { isCatalystAuthPortalDomain } from '@zcatalyst/utils';
+ * const result = isCatalystAuthPortalDomain('https://accounts.zohoportal.eu');
+ * ```
+ */
+export function isCatalystAuthPortalDomain(value: string): boolean {
+	return Object.values(CATALYST_DATA_CENTERS).some(
+		(dataCenter) => dataCenter.authPortalDomain === value
+	);
+}
+
+/**
+ * Checks that a value is the Stratus suffix of a Catalyst data center.
+ *
+ * @param value - The value to check.
+ * @returns Whether the value exactly matches the Stratus suffix of a Catalyst data center.
+ *
+ * @example
+ * ```ts
+ * import { isCatalystStratusSuffix } from '@zcatalyst/utils';
+ * const result = isCatalystStratusSuffix('.zohostratus.eu');
+ * ```
+ */
+export function isCatalystStratusSuffix(value: string): boolean {
+	return Object.values(CATALYST_DATA_CENTERS).some(
+		(dataCenter) => dataCenter.stratusSuffix === value
+	);
 }

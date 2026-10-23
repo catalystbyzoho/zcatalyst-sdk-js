@@ -1,6 +1,6 @@
 # Security Policy
 
-To report a security issue, please use [bugs portal](https://bugs.zohosecurity.com/).
+To report a security issue, please use [bugs portal](https://bugs.zohosecurity.in/).
 
 The Zoho Security Team will respond within 5 working days of your report on bugs portal.
 

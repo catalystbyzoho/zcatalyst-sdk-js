@@ -1,0 +1,7 @@
+{
+  "extends": ["../../typedoc.base.json"],
+  "name": "Catalyst DataStreams",
+  "entryPoints": ["src/**/*"],
+  "exclude": ["src/__mocks__/**/*"],
+  "out": "../../docs/datastreams"
+}

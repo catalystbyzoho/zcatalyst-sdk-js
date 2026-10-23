@@ -1,8 +1,9 @@
+import { ReadableStream } from 'node:stream/web';
+
 import { addDefaultAppHeaders, CatalystApp } from '@zcatalyst/auth-admin';
 import { CatalystService, CONSTANTS, getServicePath, LOGGER } from '@zcatalyst/utils';
 import http, { ClientRequest, IncomingHttpHeaders, IncomingMessage } from 'http';
 import https from 'https';
-import { ReadableStream } from 'node:stream/web';
 import { stringify } from 'querystring';
 import { Readable, Stream } from 'stream';
 import { URL } from 'url';
@@ -18,7 +19,6 @@ import { Component, IRequestConfig } from './utils/interfaces.js';
 import RequestAgent from './utils/request-agent.js';
 
 const {
-	IS_LOCAL,
 	USER_KEY_NAME,
 	CREDENTIAL_USER,
 	CATALYST_ORIGIN,
@@ -557,13 +557,17 @@ export class HttpClient {
 			// assign user headers
 			req.headers[USER_KEY_NAME] = this.app.credential.getCurrentUserType();
 
+			req.origin = req.origin || this.app.config.apiDomain;
+
 			// spcl handling for CLI
-			if (IS_LOCAL === 'true') {
+			if (this.app.config.servedByCLI) {
 				switch (user) {
 					case CREDENTIAL_USER.admin:
 						req.origin =
 							'https://' +
-							CATALYST_ORIGIN.replace('https://', '').replace('http://', '');
+							this.app.config.apiDomain
+								.replace('https://', '')
+								.replace('http://', '');
 						break;
 					case CREDENTIAL_USER.user:
 						req.origin = 'https://' + this.app.config.projectDomain;

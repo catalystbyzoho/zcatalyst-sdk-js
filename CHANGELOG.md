@@ -1,5 +1,15 @@
 # Change Log
 
+## [v1.1.0](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v1.1.0) - 2026-10-23
+
+#### `@zcatalyst/auth-admin@v1.1.0`
+- **Features**
+  - support per-app domain config for multi-app processes (#57)[`#57`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/57)
+
+#### `@zcatalyst/datastreams@v1.0.0`
+- **Features**
+  - Added Datastreams support.[`#43`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/43)
+
 ## [v1.0.0](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v1.0.0) - 2026-09-21
 
 First stable release. All packages bumped to `v1.0.0`.
