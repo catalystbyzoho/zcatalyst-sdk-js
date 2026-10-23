@@ -1,0 +1,50 @@
+/*
+ * Zoho Catalyst SDK — shared TypeDoc branding.
+ * Applied to both the root combined site and every per-package doc site
+ * via the "customCss" option in typedoc.base.json.
+ */
+
+:root {
+	--color-accent: #1a73e8;
+	--color-icon-background: #1a73e8;
+	--color-link: #1a73e8;
+}
+
+.light {
+	--color-accent: #1a73e8;
+	--color-icon-background: #1a73e8;
+	--color-link: #1264d1;
+}
+
+.dark {
+	--color-accent: #63a9ff;
+	--color-icon-background: #63a9ff;
+	--color-link: #63a9ff;
+}
+
+/* Header */
+#tsd-search .field input,
+#tsd-search .results {
+	border-radius: 6px;
+}
+
+.tsd-page-title h1 {
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+
+/* Nicer, rounder code blocks */
+pre,
+.tsd-signature {
+	border-radius: 8px;
+}
+
+/* Subtle card look for member groups */
+.tsd-panel {
+	border-radius: 8px;
+}
+
+/* De-emphasize the "Generated using TypeDoc" footer link a touch */
+.tsd-generator {
+	opacity: 0.7;
+}
