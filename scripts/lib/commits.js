@@ -80,10 +80,27 @@ function extractPrNumber(message) {
 function expandCommitMessage(message) {
   if (!extractPrNumber(message)) return [message];
   const [header, ...body] = message.split('\n');
-  const extra = body
-    .map((l) => l.trim().replace(/^[-*]\s+/, ''))
-    .filter((l) => /^(feat|fix|breaking|docs|test|refactor|chore|perf|style|ci|build)\([\w$.*/-]+\)!?: \S/i.test(l));
-  return [message, ...extra.filter((l) => l !== header.trim())];
+  const entryRe = /^(feat|fix|breaking|docs|test|refactor|chore|perf|style|ci|build)\([\w$.*/-]+\)!?: \S/i;
+  const stripPr = (s) => s.trim().replace(/\s*\(#\d+\)$/, '');
+  const normHeader = stripPr(header);
+  const entries = [];
+  let current = null;
+  for (const raw of body) {
+    const line = raw.trim().replace(/^[-*]\s+/, '');
+    if (entryRe.test(line)) {
+      current = { header: line, rest: [] };
+      entries.push(current);
+    } else if (current) {
+      current.rest.push(raw);
+    }
+  }
+  const extra = entries
+    .filter((e) => stripPr(e.header) !== normHeader)
+    .map((e) => {
+      const rest = e.rest.join('\n').trim();
+      return rest ? `${e.header}\n\n${rest}` : e.header;
+    });
+  return [message, ...extra];
 }
 
 /**
