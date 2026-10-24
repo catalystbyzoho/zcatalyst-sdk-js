@@ -18,7 +18,7 @@
 - **Features**
   - add data center helpers, domain validators, constants and interfaces for per-app domain config (#57)[`#57`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/57)
 
-#### `@zcatalyst/datastreams@v1.0.0`
+#### `@zcatalyst/datastreams@v1.0.1`
 - **Features**
   - Added Datastreams support.[`#43`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/43)
 
