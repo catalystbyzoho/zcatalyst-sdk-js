@@ -84,6 +84,7 @@ function expandCommitMessage(message) {
   const stripPr = (s) => s.trim().replace(/\s*\(#\d+\)$/, '');
   const normHeader = stripPr(header);
   const entries = [];
+  const primaryBody = [];
   let current = null;
   for (const raw of body) {
     const line = raw.trim().replace(/^[-*]\s+/, '');
@@ -92,15 +93,23 @@ function expandCommitMessage(message) {
       entries.push(current);
     } else if (current) {
       current.rest.push(raw);
+    } else {
+      primaryBody.push(raw);
     }
   }
+  // Keep only the primary's own notes so secondary entries' BREAKING CHANGE
+  // notes don't leak into it.
+  entries
+    .filter((e) => stripPr(e.header) === normHeader)
+    .forEach((e) => primaryBody.push(...e.rest));
+  const primary = [header, ...primaryBody].join('\n').trimEnd();
   const extra = entries
     .filter((e) => stripPr(e.header) !== normHeader)
     .map((e) => {
       const rest = e.rest.join('\n').trim();
       return rest ? `${e.header}\n\n${rest}` : e.header;
     });
-  return [message, ...extra];
+  return [primary, ...extra];
 }
 
 /**
