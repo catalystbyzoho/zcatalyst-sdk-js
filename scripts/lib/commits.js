@@ -73,13 +73,56 @@ function extractPrNumber(message) {
 }
 
 /**
+ * Expands a merge commit into one message per affected package: the original
+ * message (header scope) plus every body line of the form `type(scope): subject`.
+ * Body lines without a scope (e.g. `BREAKING CHANGE: ...`) are not treated as commits.
+ */
+function expandCommitMessage(message) {
+  if (!extractPrNumber(message)) return [message];
+  const [header, ...body] = message.split('\n');
+  const entryRe = /^(feat|fix|breaking|docs|test|refactor|chore|perf|style|ci|build)\([\w$.*/-]+\)!?: \S/i;
+  const stripPr = (s) => s.trim().replace(/\s*\(#\d+\)$/, '');
+  const normHeader = stripPr(header);
+  const entries = [];
+  const primaryBody = [];
+  let current = null;
+  for (const raw of body) {
+    const line = raw.trim().replace(/^[-*]\s+/, '');
+    if (entryRe.test(line)) {
+      current = { header: line, rest: [] };
+      entries.push(current);
+    } else if (current) {
+      current.rest.push(raw);
+    } else {
+      primaryBody.push(raw);
+    }
+  }
+  // Keep only the primary's own notes so secondary entries' BREAKING CHANGE
+  // notes don't leak into it.
+  entries
+    .filter((e) => stripPr(e.header) === normHeader)
+    .forEach((e) => primaryBody.push(...e.rest));
+  const primary = [header, ...primaryBody].join('\n').trimEnd();
+  const extra = entries
+    .filter((e) => stripPr(e.header) !== normHeader)
+    .map((e) => {
+      const rest = e.rest.join('\n').trim();
+      return rest ? `${e.header}\n\n${rest}` : e.header;
+    });
+  return [primary, ...extra];
+}
+
+/**
  * Returns commit objects since the latest tag in the form { prNumber, message }.
  * Commits without a discoverable PR number are filtered out (these scripts
  * intentionally only consider PR-merged commits).
  */
 function getCommitObjectsSinceTag() {
   return getRawCommitsSinceTag()
-    .map((message) => ({ prNumber: extractPrNumber(message), message }))
+    .flatMap((full) => {
+      const prNumber = extractPrNumber(full);
+      return expandCommitMessage(full).map((message) => ({ prNumber, message }));
+    })
     .filter((c) => c.prNumber && c.message);
 }
 
@@ -121,5 +164,6 @@ module.exports = {
   getRawCommitsSinceTag,
   getCommitObjectsSinceTag,
   extractPrNumber,
+  expandCommitMessage,
   getWorkspacePackages,
 };
