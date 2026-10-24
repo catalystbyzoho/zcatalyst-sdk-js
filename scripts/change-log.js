@@ -185,11 +185,12 @@ function commitMatchesPackage(parsedHeader, message, pkg) {
 
 function updatePackageChangelogs(commitObjects) {
   const allPkgs = getAllPackagesFromFs();
+  // Git tags are created from the root version, so package entries link to that tag.
+  const tagVersion = `v${require(join(process.cwd(), 'package.json')).version}`;
 
   for (const pkg of allPkgs) {
     const { dir, name, version } = pkg;
     const changelogPath = join(process.cwd(), 'packages', dir, 'CHANGELOG.md');
-    const tagVersion = `v${version}`;
     const scopedCommits = [];
 
     for (const { message, prNumber } of commitObjects) {

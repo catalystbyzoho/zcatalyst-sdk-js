@@ -73,13 +73,30 @@ function extractPrNumber(message) {
 }
 
 /**
+ * Expands a merge commit into one message per affected package: the original
+ * message (header scope) plus every body line of the form `type(scope): subject`.
+ * Body lines without a scope (e.g. `BREAKING CHANGE: ...`) are not treated as commits.
+ */
+function expandCommitMessage(message) {
+  if (!extractPrNumber(message)) return [message];
+  const [header, ...body] = message.split('\n');
+  const extra = body
+    .map((l) => l.trim().replace(/^[-*]\s+/, ''))
+    .filter((l) => /^(feat|fix|breaking|docs|test|refactor|chore|perf|style|ci|build)\([\w$.*/-]+\)!?: \S/i.test(l));
+  return [message, ...extra.filter((l) => l !== header.trim())];
+}
+
+/**
  * Returns commit objects since the latest tag in the form { prNumber, message }.
  * Commits without a discoverable PR number are filtered out (these scripts
  * intentionally only consider PR-merged commits).
  */
 function getCommitObjectsSinceTag() {
   return getRawCommitsSinceTag()
-    .map((message) => ({ prNumber: extractPrNumber(message), message }))
+    .flatMap((full) => {
+      const prNumber = extractPrNumber(full);
+      return expandCommitMessage(full).map((message) => ({ prNumber, message }));
+    })
     .filter((c) => c.prNumber && c.message);
 }
 
@@ -121,5 +138,6 @@ module.exports = {
   getRawCommitsSinceTag,
   getCommitObjectsSinceTag,
   extractPrNumber,
+  expandCommitMessage,
   getWorkspacePackages,
 };
