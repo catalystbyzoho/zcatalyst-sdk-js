@@ -6,6 +6,18 @@
 - **Features**
   - support per-app domain config for multi-app processes (#57)[`#57`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/57)
 
+#### `@zcatalyst/stratus@v1.1.0`
+- **Features**
+  - use per-app domain config for bucket URL and auth handlers (#57)[`#57`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/57)
+
+#### `@zcatalyst/transport@v1.1.0`
+- **Features**
+  - support per-app domain config in the HTTP handler (#57)[`#57`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/57)
+
+#### `@zcatalyst/utils@v1.1.0`
+- **Features**
+  - add data center helpers, domain validators, constants and interfaces for per-app domain config (#57)[`#57`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/57)
+
 #### `@zcatalyst/datastreams@v1.0.0`
 - **Features**
   - Added Datastreams support.[`#43`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/43)

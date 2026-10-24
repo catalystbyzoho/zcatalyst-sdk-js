@@ -1,5 +1,10 @@
 # @zcatalyst/stratus
 
+## [1.1.0](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v1.1.0) - 2026-10-23
+
+### Features
+- use per-app domain config for bucket URL and auth handlers (#57)[`#57`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/57)
+
 ## [1.0.0](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v1.0.0) - 2026-09-21
 
 - First stable release.
