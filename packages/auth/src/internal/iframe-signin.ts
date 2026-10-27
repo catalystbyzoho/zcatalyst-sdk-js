@@ -171,7 +171,9 @@ export class IframeSignInManager {
 		) as string;
 		const serviceUrl = config.redirectUrl ?? config.serviceUrl ?? redirectUrl;
 		const appDomain = `${location.protocol}//${location.host}`;
-		const signInRedirect = encodeURIComponent(this.#constructRedirectUrl(serviceUrl));
+		const redirectTarget = this.#constructRedirectUrl(serviceUrl);
+		// Nested inside recoveryurl; that value is encoded once by URLSearchParams below.
+		const signInRedirect = encodeURIComponent(redirectTarget);
 
 		const recoveryUrl = `${appDomain}/accounts/p/70-${this.#zaid}/password?servicename=ZohoCatalyst&&serviceurl=${signInRedirect}`;
 
@@ -179,18 +181,19 @@ export class IframeSignInManager {
 			css_url: cssUrl,
 			portal: this.#zaid,
 			servicename: 'ZohoCatalyst',
-			serviceurl: encodeURIComponent(this.#constructRedirectUrl(serviceUrl)),
+			serviceurl: redirectTarget,
 			hide_signup: true,
 			hide_fs: `${!isPublicSignupEnabled}`,
 			dcc: true,
 			hide_fp: `${hideForgotPassword}`,
-			recoveryurl: encodeURIComponent(recoveryUrl)
+			recoveryurl: recoveryUrl
 		};
 
-		const params = Object.keys(urlParams)
-			.map((key) => `${key}=${urlParams[key]}`)
-			.join('&');
-		return `${appDomain}/accounts/p/${this.#zaid}/signin?${params}`;
+		const iamUrl = new URL(`${appDomain}/accounts/p/${this.#zaid}/signin`);
+		for (const [key, value] of Object.entries(urlParams)) {
+			iamUrl.searchParams.set(key, String(value));
+		}
+		return iamUrl.toString();
 	}
 
 	#getIAMForgotPasswordURL(config: ICatalystSignInConfig): string {
