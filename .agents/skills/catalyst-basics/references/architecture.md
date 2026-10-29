@@ -1,0 +1,153 @@
+# Catalyst Architecture — Service Selection Guide
+
+Use this file when a user asks "which Catalyst service should I use for X?" or is starting a new project and needs to pick the right components. Load it before writing any service-specific code for a new project.
+
+---
+
+## Service Selection Matrix
+
+### Compute
+
+| If you need… | Use | Do NOT use |
+|---|---|---|
+| Stateless HTTP endpoints, event-driven logic, scheduled jobs, or Zoho service integrations | **Functions** | AppSail |
+| A persistent server process, long-running background workers, or a custom Docker container | **AppSail** | Functions |
+| Visual workflow orchestration across multiple functions (parallel/sequential) | **Circuits** | Manual function chaining in code — *check DC restriction first* |
+
+**Rule:** Default to Functions. Reach for AppSail only when the process genuinely cannot be stateless. Functions bill per invocation; AppSail bills per instance uptime.
+
+---
+
+### Data Storage
+
+| If you need… | Use | Do NOT use |
+|---|---|---|
+| Relational data, SQL-style queries (ZCQL), joins, fixed schema, ACID compliance | **Data Store** | NoSQL |
+| Flexible/schemaless document data, JSON-heavy payloads, no predefined structure, high write throughput | **NoSQL** | Data Store |
+| File/binary storage: images, PDFs, CSVs, uploads | **Stratus** | Data Store, NoSQL |
+| Ephemeral key-value data, session tokens, short-lived state (max 48-hour TTL) | **Cache** | Data Store |
+
+---
+
+### Frontend Hosting
+
+| If you need… | Use |
+|---|---|
+| Static sites or SPAs (React, Next.js, Vue, Angular, Svelte, Astro) | **Slate** |
+| Server-rendered or full-stack frameworks with backend | **AppSail** |
+
+---
+
+### Authentication & Identity
+
+| If you need… | Use |
+|---|---|
+| End-user login/signup for your application | **Authentication** (Catalyst built-in) |
+| OAuth tokens for external APIs (Zoho CRM, Zoho Mail, etc.) | **Connections** (part of `catalyst-authentication` skill) |
+| Row-level data access control tied to the logged-in user | **Security Rules** + Data Store permissions |
+
+---
+
+### AI / ML
+
+| If you need… | Use | DC restriction |
+|---|---|---|
+| OCR, face detection, text analytics, object detection, barcode scanning, content moderation | **Zia Services** | No DC restriction (Identity Scanner excepted; see DC table) |
+| Train a custom ML model on your own data | **QuickML (ML pipelines / AutoML)** | Prediction models: all DCs. Generative AI (LLM/RAG/Knowledge Base): not in AU, SA, CA |
+| Browser automation, web scraping, PDF generation | **SmartBrowz / Browser Logic** | No DC restriction |
+
+---
+
+### Events & Scheduling
+
+| If you need… | Use | Do NOT use |
+|---|---|---|
+| Trigger logic when data changes in Catalyst services | **Signals** | ~~Event Listeners~~ (deprecated) |
+| Run a function on a schedule (cron-style) | **Job Scheduling** | ~~Cron~~ (deprecated) |
+| Zoho service integration (Cliq, ConvoKraft bot logic) | **Integration Functions** | US DC only. On restricted DCs, build ConvoKraft bot logic with the Deluge function option instead |
+
+---
+
+## Typical Stack Patterns
+
+### Simple REST API + database
+```
+Functions (Basic I/O or Advanced I/O)
+  + Data Store (relational data)
+  + Authentication (if user login needed)
+  + API Gateway (rate limiting, routing)
+```
+**Cost signal:** Within free tier for < ~1K daily active users.
+
+---
+
+### Full-stack web app
+```
+Slate (React/Next.js frontend)
+  + Functions (API backend)
+  + Data Store (structured data)
+  + Stratus (file uploads)
+  + Authentication (user login)
+```
+**Cost signal:** Free tier covers most hobby projects. DataStore write volume is usually the first paid item.
+
+---
+
+### Persistent Node.js/Python/Java server (Express, FastAPI, Spring Boot)
+```
+AppSail (managed runtime or Docker)
+  + Data Store / NoSQL (data)
+  + Stratus (files)
+```
+**Cost signal:** AppSail bills per GB-hour of instance uptime ($0.08/GB-hour). A 512 MB instance running 24/7 = ~$0.04/day.
+
+---
+
+### File processing pipeline
+```
+Functions (trigger on upload event via Signals)
+  + Stratus (source files + processed output)
+  + Data Store (processing metadata/status)
+  + Job Scheduling (retry / batch jobs)
+```
+
+---
+
+### ML-powered app
+```
+Functions (API layer)
+  + Zia Services (OCR/text analytics/image)  — or —  QuickML (custom model)
+  + Data Store (results/metadata)
+  + Cache (cache frequent predictions)
+```
+**Cost signal:** Zia APIs are $0.001/request. 100 calls/month free. For QuickML rates load the `catalyst-quickml` skill's pricing section (India-region INR; other regions differ — verify at catalyst.zoho.com/pricing.html).
+
+---
+
+## DC Availability Quick Reference
+
+Before recommending Circuits, Integration Functions, QuickML Generative AI, Identity Scanner, or Mobile Device Management — confirm the user's DC. (Zia AutoML is retired — "AutoML" now means QuickML AutoML, which is available in all DCs.)
+
+| Service | US | EU | IN | AU | JP | SA | CA |
+|---------|----|----|----|----|----|----|-----|
+| Circuits | Yes | No | No | No | No | No | No |
+| Integration Functions | Yes | No | No | No | No | No | No |
+| QuickML — prediction/ML models | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| QuickML — Generative AI (LLM Serving, RAG, Knowledge Base) | Yes | Yes | Yes | No | Yes | No | No |
+| Push Notifications | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Identity Scanner — Document Processing | No | No | Yes | No | No | No | No |
+| Identity Scanner — Facial Comparison API/SDK | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| All other services | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+
+Note: **Identity Scanner's "Facial Comparison" feature works from any DC via API/SDK** — only *testing it in the Catalyst console* is restricted to IN DC. The "Document Processing" feature (Aadhaar, PAN, etc.) is IN DC only end-to-end, API included.
+
+Source: https://docs.catalyst.zoho.com/en/llms.txt
+
+## Common Errors
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| Circuits not visible in console | User is on EU/AU/IN/JP/SA/CA DC | Use function chaining or Job Scheduling instead |
+| Integration Functions grayed out | User is on a restricted DC (EU/AU/IN/JP/SA/CA) | For ConvoKraft bot logic, use the Deluge function option; otherwise use a Basic I/O function with the Zoho API directly via Connections |
+| QuickML Generative AI (LLM/RAG/Knowledge Base) not available | User is on AU/SA/CA DC | Prediction/AutoML models still work in all DCs; for pre-built AI use Zia Services which have no DC restriction |
+| "File Store not found" error | Deprecated service accessed by pre-Aug 2025 account trying new feature | Migrate to Stratus |
