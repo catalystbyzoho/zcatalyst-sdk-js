@@ -21,12 +21,12 @@ const tokenResp = (token = 'jwt-1', expires_at = Date.now() + 3600 * 1000) => ({
 	data: { data: { token, expires_at } }
 });
 const queryResp = { statusCode: 200, headers: {}, data: JSON.stringify([{ id: 1 }]) };
-const opts = { clusterId: 'c1', domain: 'pg.example.com' };
+const opts = {};
 
 describe('postgres browser entry', () => {
 	it('does not expose asUser', () => {
 		const { Postgres: BrowserPostgres } = require('../src/index.browser');
-		const pg = new BrowserPostgres(undefined, { clusterId: 'c1', domain: 'pg.example.com' });
+		const pg = new BrowserPostgres();
 		expect(pg.asUser).toBeUndefined();
 		expect(typeof pg.from).toBe('function');
 	});
@@ -36,6 +36,8 @@ describe('postgres', () => {
 	beforeEach(() => {
 		sendMock.mockReset();
 		adminUser = true;
+		process.env.CLUSTER_ID = 'c1';
+		process.env.POSTGRESS_DOMAIN = 'pg.example.com';
 	});
 
 	it('component name', () => {
@@ -89,13 +91,13 @@ describe('postgres', () => {
 		});
 	});
 
-	it('admin without asUser requests an anon token', async () => {
+	it('admin without asUser requests a token with no role params', async () => {
 		sendMock.mockResolvedValueOnce(tokenResp()).mockResolvedValue(queryResp);
 		await new Postgres(undefined, opts).from('t').select();
 		expect(sendMock.mock.calls[0][0]).toMatchObject({
 			user: 'admin',
 			path: '/postgres/c1/token',
-			qs: { role: 'anon' }
+			qs: {}
 		});
 	});
 
@@ -283,12 +285,14 @@ describe('postgres', () => {
 			globalThis.process = realProcess;
 		});
 
-		it('works with options only and rejects asUser', async () => {
+		it('works with app headers only and rejects asUser', async () => {
 			adminUser = false;
+			appConfig = { postgresId: 'c1', postgresDomain: 'pg.example.com' };
 			sendMock.mockResolvedValueOnce(tokenResp()).mockResolvedValue(queryResp);
 			const pg = new Postgres(undefined, opts);
 			await expect(pg.from('t').select()).resolves.toBeDefined();
 			expect(() => pg.asUser('123')).toThrow(CatalystPostgresError);
+			appConfig = undefined;
 		});
 
 		it('fails clearly when config is missing', async () => {

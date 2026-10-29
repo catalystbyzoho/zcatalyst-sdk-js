@@ -21,7 +21,7 @@ export class Postgres implements Component {
 	protected readonly requester: Handler;
 	#tokens?: TokenManager;
 
-	/** Creates a Postgres client. Pass `clusterId` and `domain` in options when env is unavailable. */
+	/** Creates a Postgres client. Cluster id and domain come from env or request headers. */
 	constructor(app?: unknown, options: IPostgresOptions = {}) {
 		this.app = app;
 		this.options = options;
@@ -36,7 +36,7 @@ export class Postgres implements Component {
 	get #tokenManager(): TokenManager {
 		this.#tokens ??= new TokenManager(
 			this.requester,
-			() => resolveClusterId(this.options, this.requester.app),
+			() => resolveClusterId(this.requester.app),
 			this.tokenScope()
 		);
 		return this.#tokens;
@@ -89,7 +89,7 @@ export class Postgres implements Component {
 		body?: unknown;
 		asString?: boolean;
 	}) {
-		const domain = resolveDomain(this.options, this.requester.app);
+		const domain = resolveDomain(this.requester.app);
 		const origin = /^https?:\/\//.test(domain) ? domain : `https://${domain}`;
 		const url = `${origin}${req.path}${req.query ? `?${req.query}` : ''}`;
 

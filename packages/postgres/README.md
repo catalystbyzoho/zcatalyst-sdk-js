@@ -43,8 +43,8 @@ Modifiers: `order limit range single`. Table routes are `https://<domain>/<table
 
 | Value | Source |
 |---|---|
-| Cluster id | `options.clusterId`, else env `CLUSTER_ID`, else request header `x-zc-directdb-cluster-id` |
-| Query domain | `options.domain`, else env `POSTGRESS_DOMAIN`, else request header `x-zc-directdb-pdomain` |
+| Cluster id | env `CLUSTER_ID`, else request header `x-zc-directdb-cluster-id` |
+| Query domain | env `POSTGRESS_DOMAIN`, else request header `x-zc-directdb-pdomain` |
 
 ## Notes
 
@@ -57,7 +57,7 @@ Catalyst has no anonymous session, and an `anon` token needs admin credentials. 
 (function/AppSail, Security Rule `authentication: optional`) fetch it and pass it to the browser:
 
 ```ts
-const pg = new Postgres(app, { domain, anonToken }); // queries run as the `anon` database role
+const pg = new Postgres(app, { anonToken }); // queries run as the `anon` database role
 ```
 
 The token is used as is (never refreshed). Restrict what the `anon` role can access in the database.
@@ -66,4 +66,4 @@ The token is used as is (never refreshed). Restrict what the `anon` role can acc
 
 - **Classes:** `Postgres` (user, from `postgres.ts`) is exported by the browser entry. The Node entry exports `PostgresAdmin` as `Postgres`; both live in `postgres.ts`. `asUser()` returns a scoped admin client.
 - **Node:** admin credentials work (`anon` token by default, `asUser` for a specific user); cluster id and domain can come from env.
-- **Browser:** user-only. `asUser` is not part of the browser build (separate `index.browser` entry), there is no `process.env`, so pass `{ clusterId, domain }` to the constructor. The query domain must allow CORS for your origin.
+- **Browser:** user-only. `asUser` is not part of the browser build (separate `index.browser` entry), there is no `process.env`, so the cluster id and domain come from the request-header app config. The query domain must allow CORS for your origin.

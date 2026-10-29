@@ -1,9 +1,5 @@
 /** Optional configuration for the Postgres component. */
 export interface IPostgresOptions {
-	/** Catalyst Postgres cluster id. Defaults to the `CLUSTER_ID` environment variable. */
-	clusterId?: string;
-	/** Query domain. Defaults to the `POSTGRESS_DOMAIN` environment variable. */
-	domain?: string;
 	/**
 	 * Pre-issued `anon` role token for visitors without a Catalyst session (e.g. browsers).
 	 * When set, no token is generated and it is used as is; `asUser()` still generates its own.
