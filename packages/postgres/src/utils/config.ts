@@ -3,18 +3,28 @@ import { isNonEmptyString, isValidInputString, wrapValidators } from '@zcatalyst
 import { CatalystPostgresError } from './error.js';
 import { IPostgresOptions } from './types.js';
 
-/** Resolves the cluster id from options, falling back to the `CLUSTER_ID` environment variable. */
-export function resolveClusterId(options: IPostgresOptions): string {
-	const clusterId = options.clusterId ?? process.env.CLUSTER_ID;
+// `process` is absent in browsers, where these values must be passed as options
+const env = (key: string): string | undefined =>
+	(typeof process !== 'undefined' ? process.env?.[key] : undefined) || undefined;
+
+type AppWithConfig = { config?: { postgresId?: string; postgresDomain?: string } } | undefined;
+
+/** Resolves the cluster id: options, then env `CLUSTER_ID`, then the `x-zc-directdb-cluster-id` request header. */
+export function resolveClusterId(options: IPostgresOptions, app?: AppWithConfig): string {
+	const clusterId = options.clusterId ?? env('CLUSTER_ID') ?? app?.config?.postgresId;
 	wrapValidators(() => {
 		isValidInputString(clusterId, 'cluster_id', true);
 	}, CatalystPostgresError);
 	return clusterId as string;
 }
 
-/** Resolves the query domain from options, falling back to the `POSTGRESS_DOMAIN` environment variable. */
-export function resolveDomain(options: IPostgresOptions): string {
-	const domain = options.domain ?? process.env.POSTGRESS_DOMAIN ?? process.env.POSTGRES_DOMAIN;
+/** Resolves the query domain: options, then env `POSTGRESS_DOMAIN`, then the `x-zc-directdb-pdomain` request header. */
+export function resolveDomain(options: IPostgresOptions, app?: AppWithConfig): string {
+	const domain =
+		options.domain ??
+		env('POSTGRESS_DOMAIN') ??
+		env('POSTGRES_DOMAIN') ??
+		app?.config?.postgresDomain;
 	wrapValidators(() => {
 		isNonEmptyString(domain, 'postgres_domain', true);
 	}, CatalystPostgresError);

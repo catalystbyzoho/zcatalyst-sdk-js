@@ -79,6 +79,10 @@ export const CONSTANTS = {
 		environment: 'x-zc-environment',
 		projectSecretKey: 'x-zc-project-secret-key'
 	},
+	POSTGRES_HEADER: {
+		clusterId: 'x-zc-directdb-cluster-id',
+		domain: 'x-zc-directdb-pdomain'
+	},
 	DOMAIN_HEADER: {
 		api: 'zc-api-domain',
 		authPortal: 'za-portal-domain',

@@ -4,6 +4,25 @@
   "main": "./dist-cjs/index.js",
   "module": "./dist-es/index.js",
   "types": "./dist-types/index.d.ts",
+  "exports": {
+    ".": {
+      "node": {
+        "import": "./dist-es/index.js",
+        "require": "./dist-cjs/index.js",
+        "types": "./dist-types/index.d.ts"
+      },
+      "browser": {
+        "import": "./dist-es/index.browser.js",
+        "require": "./dist-cjs/index.browser.js",
+        "types": "./dist-types/index.browser.d.ts"
+      },
+      "default": {
+        "import": "./dist-es/index.js",
+        "require": "./dist-cjs/index.js",
+        "types": "./dist-types/index.d.ts"
+      }
+    }
+  },
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -31,12 +50,10 @@
   "engines": {
     "node": ">=22"
   },
+  "sideEffects": false,
   "files": [
     "dist-*/**"
   ],
-  "browser": {
-    "server-only-package": true
-  },
   "keywords": [
     "postgres",
     "zcatalyst",

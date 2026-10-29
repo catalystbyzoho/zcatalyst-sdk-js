@@ -28,6 +28,8 @@ export interface ICatalystAppConfig {
 	environment?: string;
 	projectSecretKey?: string;
 	origin?: string;
+	postgresId?: string;
+	postgresDomain?: string;
 }
 
 export interface ICatalystResolvedAppConfig extends ICatalystAppConfig {

@@ -9,6 +9,10 @@ const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
 const EXPIRY_BUFFER_MS = 60 * 1000;
 const DEFAULT_TTL_MS = 60 * 60 * 1000;
 
+/** Who the token is for: the logged-in user (optionally a fixed token), or an admin-minted role. */
+export type TokenScope =
+	{ kind: 'user'; staticToken?: string } | { kind: 'admin'; userId?: string };
+
 interface ICachedToken {
 	token: string;
 	expiresAt: number;
@@ -18,18 +22,26 @@ interface ICachedToken {
 export class TokenManager {
 	#requester: Handler;
 	#getClusterId: () => string;
-	#userId?: string;
+	#scope: TokenScope;
 	#cached?: ICachedToken;
 	#inflight?: Promise<string>;
 
-	constructor(requester: Handler, getClusterId: () => string, userId?: string) {
+	constructor(requester: Handler, getClusterId: () => string, scope: TokenScope) {
 		this.#requester = requester;
 		this.#getClusterId = getClusterId;
-		this.#userId = userId;
+		this.#scope = scope;
+	}
+
+	/** True when a fixed token is used, so refreshing it is pointless. */
+	get isStatic(): boolean {
+		return this.#scope.kind === 'user' && !!this.#scope.staticToken;
 	}
 
 	/** Returns a valid token, reusing the cached one until it is about to expire. */
 	async getToken(forceRefresh = false): Promise<string> {
+		if (this.#scope.kind === 'user' && this.#scope.staticToken) {
+			return this.#scope.staticToken;
+		}
 		if (
 			!forceRefresh &&
 			this.#cached &&
@@ -46,14 +58,24 @@ export class TokenManager {
 	}
 
 	async #generateToken(): Promise<string> {
-		const request: IRequestConfig = {
-			method: REQ_METHOD.post,
-			path: `/postgres/${this.#getClusterId()}/token`,
-			service: CatalystService.BAAS,
-			// admin credentials are required to mint a token for another user
-			user: this.#userId ? CREDENTIAL_USER.admin : CREDENTIAL_USER.user,
-			qs: this.#userId ? { user_id: this.#userId } : undefined
-		};
+		const clusterId = this.#getClusterId();
+		const scope = this.#scope;
+		let request: IRequestConfig;
+		if (scope.kind === 'user') {
+			request = { path: `/postgres/${clusterId}/token`, user: CREDENTIAL_USER.user };
+		} else {
+			request = {
+				path: `/postgres/${clusterId}/token`,
+				user: CREDENTIAL_USER.admin,
+				qs:
+					scope.userId === 'anon'
+						? { role: 'anon' }
+						: scope.userId
+							? { role: 'authenticated', user_id: scope.userId }
+							: {}
+			};
+		}
+		request = { ...request, method: REQ_METHOD.post, service: CatalystService.BAAS };
 		const res = await this.#requester.send(request);
 		const body = res.data as { data?: Record<string, unknown> } & Record<string, unknown>;
 		const payload = (body?.data ?? body) as Record<string, unknown>;
@@ -64,9 +86,15 @@ export class TokenManager {
 				'Unable to generate the Postgres token from the server response.'
 			);
 		}
-		const expiresIn = Number(payload?.expires_in);
-		const ttl = Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn * 1000 : DEFAULT_TTL_MS;
-		this.#cached = { token, expiresAt: Date.now() + ttl };
+		// `expires_at` is an absolute epoch time in ms (number or numeric string)
+		const expiresAt = Number(payload?.expires_at);
+		this.#cached = {
+			token,
+			expiresAt:
+				Number.isFinite(expiresAt) && expiresAt > 0
+					? expiresAt
+					: Date.now() + DEFAULT_TTL_MS
+		};
 		return token;
 	}
 }
