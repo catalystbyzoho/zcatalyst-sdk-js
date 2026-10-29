@@ -1,10 +1,10 @@
 # @zcatalyst/quickml
 
-JavaScript SDK for Catalyst QuickML - Prediction
+JavaScript SDK for Catalyst QuickML - Prediction & Generative AI
 
 ## Overview
 
-The `@zcatalyst/quickml` package provides JavaScript/TypeScript methods to call deployed [Catalyst QuickML](https://docs.catalyst.zoho.com/en/quickml/) prediction endpoints. Runs in Node.js (server-side) environments only.
+The `@zcatalyst/quickml` package provides JavaScript/TypeScript methods to call deployed [Catalyst QuickML](https://docs.catalyst.zoho.com/en/quickml/) prediction endpoints, as well as QuickML GenAI endpoints (RAG search/generation/agents, LLM chat, and VLM image analysis). Runs in Node.js (server-side) environments only.
 
 ### Prerequisites
 
@@ -49,12 +49,50 @@ To send a request, you:
 ```js
 const quickml = new QuickML();
 
-const data = await quickml.predict('endpoint_key', {
+const data = await quickml.runInference('endpoint_key', {
 	// Enter column name and value as per your dataset
 	column_name1: 'value1',
 	column_name2: 'value2'
 });
 ```
+
+> `predict()` is deprecated in favor of `runInference()`, which has the same signature and behavior.
+
+### GenAI operations
+
+In addition to prediction, the SDK supports calling QuickML GenAI endpoints:
+
+```js
+const quickml = new QuickML();
+
+// Search indexed documents on a RAG endpoint.
+const searchResult = await quickml.searchDocuments('endpoint_key', 'What is QuickML?');
+
+// Generate a RAG (retrieval-augmented generation) response.
+const ragResponse = await quickml.generateRagResponse('endpoint_key', 'What is QuickML?');
+
+// Send a single, stateless query to a RAG agent.
+const agentResponse = await quickml.askRagAgent('endpoint_key', 'Hello');
+
+// Continue a stateful conversation with a RAG agent.
+const agentChat = await quickml.converseWithRagAgent('endpoint_key', 'Hello', 'conversation_id');
+
+// Send a single, stateless prompt to an LLM.
+const llmResponse = await quickml.askLlm('endpoint_key', 'Explain AI');
+
+// Continue a stateful conversation with an LLM.
+const llmChat = await quickml.converseWithLlm('endpoint_key', 'Explain AI', 'conversation_id');
+
+// Analyze an image using a VLM (vision-language model) endpoint.
+const fs = require('fs');
+const imageResult = await quickml.analyzeImage(
+	'endpoint_key',
+	fs.createReadStream('image.png'),
+	'Describe this image'
+);
+```
+
+`converseWithRagAgent` and `converseWithLlm` accept an optional `conversationId`; when omitted or empty, a new conversation is started.
 
 ### Async/await
 
@@ -65,7 +103,7 @@ operator to wait for the promise returned by send operation as follows:
 // async/await.
 try {
 	const quickml = new QuickML();
-	const data = await quickml.predict('endpoint_key', {
+	const data = await quickml.runInference('endpoint_key', {
 		// Enter column name and value as per your dataset
 		column_name1: 'value1',
 		column_name2: 'value2'
@@ -82,7 +120,7 @@ try {
 
 ```js
 try {
-	const data = await quickml.predict('endpoint_key', {
+	const data = await quickml.runInference('endpoint_key', {
 		// Enter column name and value as per your dataset
 		column_name1: 'value1',
 		column_name2: 'value2'
