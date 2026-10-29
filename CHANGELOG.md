@@ -1,5 +1,27 @@
 # Change Log
 
+## [v1.1.0](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v1.1.0) - 2026-10-23
+
+#### `@zcatalyst/auth-admin@v1.1.0`
+- **Features**
+  - support per-app domain config for multi-app processes [`#57`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/57)
+
+#### `@zcatalyst/stratus@v1.1.0`
+- **Features**
+  - use per-app domain config for bucket URL and auth handlers [`#57`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/57)
+
+#### `@zcatalyst/transport@v1.1.0`
+- **Features**
+  - support per-app domain config in the HTTP handler [`#57`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/57)
+
+#### `@zcatalyst/utils@v1.1.0`
+- **Features**
+  - add data center helpers, domain validators, constants and interfaces for per-app domain config [`#57`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/57)
+
+#### `@zcatalyst/datastreams@v1.0.1`
+- **Features**
+  - Added Datastreams support.[`#43`](https://github.com/catalystbyzoho/zcatalyst-sdk-js/pull/43)
+
 ## [v1.0.0](https://github.com/catalystbyzoho/zcatalyst-sdk-js/releases/tag/v1.0.0) - 2026-09-21
 
 First stable release. All packages bumped to `v1.0.0`.

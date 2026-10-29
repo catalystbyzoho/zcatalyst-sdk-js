@@ -47,6 +47,7 @@ const semver = require("semver");
 const {
   parseCommit,
   getRawCommitsSinceTag,
+  expandCommitMessage,
   getWorkspacePackages,
 } = require("./lib/commits");
 
@@ -72,6 +73,7 @@ function getBumpType(commit) {
 
 function getCommits() {
   return getRawCommitsSinceTag()
+    .flatMap(expandCommitMessage)
     .map(msg => {
       try {
         return parseCommit(msg);
