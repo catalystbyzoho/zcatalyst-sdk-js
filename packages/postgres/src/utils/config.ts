@@ -38,6 +38,16 @@ export function resolveEnvDomain(): string | undefined {
 	return env('POSTGRES_DOMAIN') ?? env('ZC_POSTGRES_DOMAIN');
 }
 
+/** Optional token server (env `ZC_POSTGRES_TOKEN_SERVER`) used only for the token request, e.g. when serving locally. */
+export function resolveTokenServer(): string | undefined {
+	const server = env('ZC_POSTGRES_TOKEN_SERVER');
+	if (!server) {
+		return undefined;
+	}
+	const normalized = server.replace(/\/+$/, '');
+	return /^https?:\/\//.test(normalized) ? normalized : `https://${normalized}`;
+}
+
 /** Validates a domain and strips trailing slashes. */
 export function normalizeDomain(domain: string | undefined): string {
 	wrapValidators(() => {

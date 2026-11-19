@@ -48,6 +48,7 @@ Stored functions: `await pg.rpc('add_them', { a: 1, b: 2 })`; pass `{ get: true 
 | Cluster id | env `CLUSTER_ID`, else `ZC_CLUSTER_ID` (browser: the `/sdk/init` value) |
 | Instance id (optional) | `options.instanceId`, else env `POSTGRES_INSTANCE_ID`; when set, the token is requested from `/postgres/{clusterId}/instance/{instanceId}/token` |
 | Instance domain | with an instance id and no env domain (backup cluster), `getClusterInstance()` (`GET /postgres/{clusterId}/instance/{instanceId}`) supplies `data_api_url`; with no instance id the domain comes from env |
+| Token server (optional) | env `ZC_POSTGRES_TOKEN_SERVER`; used only for the token request, e.g. when serving locally. The query domain is unaffected |
 | Query domain | env `POSTGRES_DOMAIN`, else `ZC_POSTGRES_DOMAIN` (browser: the `/sdk/init` value) |
 
 ## Notes

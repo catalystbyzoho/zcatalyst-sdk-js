@@ -32,6 +32,7 @@ const ENV_KEYS = [
 	'ZC_CLUSTER_ID',
 	'POSTGRES_DOMAIN',
 	'ZC_POSTGRES_DOMAIN',
+	'ZC_POSTGRES_TOKEN_SERVER',
 	'POSTGRES_INSTANCE_ID'
 ];
 
@@ -150,6 +151,20 @@ describe('2. Configuration', () => {
 		await admin().from('t').select();
 		expect(sendMock.mock.calls[0][0].path).toBe('/postgres/envc/token');
 		expect(sendMock.mock.calls[1][0].url).toBe('https://env.example.com/t?select=*');
+	});
+
+	it('sends only the token request to ZC_POSTGRES_TOKEN_SERVER', async () => {
+		process.env.ZC_POSTGRES_TOKEN_SERVER = 'localhost:3000/';
+		queueToken();
+		await admin().from('t').select();
+		expect(sendMock.mock.calls[0][0].origin).toBe('https://localhost:3000');
+		expect(sendMock.mock.calls[1][0].origin).toBeUndefined();
+	});
+
+	it('does not set an origin on the token request when ZC_POSTGRES_TOKEN_SERVER is unset', async () => {
+		queueToken();
+		await admin().from('t').select();
+		expect(sendMock.mock.calls[0][0].origin).toBeUndefined();
 	});
 
 	it('falls back to ZC_CLUSTER_ID / ZC_POSTGRES_DOMAIN when the plain names are unset', async () => {

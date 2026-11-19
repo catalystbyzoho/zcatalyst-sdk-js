@@ -1,6 +1,7 @@
 import { Handler, IRequestConfig, RequestType } from '@zcatalyst/transport';
 import { CatalystService, CONSTANTS } from '@zcatalyst/utils';
 
+import { resolveTokenServer } from './utils/config.js';
 import { CatalystPostgresError } from './utils/error.js';
 
 const { REQ_METHOD, CREDENTIAL_USER } = CONSTANTS;
@@ -88,7 +89,13 @@ export class TokenManager {
 				...(body ? { data: body, type: RequestType.JSON } : {})
 			};
 		}
-		request = { ...request, method: REQ_METHOD.post, service: CatalystService.BAAS };
+		const origin = resolveTokenServer();
+		request = {
+			...request,
+			method: REQ_METHOD.post,
+			service: CatalystService.BAAS,
+			...(origin ? { origin } : {})
+		};
 		const res = await this.#requester.send(request);
 		const body = res.data as { data?: Record<string, unknown> } & Record<string, unknown>;
 		const payload = (body?.data ?? body) as Record<string, unknown>;
