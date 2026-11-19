@@ -17,6 +17,26 @@ import { IPostgresClusterInstance, IPostgresOptions, PostgresCountType } from '.
 
 const { COMPONENT, AUTH_HEADER, CREDENTIAL_USER, REQ_METHOD } = CONSTANTS;
 
+const OPTION_KEYS = ['anonToken', 'instanceId'];
+
+/** Accepts `(options)` or `(app, options)`; a plain object holding only option keys is options. */
+function splitArgs(
+	first?: unknown,
+	second?: IPostgresOptions
+): { app?: unknown; options: IPostgresOptions } {
+	if (second === undefined && first !== null && typeof first === 'object') {
+		const proto = Object.getPrototypeOf(first);
+		const keys = Object.keys(first);
+		if (
+			(proto === Object.prototype || proto === null) &&
+			keys.every((k) => OPTION_KEYS.includes(k))
+		) {
+			return { options: first as IPostgresOptions };
+		}
+	}
+	return { app: first ?? undefined, options: second ?? {} };
+}
+
 /**
  * User-scoped access to a Catalyst Postgres cluster (Supabase-style table API).
  * Queries run as the logged-in user, or as the anonymous role when `anonToken` is supplied.
@@ -28,8 +48,15 @@ export class Postgres implements Component {
 	#tokens?: TokenManager;
 	#instanceDomain?: Promise<string>;
 
-	/** Creates a Postgres client. Cluster id and domain come from env or request headers. */
-	constructor(app?: unknown, options: IPostgresOptions = {}) {
+	/**
+	 * Creates a Postgres client. Cluster id and domain come from env or request headers.
+	 * `app` is optional (not needed in the browser); `anonToken` and `instanceId` work in both
+	 * environments. Use `new Postgres()`, `new Postgres(options)` or `new Postgres(app, options)`.
+	 */
+	constructor(options?: IPostgresOptions);
+	constructor(app?: unknown, options?: IPostgresOptions);
+	constructor(first?: unknown, second?: IPostgresOptions) {
+		const { app, options } = splitArgs(first, second);
 		this.app = app;
 		this.options = options;
 		this.requester = new Handler(app, this);
@@ -206,7 +233,10 @@ export class PostgresAdmin extends Postgres {
 	readonly #userId?: string;
 
 	/** Creates an admin Postgres client. `userId` scopes it to that user; prefer `asUser()`. */
-	constructor(app?: unknown, options: IPostgresOptions = {}, userId?: string) {
+	constructor(options?: IPostgresOptions);
+	constructor(app?: unknown, options?: IPostgresOptions, userId?: string);
+	constructor(first?: unknown, second?: IPostgresOptions, userId?: string) {
+		const { app, options } = splitArgs(first, second);
 		super(app, options);
 		this.#userId = userId;
 	}

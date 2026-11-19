@@ -5,7 +5,7 @@ Run SQL against a Catalyst Postgres cluster. JWT tokens are generated and cached
 ```ts
 import { Postgres } from '@zcatalyst/postgres';
 
-const pg = new Postgres(app);
+const pg = new Postgres();
 const { data } = await pg.from('orders').select();
 
 // admin credentials only. The plain admin client runs as service_role (bypasses RLS)

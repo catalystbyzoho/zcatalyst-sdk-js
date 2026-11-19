@@ -1013,6 +1013,21 @@ describe('12. Anonymous visitors', () => {
 		expect(lastReq().headers.Authorization).toBe(bearer('anon-jwt'));
 	});
 
+	it('accepts options as the only argument (no app), in both clients', async () => {
+		adminUser = false;
+		sendMock.mockResolvedValue(rowsResp);
+		await new UserPostgres({ anonToken: 'anon-jwt' }).from('t').select();
+		expect(lastReq().headers.Authorization).toBe(bearer('anon-jwt'));
+		await new UserPostgres(undefined, { anonToken: 'anon-2' }).from('t').select();
+		expect(lastReq().headers.Authorization).toBe(bearer('anon-2'));
+		expect(new Postgres({ instanceId: 'inst_1' })).toBeInstanceOf(Postgres);
+	});
+
+	it('treats a first argument with non-option keys as the app', () => {
+		const app = { credential: {} };
+		expect(() => new Postgres(app, { instanceId: 'inst_1' })).not.toThrow();
+	});
+
 	it('never refreshes or retries a static anonToken on 401', async () => {
 		adminUser = false;
 		sendMock.mockRejectedValueOnce({ statusCode: 401 });
