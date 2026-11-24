@@ -121,6 +121,8 @@ export const IAM_DOMAIN = 'IAM_DOMAIN';
 export const PROJECT_DOMAIN = 'PROJECT_DOMAIN';
 export const CATALYST_DOMAIN = 'CATALYST_DOMAIN';
 export const ORG_ID = 'ORG_ID';
+export const CLUSTER_ID = 'CLUSTER_ID';
+export const POSTGRES_DOMAIN = 'POSTGRES_DOMAIN';
 
 // =============================================================================
 // CSRF TOKEN CONSTANT

@@ -180,22 +180,30 @@ export class ZCAuth {
 			appName = DEFAULT_APP_NAME;
 		}
 
-		if (!isNonEmptyObject(appOptions)) {
-			appOptions = this.#loadOptionsFromEnvVar();
-			if (!isNonEmptyObject(appOptions)) {
+		// work on a local copy so this component never mutates shared module state
+		let options = { ...appOptions };
+		if (!isNonEmptyObject(options)) {
+			options = this.#loadOptionsFromEnvVar();
+			if (!isNonEmptyObject(options)) {
 				throw new CatalystAppError(
 					'AUTH_ERROR',
 					'Unable to get the app credentials, please initialize the app before perform operations.',
-					appOptions
+					options
 				);
 			}
 		}
 
 		// credential alone can be not given
-		if (typeof appOptions.credential === 'undefined') {
-			appOptions.credential = new ApplicationDefaultCredential();
+		if (typeof options.credential === 'undefined') {
+			options.credential = new ApplicationDefaultCredential();
 		}
-		const app = new CatalystApp(appOptions);
+		// switch a copy so the credential held by an already-initialised app keeps its scope
+		const credential = options.credential as Credential;
+		const adminCredential = Object.assign(
+			Object.create(Object.getPrototypeOf(credential)),
+			credential
+		) as Credential;
+		const app = new CatalystApp({ ...options, credential: adminCredential });
 		app.credential.switchUser(CREDENTIAL_USER.admin);
 		this.#appCollection[appName] = app;
 		return app;

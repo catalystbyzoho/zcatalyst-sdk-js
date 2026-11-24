@@ -77,6 +77,8 @@ export interface CatalystConfig {
 	PROJECT_ID?: string;
 	ZAID?: string;
 	ORG_ID?: string;
+	CLUSTER_ID?: string;
+	POSTGRES_DOMAIN?: string;
 	CATALYST_DOMAIN: string;
 	STRATUS_DOMAIN?: string;
 	NIMBUS_DOMAIN?: string;

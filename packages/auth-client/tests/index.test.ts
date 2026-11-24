@@ -123,6 +123,21 @@ describe('auth-client index', () => {
 			expect(ConfigStore.get(ZAID)).toBe('test-zaid');
 		});
 
+		it('should store postgres cluster id and domain from sdk/init', async () => {
+			(global.fetch as jest.Mock).mockResolvedValue({
+				json: async () => ({
+					...mockCredentials,
+					cluster_id: 'c1',
+					pdomain: 'https://pg.example.com'
+				})
+			});
+
+			await getCredentials();
+
+			expect(ConfigStore.get('CLUSTER_ID')).toBe('c1');
+			expect(ConfigStore.get('POSTGRES_DOMAIN')).toBe('https://pg.example.com');
+		});
+
 		it('should handle nested credentials with credentialQR', async () => {
 			const mockResponse = {
 				credentialQR: {

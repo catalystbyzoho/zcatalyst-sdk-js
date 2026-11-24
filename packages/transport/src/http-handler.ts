@@ -557,10 +557,11 @@ export class HttpClient {
 			// assign user headers
 			req.headers[USER_KEY_NAME] = this.app.credential.getCurrentUserType();
 
+			const hasCustomOrigin = !!req.origin;
 			req.origin = req.origin || this.app.config.apiDomain;
 
-			// spcl handling for CLI
-			if (this.app.config.servedByCLI) {
+			// spcl handling for CLI (an explicitly requested origin is kept)
+			if (this.app.config.servedByCLI && !hasCustomOrigin) {
 				switch (user) {
 					case CREDENTIAL_USER.admin:
 						req.origin =

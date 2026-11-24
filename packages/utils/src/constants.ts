@@ -33,6 +33,7 @@ export const CONSTANTS = {
 		job_scheduling: 'JobScheduling',
 		pipeline: 'Pipeline',
 		no_sql: 'NoSQL',
+		postgres: 'Postgres',
 		data_streams: 'DataStreams'
 	},
 	PRODUCT_NAME: {

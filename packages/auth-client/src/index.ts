@@ -8,6 +8,7 @@
 import { ConfigStore } from './config-store.js';
 import {
 	API_DOMAIN,
+	CLUSTER_ID,
 	CSRF_TOKEN,
 	CSRF_TOKEN_KEY,
 	defaultConfig,
@@ -16,6 +17,7 @@ import {
 	INITIALIZED,
 	IS_APPSAIL,
 	ORG_ID,
+	POSTGRES_DOMAIN,
 	PROJECT_DOMAIN,
 	PROJECT_ID,
 	REQUIREMENT,
@@ -96,6 +98,12 @@ export function getCredentials(): Promise<void> {
 			ConfigStore.set(PROJECT_DOMAIN, finalCredentials.project_domain);
 			if (finalCredentials.org_id) {
 				ConfigStore.set(ORG_ID, finalCredentials.org_id);
+			}
+			if (finalCredentials.cluster_id) {
+				ConfigStore.set(CLUSTER_ID, finalCredentials.cluster_id);
+			}
+			if (finalCredentials.pdomain) {
+				ConfigStore.set(POSTGRES_DOMAIN, finalCredentials.pdomain);
 			}
 			ConfigStore.set(INITIALIZED, true + '');
 			setGlobal('__catalyst', finalCredentials);
