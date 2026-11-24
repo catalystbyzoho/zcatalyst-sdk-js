@@ -217,7 +217,8 @@ export class PopupManager {
 						signInProvidersOnly: config.signInProvidersOnly,
 						forgotPasswordCssUrl: config.forgotPasswordCssUrl,
 						forgotPasswordId: config.forgotPasswordId,
-						is_customize_forgot_password: config.is_customize_forgot_password,
+						is_customize_forgot_password:
+							config.is_customize_forgot_password ?? config.isCustomizeForgotPassword,
 						redirectUrl: config.redirectUrl,
 						serviceUrl: config.serviceUrl
 					}),
