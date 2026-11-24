@@ -1278,3 +1278,59 @@ describe('15. Error handling', () => {
 		});
 	});
 });
+
+// ---------------------------------------------------------------------------
+// 16. Schemas
+// ---------------------------------------------------------------------------
+
+describe('16. Schemas', () => {
+	it('sends Accept-Profile on reads and Content-Profile on writes', async () => {
+		queueToken();
+		await admin().schema('sales').from('t').select();
+		expect(lastReq().headers['Accept-Profile']).toBe('sales');
+		expect(lastReq().headers['Content-Profile']).toBeUndefined();
+
+		routeRequests(httpResp(''));
+		await admin().schema('sales').from('t').insert({ a: 1 });
+		await admin().schema('sales').from('t').update({ a: 2 }).eq('id', 1);
+		await admin().schema('sales').from('t').delete().eq('id', 1);
+		for (const req of allReqs()
+			.filter((r) => r.url)
+			.slice(-3)) {
+			expect(req.headers['Content-Profile']).toBe('sales');
+			expect(req.headers['Accept-Profile']).toBeUndefined();
+		}
+	});
+
+	it('applies to rpc (POST uses Content-Profile, GET uses Accept-Profile)', async () => {
+		queueToken();
+		await admin().schema('sales').rpc('fn', { a: 1 });
+		expect(lastReq().headers['Content-Profile']).toBe('sales');
+		routeRequests();
+		await admin().schema('sales').rpc('fn', {}, { get: true });
+		expect(lastReq().headers['Accept-Profile']).toBe('sales');
+	});
+
+	it('uses the schema option as the default and schema() overrides it', async () => {
+		queueToken();
+		const pg = admin({ schema: 'sales' });
+		await pg.from('t').select();
+		expect(lastReq().headers['Accept-Profile']).toBe('sales');
+		routeRequests();
+		await pg.schema('hr').from('t').select();
+		expect(lastReq().headers['Accept-Profile']).toBe('hr');
+		await pg.asUser('42').from('t').select();
+		expect(lastReq().headers['Accept-Profile']).toBe('sales');
+	});
+
+	it('sends no profile header by default', async () => {
+		queueToken();
+		await admin().from('t').select();
+		expect(lastReq().headers['Accept-Profile']).toBeUndefined();
+	});
+
+	it('rejects an invalid schema name', () => {
+		expect(() => admin().schema('bad name;')).toThrow(CatalystPostgresError);
+		expect(() => admin().schema('')).toThrow(CatalystPostgresError);
+	});
+});

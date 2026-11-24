@@ -112,8 +112,14 @@ export class PostgresQueryBuilder<T = Record<string, unknown>> implements Promis
 	#single = false;
 	#maybeSingle = false;
 	#rpc = false;
+	#schema?: string;
 
-	constructor(executor: PostgresExecutor, table: string, rpc?: IPostgresRpcInit) {
+	constructor(
+		executor: PostgresExecutor,
+		table: string,
+		rpc?: IPostgresRpcInit,
+		schema?: string
+	) {
 		if (typeof table !== 'string' || !/^[A-Za-z_][A-Za-z0-9_$]*$/.test(table)) {
 			throw new CatalystPostgresError(
 				'INVALID_ARGUMENT',
@@ -123,6 +129,7 @@ export class PostgresQueryBuilder<T = Record<string, unknown>> implements Promis
 			);
 		}
 		this.#executor = executor;
+		this.#schema = schema;
 		if (rpc) {
 			this.#initRpc(table, rpc);
 		} else {
@@ -436,6 +443,14 @@ export class PostgresQueryBuilder<T = Record<string, unknown>> implements Promis
 		const prefer = Object.entries(this.#prefer).map(([k, v]) => `${k}=${v}`);
 		if (prefer.length) {
 			headers.Prefer = prefer.join(', ');
+		}
+		if (this.#schema) {
+			// PostgREST: Accept-Profile selects the schema for GET/HEAD, Content-Profile for the rest
+			headers[
+				this.#method === 'GET' || this.#method === 'HEAD'
+					? 'Accept-Profile'
+					: 'Content-Profile'
+			] = this.#schema;
 		}
 		if (this.#single) {
 			headers.Accept = 'application/vnd.pgrst.object+json';

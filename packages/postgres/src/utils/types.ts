@@ -10,6 +10,12 @@ export interface IPostgresOptions {
 	 * requested for that instance; otherwise the cluster-level token is used.
 	 */
 	instanceId?: string;
+	/**
+	 * Default database schema for `from()` and `rpc()` (sent as `Accept-Profile` /
+	 * `Content-Profile`). Omit for the cluster default (`public`). Override per call with `schema()`.
+	 * The schema must be exposed by the data API and the role needs `USAGE` on it.
+	 */
+	schema?: string;
 }
 
 /** Cluster details returned by `getClusterInstance()`. */

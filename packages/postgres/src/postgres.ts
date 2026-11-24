@@ -17,7 +17,31 @@ import { IPostgresClusterInstance, IPostgresOptions, PostgresCountType } from '.
 
 const { COMPONENT, AUTH_HEADER, CREDENTIAL_USER, REQ_METHOD } = CONSTANTS;
 
-const OPTION_KEYS = ['anonToken', 'instanceId'];
+const OPTION_KEYS = ['anonToken', 'instanceId', 'schema'];
+const SCHEMA_NAME = /^[A-Za-z_][A-Za-z0-9_$-]*$/;
+
+function validSchema(schema: unknown): string | undefined {
+	if (schema === undefined || schema === null || schema === '') {
+		return undefined;
+	}
+	if (typeof schema !== 'string' || !SCHEMA_NAME.test(schema)) {
+		throw new CatalystPostgresError(
+			'INVALID_ARGUMENT',
+			'The value provided for schema is invalid. Use a plain schema name.'
+		);
+	}
+	return schema;
+}
+
+/** A client view bound to one schema (returned by `schema()`). */
+export interface IPostgresSchemaClient {
+	from<T = Record<string, unknown>>(table: string): PostgresQueryBuilder<T>;
+	rpc<T = Record<string, unknown>>(
+		fn: string,
+		args?: Record<string, unknown>,
+		options?: { get?: boolean; head?: boolean; count?: PostgresCountType }
+	): PostgresQueryBuilder<T>;
+}
 
 /** Accepts `(options)` or `(app, options)`; a plain object holding only option keys is options. */
 function splitArgs(
@@ -146,7 +170,43 @@ export class Postgres implements Component {
 	 * ```
 	 */
 	from<T = Record<string, unknown>>(table: string): PostgresQueryBuilder<T> {
-		return new PostgresQueryBuilder<T>(this.#executor, table);
+		return new PostgresQueryBuilder<T>(
+			this.#executor,
+			table,
+			undefined,
+			validSchema(this.options.schema)
+		);
+	}
+
+	/**
+	 * Targets a database schema for `from()` and `rpc()`, like Supabase's `schema()`. Reads send
+	 * `Accept-Profile`, writes and POST RPC send `Content-Profile`. The current client is not modified.
+	 * @param name - Schema name. The data API must expose it and the role needs `USAGE` on it.
+	 * @throws {CatalystPostgresError} when the name is invalid.
+	 *
+	 * @example
+	 * ```ts
+	 * const { data } = await postgres.schema('sales').from('orders').select();
+	 * await postgres.schema('sales').rpc('monthly_total');
+	 * ```
+	 */
+	schema(name: string): IPostgresSchemaClient {
+		const schema = validSchema(name);
+		if (!schema) {
+			throw new CatalystPostgresError(
+				'INVALID_ARGUMENT',
+				'The value provided for schema is invalid.'
+			);
+		}
+		return {
+			from: <T = Record<string, unknown>>(table: string) =>
+				new PostgresQueryBuilder<T>(this.#executor, table, undefined, schema),
+			rpc: <T = Record<string, unknown>>(
+				fn: string,
+				args: Record<string, unknown> = {},
+				options: { get?: boolean; head?: boolean; count?: PostgresCountType } = {}
+			) => new PostgresQueryBuilder<T>(this.#executor, fn, { args, ...options }, schema)
+		};
 	}
 
 	/**
@@ -168,7 +228,12 @@ export class Postgres implements Component {
 		args: Record<string, unknown> = {},
 		options: { get?: boolean; head?: boolean; count?: PostgresCountType } = {}
 	): PostgresQueryBuilder<T> {
-		return new PostgresQueryBuilder<T>(this.#executor, fn, { args, ...options });
+		return new PostgresQueryBuilder<T>(
+			this.#executor,
+			fn,
+			{ args, ...options },
+			validSchema(this.options.schema)
+		);
 	}
 
 	#executor: PostgresExecutor = async (req) => {

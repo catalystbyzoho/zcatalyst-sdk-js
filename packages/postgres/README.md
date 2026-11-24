@@ -41,6 +41,18 @@ Modifiers: `order limit range single maybeSingle` (`maybeSingle` returns `null` 
 
 Stored functions: `await pg.rpc('add_them', { a: 1, b: 2 })`; pass `{ get: true }` (or `head`, `count`) as the third argument for read-only calls. The result supports the same filters and modifiers. Table routes are `https://<domain>/<table>`, as in PostgREST.
 
+## Schemas
+
+Queries use the cluster default schema (`public`). Use `schema()` like Supabase, or set the `schema` option as the default:
+
+```ts
+await pg.schema('sales').from('orders').select();
+await pg.schema('sales').rpc('monthly_total');
+const salesPg = new Postgres(app, { schema: 'sales' }); // default for from() / rpc()
+```
+
+Reads send `Accept-Profile`, writes and POST RPC send `Content-Profile`. The schema must be exposed by the data API and the role needs `USAGE` on it.
+
 ## Configuration
 
 | Value | Source |
