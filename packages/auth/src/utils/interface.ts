@@ -102,6 +102,7 @@ export interface ICatalystSignInConfig {
 	signInProvidersOnly?: boolean;
 	cssUrl?: string;
 	is_customize_forgot_password?: boolean;
+	isCustomizeForgotPassword?: boolean;
 	forgotPasswordId?: string;
 	forgotPasswordCssUrl?: string;
 	serviceUrl?: string;
@@ -135,6 +136,7 @@ export interface ICatalystPopupSignInConfig {
 	forgotPasswordId?: string;
 	/** Forwarded to the popup login page via URL hash — never sent to the server. */
 	is_customize_forgot_password?: boolean;
+	isCustomizeForgotPassword?: boolean;
 	/** Forwarded to the popup login page via URL hash — never sent to the server. */
 	redirectUrl?: string;
 	/** Forwarded to the popup login page via URL hash — never sent to the server. */
